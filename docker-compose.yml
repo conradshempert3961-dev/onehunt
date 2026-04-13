@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    container_name: onehunt_bot
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - onehunt
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: onehunt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: onehunt
+      POSTGRES_USER: onehunt
+      POSTGRES_PASSWORD: onehunt
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onehunt -d onehunt"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - onehunt
+
+  redis:
+    image: redis:7-alpine
+    container_name: onehunt_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - onehunt
+
+volumes:
+  pgdata:
+
+networks:
+  onehunt:
+    driver: bridge

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#eef6f0">
+    <title>ONEHUNT Mini App</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="brand-block">
+                <span class="brand-mark">OH</span>
+                <div>
+                    <strong>ONEHUNT</strong>
+                    <small id="statusLabel">Mini App</small>
+                </div>
+            </div>
+            <button class="ghost-chip" id="refreshButton" type="button">Обновить</button>
+        </header>
+
+        <main class="app-main">
+            <section class="screen screen-active" id="screen-home">
+                <div class="hero-card card">
+                    <p class="eyebrow">Лагерь охотника</p>
+                    <h1 id="heroTitle">ONEHUNT</h1>
+                    <p class="hero-text" id="heroText">Загружаем ваш профиль и текущий прогресс.</p>
+                    <div class="hero-badges" id="heroBadges"></div>
+                </div>
+
+                <div class="stats-grid" id="homeStats"></div>
+
+                <div class="card quote-card">
+                    <p class="eyebrow">Цитата дня</p>
+                    <p id="quoteText">...</p>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Быстрый старт</h2>
+                        <span>Сразу в действие</span>
+                    </div>
+                    <div class="actions-grid">
+                        <button class="action-tile" data-start-mode="quick" type="button">
+                            <strong>🦆 Быстрый вопрос</strong>
+                            <span>Один вопрос прямо сейчас</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="training" type="button">
+                            <strong>🎯 Стрельбище</strong>
+                            <span>Обычная тренировка</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="exam" type="button">
+                            <strong>📝 Экзамен</strong>
+                            <span>Все 257 вопросов</span>
+                        </button>
+                        <button class="action-tile" id="routeTaskButton" type="button">
+                            <strong>📍 Задача маршрута</strong>
+                            <span>Открыть текущий шаг</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card" id="homeRouteCard"></div>
+            </section>
+
+            <section class="screen" id="screen-practice">
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Режимы практики</h2>
+                        <span>Всё, что есть в боте</span>
+                    </div>
+                    <div class="actions-grid" id="practiceModes">
+                        <button class="action-tile" data-start-mode="training" type="button">
+                            <strong>🎯 Стрельбище</strong>
+                            <span>По вашим настройкам</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="blitz" type="button">
+                            <strong>⚡ Блиц</strong>
+                            <span>Короткий и быстрый режим</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="mistakes" type="button">
+                            <strong>🔄 Промахи</strong>
+                            <span>Разобрать ошибки</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="starred" type="button">
+                            <strong>⭐ Трудные следы</strong>
+                            <span>Избранные вопросы</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="repetition" type="button">
+                            <strong>🧠 Повторение</strong>
+                            <span>Интервальная память</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="duel" type="button">
+                            <strong>⚔️ Дуэль</strong>
+                            <span>Против Михалыча</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="training" data-weak="true" type="button">
+                            <strong>🎯 Слабые темы</strong>
+                            <span>Самые проседающие блоки</span>
+                        </button>
+                        <button class="action-tile" data-start-mode="training" data-timed="true" type="button">
+                            <strong>⏱ Таймер</strong>
+                            <span>Тренировка на время</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Тропа знаний</h2>
+                        <span>Последовательное прохождение</span>
+                    </div>
+                    <div class="block-grid" id="blockGrid"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Карточки охотника</h2>
+                        <span>Животные, следы, сезонность</span>
+                    </div>
+                    <div class="info-line" id="cardsSummary">Загружаем карточки...</div>
+                    <div class="category-list" id="cardCategories"></div>
+                    <div class="cards-list" id="cardsList"></div>
+                </div>
+            </section>
+
+            <section class="screen" id="screen-daily">
+                <div class="card" id="dailyQuestionCard"></div>
+                <div class="card" id="dailyChallengeCard"></div>
+                <div class="card" id="routeCard"></div>
+            </section>
+
+            <section class="screen" id="screen-profile">
+                <div class="stats-grid" id="profileStats"></div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Прогресс по блокам</h2>
+                        <span>Где уже хорошо, а где нужно дожать</span>
+                    </div>
+                    <div id="blockProgress"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>График за 14 дней</h2>
+                        <span>Живой срез по результатам</span>
+                    </div>
+                    <div class="chart-bars" id="progressChart"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>Достижения</h2>
+                        <span>Ближайшие и уже открытые</span>
+                    </div>
+                    <div class="achievements-list" id="achievementsList"></div>
+                </div>
+
+                <div class="card">
+                    <div class="section-head">
+                        <h2>История экзаменов</h2>
+                        <span>Последние попытки</span>
+                    </div>
+                    <div class="history-list" id="historyList"></div>
+                </div>
+
+                <div class="card settings-card">
+                    <div class="section-head">
+                        <h2>Снаряжение</h2>
+                        <span>Настройки и управление</span>
+                    </div>
+                    <label class="field">
+                        <span>Вопросов в тренировке</span>
+                        <select id="settingQuestions">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Таймер для тренировки</span>
+                        <select id="settingTimer">
+                            <option value="0">Выключен</option>
+                            <option value="30">30 сек</option>
+                            <option value="45">45 сек</option>
+                            <option value="60">60 сек</option>
+                        </select>
+                    </label>
+                    <label class="toggle">
+                        <input id="settingExplanations" type="checkbox">
+                        <span>Показывать объяснения после ответа</span>
+                    </label>
+                    <label class="toggle">
+                        <input id="settingReminder" type="checkbox">
+                        <span>Включить ежедневные напоминания</span>
+                    </label>
+                    <label class="field">
+                        <span>Час напоминания</span>
+                        <input id="settingHour" type="number" min="0" max="23">
+                    </label>
+                    <div class="settings-actions">
+                        <button class="primary-button" id="saveSettingsButton" type="button">Сохранить</button>
+                        <button class="ghost-button" id="resetProgressButton" type="button">Сбросить прогресс</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-button active" data-screen="home" type="button"><span>🏕</span><small>Главная</small></button>
+            <button class="nav-button" data-screen="practice" type="button"><span>📚</span><small>Практика</small></button>
+            <button class="nav-button" data-screen="daily" type="button"><span>📅</span><small>Ежедневно</small></button>
+            <button class="nav-button" data-screen="profile" type="button"><span>👤</span><small>Профиль</small></button>
+        </nav>
+    </div>
+
+    <section class="session-overlay hidden" id="sessionOverlay">
+        <div class="session-shell">
+            <div class="session-topbar">
+                <div>
+                    <p class="eyebrow">Сессия</p>
+                    <h2 id="sessionTitle">Вопрос</h2>
+                </div>
+                <button class="ghost-chip" id="closeSessionButton" type="button">Закрыть</button>
+            </div>
+            <div class="session-meta" id="sessionMeta"></div>
+            <img class="session-image hidden" id="sessionImage" alt="Иллюстрация">
+            <article class="question-card">
+                <p class="question-text" id="questionText"></p>
+                <div class="option-list" id="questionOptions"></div>
+            </article>
+            <div class="answer-toolbar">
+                <div class="answer-buttons" id="answerButtons"></div>
+                <button class="ghost-button" id="starQuestionButton" type="button">⭐ В избранное</button>
+            </div>
+            <div class="result-panel hidden" id="resultPanel"></div>
+        </div>
+    </section>
+
+    <section class="sheet hidden" id="detailSheet">
+        <div class="sheet-backdrop" id="sheetBackdrop"></div>
+        <div class="sheet-card">
+            <button class="ghost-chip sheet-close" id="closeSheetButton" type="button">Закрыть</button>
+            <div id="sheetContent"></div>
+        </div>
+    </section>
+
+    <div class="toast hidden" id="toast"></div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/assets/app.js"></script>
+</body>
+</html>
