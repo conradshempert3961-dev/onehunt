@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import html
 import logging
+import os
 import random
 import uuid
 from aiohttp import ClientSession
@@ -173,6 +174,14 @@ class SystemProxyAiohttpSession(AiohttpSession):
             self._should_reset_connector = False
 
         return self._session
+
+
+def build_bot_session() -> AiohttpSession:
+    # On Windows we may need system proxy settings; on Linux servers they often
+    # cause unnecessary timeouts or proxy resolution issues.
+    if os.name == "nt":
+        return SystemProxyAiohttpSession()
+    return AiohttpSession()
 
 
 def build_storage():
@@ -2173,20 +2182,25 @@ async def cleanup_sessions_job() -> None:
 async def register_bot_commands() -> None:
     if bot is None:
         return
-    await bot.set_my_commands(
-        [
-            BotCommand(command="start", description="Открыть лагерь"),
-            BotCommand(command="help", description="Показать справку"),
-            BotCommand(command="admin", description="Открыть админ-панель"),
-        ]
-    )
+    try:
+        await bot.set_my_commands(
+            [
+                BotCommand(command="start", description="Открыть лагерь"),
+                BotCommand(command="help", description="Показать справку"),
+                BotCommand(command="admin", description="Открыть админ-панель"),
+            ],
+            request_timeout=30,
+        )
+    except Exception:
+        logger.exception("Failed to set bot commands, continuing startup.")
     if MINIAPP_URL and MINIAPP_URL.lower().startswith("https://"):
         try:
             await bot.set_chat_menu_button(
                 menu_button=MenuButtonWebApp(
                     text="ONEHUNT App",
                     web_app=WebAppInfo(url=MINIAPP_URL),
-                )
+                ),
+                request_timeout=30,
             )
         except Exception:
             logger.exception("Failed to configure Mini App menu button.")
@@ -2210,15 +2224,15 @@ async def main() -> None:
 
     bot = Bot(
         token=BOT_TOKEN,
-        session=SystemProxyAiohttpSession(),
+        session=build_bot_session(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    await register_bot_commands()
 
     scheduler = setup_scheduler()
     scheduler.start()
 
     logger.info("ONEHUNT bot is starting.")
+    await register_bot_commands()
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
