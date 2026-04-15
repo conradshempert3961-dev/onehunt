@@ -5,6 +5,7 @@ import html
 import logging
 import os
 import random
+import socket
 import uuid
 from aiohttp import ClientSession
 from dataclasses import dataclass, field
@@ -176,12 +177,31 @@ class SystemProxyAiohttpSession(AiohttpSession):
         return self._session
 
 
+class IPv4AiohttpSession(AiohttpSession):
+    async def create_session(self) -> ClientSession:
+        if self._should_reset_connector:
+            await self.close()
+
+        if self._session is None or self._session.closed:
+            connector_init = dict(self._connector_init)
+            connector_init["family"] = socket.AF_INET
+            self._session = ClientSession(
+                connector=self._connector_type(**connector_init),
+                headers={
+                    USER_AGENT: f"{SERVER_SOFTWARE} aiogram/{__version__}",
+                },
+            )
+            self._should_reset_connector = False
+
+        return self._session
+
+
 def build_bot_session() -> AiohttpSession:
     # On Windows we may need system proxy settings; on Linux servers they often
     # cause unnecessary timeouts or proxy resolution issues.
     if os.name == "nt":
         return SystemProxyAiohttpSession()
-    return AiohttpSession()
+    return IPv4AiohttpSession()
 
 
 def build_storage():
