@@ -50,6 +50,7 @@ from config import (
     EXAM_QUESTIONS,
     FREE_MODE,
     MINIAPP_URL,
+    TELEGRAM_PROXY,
     PREMIUM_PRICE_RUB,
     PREMIUM_PRICE_STARS,
     TELEGRAM_STARS_PROVIDER_TOKEN,
@@ -197,6 +198,8 @@ class IPv4AiohttpSession(AiohttpSession):
 
 
 def build_bot_session() -> AiohttpSession:
+    if TELEGRAM_PROXY:
+        return IPv4AiohttpSession(proxy=TELEGRAM_PROXY)
     # On Windows we may need system proxy settings; on Linux servers they often
     # cause unnecessary timeouts or proxy resolution issues.
     if os.name == "nt":
