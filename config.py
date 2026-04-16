@@ -35,6 +35,12 @@ MINIAPP_URL = os.getenv("MINIAPP_URL", "")
 MINIAPP_DEV_USER_ID = int(os.getenv("MINIAPP_DEV_USER_ID", "0") or 0)
 MINIAPP_PORT = int(os.getenv("MINIAPP_PORT", "8080"))
 MINIAPP_SESSION_TTL_MINUTES = int(os.getenv("MINIAPP_SESSION_TTL_MINUTES", "240"))
+MINIAPP_BROWSER_DEMO = os.getenv("MINIAPP_BROWSER_DEMO", "false").lower() == "true"
+MINIAPP_BROWSER_DEMO_HOSTS = {
+    item.strip().lower()
+    for item in os.getenv("MINIAPP_BROWSER_DEMO_HOSTS", "localhost,127.0.0.1,::1").split(",")
+    if item.strip()
+}
 TELEGRAM_PROXY = os.getenv("TELEGRAM_PROXY", "").strip()
 
 TELEGRAM_STARS_PROVIDER_TOKEN = os.getenv("TELEGRAM_STARS_PROVIDER_TOKEN", "")

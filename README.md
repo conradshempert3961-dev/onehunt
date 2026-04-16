@@ -73,6 +73,8 @@ python miniapp_server.py
 - `MINIAPP_URL` — адрес Mini App, который бот использует для кнопки входа.
 - `MINIAPP_DEV_USER_ID` — локальный dev-пользователь для теста в браузере вне Telegram.
 - `MINIAPP_PORT` — порт локального FastAPI-сервера.
+- `MINIAPP_BROWSER_DEMO=true` — fallback-режим для открытия Mini App как обычного сайта без Telegram init data.
+- `MINIAPP_BROWSER_DEMO_HOSTS` — список доменов, где разрешён browser-demo режим, например `huntexam.online,www.huntexam.online`.
 - `TELEGRAM_PROXY` — SOCKS5/HTTP прокси для бота, если VDS не может достучаться до `api.telegram.org`.
 - Бот умеет открывать Mini App кнопкой из меню и из стартового экрана.
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import random
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -16,6 +17,8 @@ from config import (
     EXAM_PASS_PERCENT,
     EXAM_QUESTIONS,
     FREE_MODE,
+    MINIAPP_BROWSER_DEMO,
+    MINIAPP_BROWSER_DEMO_HOSTS,
 )
 from database.database import init_db
 from services.game import (
@@ -66,6 +69,7 @@ from utils.helpers import calculate_accuracy, format_duration, get_rank_by_corre
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+DEMO_COOKIE_NAME = "onehunt_demo_id"
 
 
 class SessionStartRequest(BaseModel):
@@ -348,8 +352,39 @@ def require_full_access(user: Any, feature: str) -> None:
     raise HTTPException(status_code=403, detail=f"Функция {feature} доступна в полном доступе.")
 
 
+def browser_demo_allowed(hostname: str | None) -> bool:
+    if not MINIAPP_BROWSER_DEMO:
+        return False
+    host = (hostname or "").lower()
+    return "*" in MINIAPP_BROWSER_DEMO_HOSTS or host in MINIAPP_BROWSER_DEMO_HOSTS
+
+
+def build_browser_demo_identity(request: Request, response: Response) -> MiniAppIdentity:
+    raw_id = request.cookies.get(DEMO_COOKIE_NAME, "")
+    if raw_id.isdigit():
+        telegram_id = int(raw_id)
+    else:
+        telegram_id = 900_000_000_000 + uuid.uuid4().int % 999_999_999
+    response.set_cookie(
+        DEMO_COOKIE_NAME,
+        str(telegram_id),
+        max_age=60 * 60 * 24 * 365,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+    )
+    return MiniAppIdentity(
+        telegram_id=telegram_id,
+        username="browser_user",
+        first_name="ONEHUNT",
+        last_name="Web",
+        is_telegram=False,
+    )
+
+
 async def resolve_identity(
     request: Request,
+    response: Response,
     x_telegram_init_data: str | None = Header(default=None, alias="X-Telegram-Init-Data"),
 ) -> MiniAppIdentity:
     if x_telegram_init_data:
@@ -362,6 +397,9 @@ async def resolve_identity(
         identity = build_dev_identity()
         if identity:
             return identity
+
+    if browser_demo_allowed(request.url.hostname):
+        return build_browser_demo_identity(request, response)
 
     raise HTTPException(status_code=401, detail="Mini App доступен из Telegram или локально в режиме разработки.")
 
