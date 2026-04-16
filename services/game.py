@@ -7,6 +7,7 @@ import random
 from typing import Any
 
 from sqlalchemy import and_, delete, distinct, func, or_, select
+from sqlalchemy.exc import IntegrityError
 
 from config import BLOCK_QUESTIONS, EXAM_PASS_PERCENT, EXAM_QUESTIONS
 from database.database import async_session
@@ -161,7 +162,20 @@ async def get_or_create_user(
             user.settings = ensure_settings(user.settings)
             user.last_seen_at = utcnow()
 
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError:
+            await session.rollback()
+            result = await session.execute(select(User).where(User.telegram_id == telegram_id))
+            user = result.scalar_one_or_none()
+            if user is None:
+                raise
+            user.username = username
+            user.first_name = first_name
+            user.last_name = last_name
+            user.settings = ensure_settings(user.settings)
+            user.last_seen_at = utcnow()
+            await session.commit()
         await session.refresh(user)
         return user
 

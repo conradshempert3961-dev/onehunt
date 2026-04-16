@@ -30,6 +30,7 @@ QUOTES_FILE = os.getenv("QUOTES_FILE", str(BASE_DIR / "data" / "quotes.json"))
 USE_REDIS_FSM = os.getenv("USE_REDIS_FSM", "false").lower() == "true"
 APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Europe/Moscow")
 FREE_MODE = os.getenv("FREE_MODE", "true").lower() == "true"
+BOT_SHELL_MODE = os.getenv("BOT_SHELL_MODE", "true").lower() == "true"
 ANSWER_BUTTONS_LAYOUT = os.getenv("ANSWER_BUTTONS_LAYOUT", "single_row")
 MINIAPP_URL = os.getenv("MINIAPP_URL", "")
 MINIAPP_DEV_USER_ID = int(os.getenv("MINIAPP_DEV_USER_ID", "0") or 0)
@@ -58,3 +59,4 @@ PREMIUM_PRICE_RUB = PREMIUM_PRICES["rub"]
 PREMIUM_PRICE_STARS = PREMIUM_PRICES["stars"]
 
 XP_TABLE = XP_RULES
+

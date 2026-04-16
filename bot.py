@@ -45,6 +45,7 @@ from config import (
     ANSWER_BUTTONS_LAYOUT,
     APP_TIMEZONE,
     BLOCK_QUESTIONS,
+    BOT_SHELL_MODE,
     BOT_TOKEN,
     EXAM_PASS_PERCENT,
     EXAM_QUESTIONS,
@@ -268,12 +269,60 @@ def has_full_access(user) -> bool:
     return FREE_MODE or is_premium(user)
 
 
+def get_miniapp_webapp_url() -> str | None:
+    url = MINIAPP_URL.strip()
+    if url.lower().startswith("https://"):
+        return url
+    if url:
+        logger.warning("Mini App button is disabled because Telegram Web Apps require HTTPS: %s", url)
+    return None
+
+
 def get_app_timezone():
     try:
         return ZoneInfo(APP_TIMEZONE)
     except Exception:  # pragma: no cover
         logger.warning("Unknown timezone %s, falling back to UTC.", APP_TIMEZONE)
         return ZoneInfo("UTC")
+
+
+def miniapp_shell_markup() -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    miniapp_url = get_miniapp_webapp_url()
+    if miniapp_url:
+        rows.append([InlineKeyboardButton(text="Open Mini App", web_app=WebAppInfo(url=miniapp_url))])
+    rows.append(
+        [
+            InlineKeyboardButton(text="Profile", callback_data="menu_profile"),
+            InlineKeyboardButton(text="Reminders", callback_data="settings"),
+        ]
+    )
+    rows.append([InlineKeyboardButton(text="Help", callback_data="help")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+async def redirect_to_miniapp_if_shell_mode(
+    target: Message | CallbackQuery,
+    section_name: str | None = None,
+) -> bool:
+    if not BOT_SHELL_MODE:
+        return False
+
+    lines = ["<b>ONEHUNT Mini App</b>", ""]
+    if section_name:
+        lines.append(f"Section <b>{escape(section_name)}</b> is now available in the Mini App.")
+    else:
+        lines.append("Main learning flow now lives in the Mini App.")
+    lines.append("This bot keeps only profile, reminders and quick access.")
+
+    miniapp_url = get_miniapp_webapp_url()
+    if miniapp_url:
+        lines.append("Use the button below to open the app.")
+    else:
+        lines.append("Set an HTTPS MINIAPP_URL to show the Mini App button inside Telegram.")
+
+    await respond(target, "\n".join(lines), reply_markup=main_menu_markup())
+    return True
 
 
 def section_footer_rows(section_text: str, section_callback: str) -> list[list[InlineKeyboardButton]]:
@@ -298,93 +347,122 @@ def session_result_markup(mode: Mode) -> InlineKeyboardMarkup:
 
 
 def main_menu_markup() -> InlineKeyboardMarkup:
+    if BOT_SHELL_MODE:
+        return miniapp_shell_markup()
+
     rows = [
-            [
-                InlineKeyboardButton(text="🚀 Старт", callback_data="menu_start"),
-                InlineKeyboardButton(text="📚 Практика", callback_data="menu_practice"),
-            ],
-            [
-                InlineKeyboardButton(text="📅 Ежедневно", callback_data="menu_daily"),
-                InlineKeyboardButton(text="👤 Профиль", callback_data="menu_profile"),
-            ],
-        ]
-    if MINIAPP_URL:
-        rows.append([InlineKeyboardButton(text="📱 Войти в Mini App", web_app=WebAppInfo(url=MINIAPP_URL))])
+        [
+            InlineKeyboardButton(text="Start", callback_data="menu_start"),
+            InlineKeyboardButton(text="Practice", callback_data="menu_practice"),
+        ],
+        [
+            InlineKeyboardButton(text="Daily", callback_data="menu_daily"),
+            InlineKeyboardButton(text="Profile", callback_data="menu_profile"),
+        ],
+    ]
+    miniapp_url = get_miniapp_webapp_url()
+    if miniapp_url:
+        rows.append([InlineKeyboardButton(text="Open Mini App", web_app=WebAppInfo(url=miniapp_url))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def start_menu_markup() -> InlineKeyboardMarkup:
+    if BOT_SHELL_MODE:
+        return main_menu_markup()
+
     rows = [
-            [
-                InlineKeyboardButton(text="🦆 Быстрый вопрос", callback_data="quick"),
-                InlineKeyboardButton(text="🎯 Стрельбище", callback_data="training"),
-            ],
-            [
-                InlineKeyboardButton(text="📝 Экзамен 257", callback_data="exam"),
-                InlineKeyboardButton(text="🦆 Вопрос дня", callback_data="daily_question"),
-            ],
-            [InlineKeyboardButton(text="🏕 Главная", callback_data="camp")],
-        ]
-    if MINIAPP_URL:
-        rows.insert(2, [InlineKeyboardButton(text="📱 Открыть Mini App", web_app=WebAppInfo(url=MINIAPP_URL))])
+        [
+            InlineKeyboardButton(text="Quick Question", callback_data="quick"),
+            InlineKeyboardButton(text="Training", callback_data="training"),
+        ],
+        [
+            InlineKeyboardButton(text="Exam 257", callback_data="exam"),
+            InlineKeyboardButton(text="Question of the Day", callback_data="daily_question"),
+        ],
+        [InlineKeyboardButton(text="Home", callback_data="camp")],
+    ]
+    miniapp_url = get_miniapp_webapp_url()
+    if miniapp_url:
+        rows.insert(2, [InlineKeyboardButton(text="Open Mini App", web_app=WebAppInfo(url=miniapp_url))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def practice_menu_markup() -> InlineKeyboardMarkup:
+    if BOT_SHELL_MODE:
+        return main_menu_markup()
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="🗺 Тропа знаний", callback_data="trail_menu"),
-                InlineKeyboardButton(text="⚡ Блиц", callback_data="blitz"),
+                InlineKeyboardButton(text="Knowledge Trail", callback_data="trail_menu"),
+                InlineKeyboardButton(text="Blitz", callback_data="blitz"),
             ],
             [
-                InlineKeyboardButton(text="🔄 Промахи", callback_data="mistakes"),
-                InlineKeyboardButton(text="⭐ Трудные следы", callback_data="starred"),
+                InlineKeyboardButton(text="Mistakes", callback_data="mistakes"),
+                InlineKeyboardButton(text="Starred", callback_data="starred"),
             ],
             [
-                InlineKeyboardButton(text="🧠 Повторение", callback_data="repetition"),
-                InlineKeyboardButton(text="⚔️ Дуэль", callback_data="duel"),
+                InlineKeyboardButton(text="Repetition", callback_data="repetition"),
+                InlineKeyboardButton(text="Duel", callback_data="duel"),
             ],
             [
-                InlineKeyboardButton(text="🦌 Карточки", callback_data="cards"),
-                InlineKeyboardButton(text="📅 Маршрут", callback_data="route"),
+                InlineKeyboardButton(text="Cards", callback_data="cards"),
+                InlineKeyboardButton(text="Route", callback_data="route"),
             ],
-            [InlineKeyboardButton(text="🏕 Главная", callback_data="camp")],
+            [InlineKeyboardButton(text="Home", callback_data="camp")],
         ]
     )
 
 
 def daily_menu_markup() -> InlineKeyboardMarkup:
+    if BOT_SHELL_MODE:
+        return main_menu_markup()
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="🦆 Вопрос дня", callback_data="daily_question"),
-                InlineKeyboardButton(text="🎯 Вызов дня", callback_data="daily_challenge"),
+                InlineKeyboardButton(text="Question of the Day", callback_data="daily_question"),
+                InlineKeyboardButton(text="Daily Challenge", callback_data="daily_challenge"),
             ],
-            [InlineKeyboardButton(text="📍 Задача маршрута", callback_data="route_task")],
-            [InlineKeyboardButton(text="🏕 Главная", callback_data="camp")],
+            [InlineKeyboardButton(text="Route Task", callback_data="route_task")],
+            [InlineKeyboardButton(text="Home", callback_data="camp")],
         ]
     )
 
 
 def profile_menu_markup() -> InlineKeyboardMarkup:
-    premium_text = "🆓 Всё открыто" if FREE_MODE else "💎 Premium"
+    premium_text = "Free Access" if FREE_MODE else "Premium"
+    if BOT_SHELL_MODE:
+        rows: list[list[InlineKeyboardButton]] = []
+        miniapp_url = get_miniapp_webapp_url()
+        if miniapp_url:
+            rows.append([InlineKeyboardButton(text="Open Mini App", web_app=WebAppInfo(url=miniapp_url))])
+        rows.append(
+            [
+                InlineKeyboardButton(text="Reminders", callback_data="settings"),
+                InlineKeyboardButton(text="Help", callback_data="help"),
+            ]
+        )
+        rows.append([InlineKeyboardButton(text=premium_text, callback_data="premium")])
+        rows.append([InlineKeyboardButton(text="Home", callback_data="camp")])
+        return InlineKeyboardMarkup(inline_keyboard=rows)
+
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="📊 Журнал", callback_data="journal"),
-                InlineKeyboardButton(text="🏆 Достижения", callback_data="achievements"),
+                InlineKeyboardButton(text="Journal", callback_data="journal"),
+                InlineKeyboardButton(text="Achievements", callback_data="achievements"),
             ],
             [
-                InlineKeyboardButton(text="📝 История", callback_data="exam_history"),
-                InlineKeyboardButton(text="📈 График", callback_data="progress_graph"),
+                InlineKeyboardButton(text="History", callback_data="exam_history"),
+                InlineKeyboardButton(text="Graph", callback_data="progress_graph"),
             ],
             [
-                InlineKeyboardButton(text="⚙️ Снаряжение", callback_data="settings"),
-                InlineKeyboardButton(text="❓ Справка", callback_data="help"),
+                InlineKeyboardButton(text="Settings", callback_data="settings"),
+                InlineKeyboardButton(text="Help", callback_data="help"),
             ],
             [InlineKeyboardButton(text=premium_text, callback_data="premium")],
-            [InlineKeyboardButton(text="🏕 Главная", callback_data="camp")],
+            [InlineKeyboardButton(text="Home", callback_data="camp")],
         ]
     )
 
@@ -426,27 +504,48 @@ def settings_markup(user) -> InlineKeyboardMarkup:
     questions = settings.get("questions_per_session", 20)
     timer = settings.get("timer_seconds", 0)
     explanations = settings.get("show_explanations", True)
-    reminder = "вкл" if user.daily_reminder else "выкл"
-    timer_text = "выкл" if not timer else f"{timer}с"
+    reminder = "on" if user.daily_reminder else "off"
+    timer_text = "off" if not timer else f"{timer}s"
+    premium_text = "Free Access" if FREE_MODE else "Premium"
+
+    if BOT_SHELL_MODE:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text=f"Reminder: {reminder}", callback_data="settings_reminder"),
+                    InlineKeyboardButton(text=f"Hour: {user.reminder_hour}:00", callback_data="settings_hour"),
+                ],
+                [
+                    InlineKeyboardButton(text="Snooze 3 days", callback_data="snooze_3d"),
+                    InlineKeyboardButton(text="Disable", callback_data="disable_reminders"),
+                ],
+                [
+                    InlineKeyboardButton(text="Promo code", callback_data="promo_code"),
+                    InlineKeyboardButton(text=premium_text, callback_data="premium"),
+                ],
+                [InlineKeyboardButton(text="Back to profile", callback_data="menu_profile")],
+            ]
+        )
+
     rows = [
         [
-            InlineKeyboardButton(text=f"🎯 Мишеней: {questions}", callback_data="settings_count"),
-            InlineKeyboardButton(text=f"⏱ Таймер: {timer_text}", callback_data="settings_timer"),
+            InlineKeyboardButton(text=f"Questions: {questions}", callback_data="settings_count"),
+            InlineKeyboardButton(text=f"Timer: {timer_text}", callback_data="settings_timer"),
         ],
         [
-            InlineKeyboardButton(text=f"💬 Объяснения: {'да' if explanations else 'нет'}", callback_data="settings_explanations"),
-            InlineKeyboardButton(text=f"🔔 Сигнал: {reminder}", callback_data="settings_reminder"),
+            InlineKeyboardButton(text=f"Explanations: {'yes' if explanations else 'no'}", callback_data="settings_explanations"),
+            InlineKeyboardButton(text=f"Reminder: {reminder}", callback_data="settings_reminder"),
         ],
         [
-            InlineKeyboardButton(text=f"⏰ Время: {user.reminder_hour}:00", callback_data="settings_hour"),
-            InlineKeyboardButton(text="🔑 Промокод", callback_data="promo_code"),
+            InlineKeyboardButton(text=f"Hour: {user.reminder_hour}:00", callback_data="settings_hour"),
+            InlineKeyboardButton(text="Promo code", callback_data="promo_code"),
         ],
         [
-            InlineKeyboardButton(text="🗑 Начать путь заново", callback_data="reset_progress"),
-            InlineKeyboardButton(text="🆓 Всё бесплатно" if FREE_MODE else "💎 Premium", callback_data="premium"),
+            InlineKeyboardButton(text="Reset progress", callback_data="reset_progress"),
+            InlineKeyboardButton(text=premium_text, callback_data="premium"),
         ],
     ]
-    rows.extend(section_footer_rows("↩️ Профиль", "menu_profile"))
+    rows.extend(section_footer_rows("Back to profile", "menu_profile"))
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -476,22 +575,40 @@ def camp_text(user, questions_count: int) -> str:
     rank = get_rank_by_correct(user.correct_answers)
     unlocked = user.correct_answers
     access_label = "Open Beta" if FREE_MODE else ("Premium" if user.access_level == "premium" else "Free")
+    if BOT_SHELL_MODE:
+        return "\n".join(
+            [
+                "<b>ONEHUNT</b>",
+                "",
+                "Main learning, exam flow and cards now open in the Mini App.",
+                "This bot keeps profile, reminders and quick app access.",
+                "",
+                f"Question base: <b>{questions_count}</b> {plural_form(questions_count, 'question', 'questions', 'questions')}",
+                f"Rank: {rank['icon']} <b>{escape(rank['name'])}</b>",
+                f"Progress: <b>{user.questions_completed}/257</b>",
+                f"Accuracy: <b>{user.accuracy}%</b>",
+                f"Unique correct: <b>{unlocked}</b>",
+                f"Reminders: <b>{'on' if user.daily_reminder else 'off'}</b>",
+                f"Access: <b>{access_label}</b>",
+            ]
+        )
+
     return "\n".join(
         [
-            "<b>🏕 Лагерь охотника ONEHUNT</b>",
+            "<b>ONEHUNT Camp</b>",
             "",
-            f"🗂 В базе: <b>{questions_count}</b> {plural_form(questions_count, 'вопрос', 'вопроса', 'вопросов')}",
-            f"🔓 Статус: <b>{access_label}</b>",
-            f"🎖 Звание: {rank['icon']} <b>{escape(rank['name'])}</b>",
+            f"Question base: <b>{questions_count}</b> {plural_form(questions_count, 'question', 'questions', 'questions')}",
+            f"Access: <b>{access_label}</b>",
+            f"Rank: {rank['icon']} <b>{escape(rank['name'])}</b>",
             "",
-            f"📍 Пройдено: <b>{user.questions_completed}/257</b>",
-            f"🎯 Точность: <b>{user.accuracy}%</b>",
-            f"✅ Уникально правильно: <b>{unlocked}</b>",
+            f"Progress: <b>{user.questions_completed}/257</b>",
+            f"Accuracy: <b>{user.accuracy}%</b>",
+            f"Unique correct: <b>{unlocked}</b>",
             "",
-            f"⚡ XP: <b>{user.xp_total}</b> | 💎 Монеты: <b>{user.coins}</b>",
+            f"XP: <b>{user.xp_total}</b> | Coins: <b>{user.coins}</b>",
             format_streak_message(user.streak_days),
             "",
-            "Ниже 4 раздела: старт, практика, ежедневно и профиль.",
+            "Sections: start, practice, daily and profile.",
         ]
     )
 
@@ -707,17 +824,20 @@ async def show_camp(target: Message | CallbackQuery) -> None:
 
 
 async def show_start_menu(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Start"):
+        return
+
     await respond(
         target,
         "\n".join(
             [
-                "<b>🚀 Старт</b>",
+                "<b>Start</b>",
                 "",
-                "Здесь самые быстрые входы в подготовку.",
-                "🦆 Быстрый вопрос — один вопрос прямо сейчас.",
-                "🎯 Стрельбище — обычная тренировка по вашим настройкам.",
-                "📝 Экзамен 257 — полный официальный прогон.",
-                "📅 Вопрос дня — короткая ежедневная проверка.",
+                "Fast entry points for training live here.",
+                "Quick question: one question right now.",
+                "Training: normal practice session.",
+                "Exam 257: full official run.",
+                "Question of the day: short daily check.",
             ]
         ),
         reply_markup=start_menu_markup(),
@@ -725,16 +845,19 @@ async def show_start_menu(target: Message | CallbackQuery) -> None:
 
 
 async def show_practice_menu(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Practice"):
+        return
+
     await respond(
         target,
         "\n".join(
             [
-                "<b>📚 Практика</b>",
+                "<b>Practice</b>",
                 "",
-                "Здесь собраны все режимы для набивки результата.",
-                "🗺 Тропа знаний — прохождение по блокам.",
-                "⚡ Блиц, 🔄 Промахи, ⭐ Трудные следы и 🧠 Повторение — для прицельной тренировки.",
-                "⚔️ Дуэль, 🦌 Карточки и 📅 Маршрут — дополнительные режимы подготовки.",
+                "All focused practice modes are collected here.",
+                "Knowledge trail goes block by block.",
+                "Blitz, mistakes, starred and repetition help with targeted work.",
+                "Duel, cards and route are additional study modes.",
             ]
         ),
         reply_markup=practice_menu_markup(),
@@ -742,16 +865,19 @@ async def show_practice_menu(target: Message | CallbackQuery) -> None:
 
 
 async def show_daily_menu(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Daily"):
+        return
+
     await respond(
         target,
         "\n".join(
             [
-                "<b>📅 Ежедневно</b>",
+                "<b>Daily</b>",
                 "",
-                "Здесь короткие ежедневные активности.",
-                "🦆 Вопрос дня — один обязательный вопрос.",
-                "🎯 Вызов дня — мини-цель с наградой.",
-                "📍 Задача маршрута — шаг текущего дня в программе подготовки.",
+                "This section contains short daily activities.",
+                "Question of the day: one required question.",
+                "Daily challenge: a mini-goal with reward.",
+                "Route task: current day step in the learning plan.",
             ]
         ),
         reply_markup=daily_menu_markup(),
@@ -759,16 +885,41 @@ async def show_daily_menu(target: Message | CallbackQuery) -> None:
 
 
 async def show_profile_menu(target: Message | CallbackQuery) -> None:
+    user = await ensure_profile(target)
+    if BOT_SHELL_MODE:
+        rank = get_rank_by_correct(user.correct_answers)
+        access_label = "Open Beta" if FREE_MODE else ("Premium" if user.access_level == "premium" else "Free")
+        await respond(
+            target,
+            "\n".join(
+                [
+                    "<b>Profile</b>",
+                    "",
+                    f"Rank: {rank['icon']} <b>{escape(rank['name'])}</b>",
+                    f"Progress: <b>{user.questions_completed}/257</b>",
+                    f"Accuracy: <b>{user.accuracy}%</b>",
+                    f"Streak: <b>{user.streak_days}</b> days",
+                    f"XP: <b>{user.xp_total}</b> | Coins: <b>{user.coins}</b>",
+                    f"Reminders: <b>{'on' if user.daily_reminder else 'off'}</b> at <b>{user.reminder_hour}:00</b>",
+                    f"Access: <b>{access_label}</b>",
+                    "",
+                    "Main learning flow is now inside the Mini App.",
+                ]
+            ),
+            reply_markup=profile_menu_markup(),
+        )
+        return
+
     await respond(
         target,
         "\n".join(
             [
-                "<b>👤 Профиль</b>",
+                "<b>Profile</b>",
                 "",
-                "Здесь собраны все личные данные и управление ботом.",
-                "📊 Журнал и 📈 График показывают ваш прогресс.",
-                "🏆 Достижения и 📝 История помогают отслеживать путь.",
-                "⚙️ Снаряжение, ❓ Справка и доступ к Premium тоже находятся здесь.",
+                "This section contains your personal stats and bot controls.",
+                "Journal and graph show progress.",
+                "Achievements and history help you track the path.",
+                "Settings, help and access options are also here.",
             ]
         ),
         reply_markup=profile_menu_markup(),
@@ -816,6 +967,9 @@ async def require_premium(target: Message | CallbackQuery, feature_name: str) ->
 
 
 async def start_trail(target: Message | CallbackQuery, block_id: int) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Knowledge Trail"):
+        return
+
     user = await ensure_profile(target)
     progress = await get_user_block_progress(user.telegram_id, block_id)
     if not has_full_access(user) and progress >= TRAIL_FREE_LIMIT:
@@ -845,6 +999,9 @@ async def start_trail(target: Message | CallbackQuery, block_id: int) -> None:
 
 
 async def start_training(target: Message | CallbackQuery, weak: bool = False, timed: bool = False) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Training"):
+        return
+
     user = await ensure_profile(target)
     if not has_full_access(user) and user.free_trainings_used >= TRAINING_FREE_LIMIT:
         await show_premium_required(target, "training_limit")
@@ -876,6 +1033,9 @@ async def start_training(target: Message | CallbackQuery, weak: bool = False, ti
 
 
 async def start_blitz(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Blitz"):
+        return
+
     if not await require_premium(target, "blitz"):
         return
     questions = await get_random_questions(20)
@@ -891,6 +1051,9 @@ async def start_blitz(target: Message | CallbackQuery) -> None:
 
 
 async def start_exam(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Exam 257"):
+        return
+
     if not await require_premium(target, "exam"):
         return
     questions = await get_official_exam_questions(EXAM_QUESTIONS, shuffle=False)
@@ -906,6 +1069,9 @@ async def start_exam(target: Message | CallbackQuery) -> None:
 
 
 async def start_mistakes(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Mistakes"):
+        return
+
     if not await require_premium(target, "mistakes"):
         return
     questions = await get_wrong_questions(target.from_user.id, 20)
@@ -923,6 +1089,9 @@ async def start_mistakes(target: Message | CallbackQuery) -> None:
 
 
 async def start_starred(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Starred"):
+        return
+
     if not await require_premium(target, "starred"):
         return
     questions = await get_starred_questions(target.from_user.id, 20)
@@ -940,6 +1109,9 @@ async def start_starred(target: Message | CallbackQuery) -> None:
 
 
 async def start_repetition(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Repetition"):
+        return
+
     if not await require_premium(target, "repetition"):
         return
     questions = await get_due_repetition_questions(target.from_user.id, 20)
@@ -957,6 +1129,9 @@ async def start_repetition(target: Message | CallbackQuery) -> None:
 
 
 async def start_duel(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Duel"):
+        return
+
     if not await require_premium(target, "duel"):
         return
     questions = await get_random_questions(10)
@@ -972,6 +1147,9 @@ async def start_duel(target: Message | CallbackQuery) -> None:
 
 
 async def start_quick(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Quick Question"):
+        return
+
     questions = await get_random_questions(1)
     if not questions:
         await respond(target, "База вопросов пока пуста.", reply_markup=main_menu_markup())
@@ -1122,6 +1300,9 @@ async def handle_session_answer(callback: CallbackQuery, mode: Mode, question_id
 
 
 async def show_daily_question(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Question of the Day"):
+        return
+
     question = await get_daily_question_question()
     if question is None:
         await respond(target, "Не удалось подготовить вопрос дня.", reply_markup=daily_menu_markup())
@@ -1143,6 +1324,9 @@ async def show_daily_question(target: Message | CallbackQuery) -> None:
 
 
 async def show_daily_challenge(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Daily Challenge"):
+        return
+
     if not await require_premium(target, "challenge"):
         return
     challenge = await get_or_create_daily_challenge(target.from_user.id)
@@ -1161,6 +1345,9 @@ async def show_daily_challenge(target: Message | CallbackQuery) -> None:
 
 
 async def show_route(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Route"):
+        return
+
     if not await require_premium(target, "route"):
         return
     overview = await get_route_overview(target.from_user.id)
@@ -1186,6 +1373,9 @@ async def show_route(target: Message | CallbackQuery) -> None:
 
 
 async def show_route_task(target: Message | CallbackQuery) -> None:
+    if await redirect_to_miniapp_if_shell_mode(target, "Route Task"):
+        return
+
     if not await require_premium(target, "route"):
         return
     payload = await get_route_task(target.from_user.id)
@@ -1375,19 +1565,35 @@ async def show_settings(target: Message | CallbackQuery) -> None:
     user = await ensure_profile(target)
     settings = dict(user.settings or {})
     timer = settings.get("timer_seconds", 0)
-    timer_text = "выкл" if not timer else f"{timer} сек"
+    timer_text = "off" if not timer else f"{timer} sec"
+
+    if BOT_SHELL_MODE:
+        text = "\n".join(
+            [
+                "<b>Reminders</b>",
+                "",
+                f"Reminder status: <b>{'on' if user.daily_reminder else 'off'}</b>",
+                f"Reminder hour: <b>{user.reminder_hour}:00</b>",
+                f"Access: <b>{'Open Beta' if FREE_MODE else ('Premium' if user.access_level == 'premium' else 'Free')}</b>",
+                "",
+                "The bot is now responsible for reminders and quick Mini App access.",
+            ]
+        )
+        await respond(target, text, reply_markup=settings_markup(user))
+        return
+
     text = "\n".join(
         [
-            "<b>⚙️ Снаряжение</b>",
+            "<b>Settings</b>",
             "",
-            f"🎯 Мишеней в сессии: <b>{settings.get('questions_per_session', 20)}</b>",
-            f"⏱ Таймер: <b>{timer_text}</b>",
-            f"💬 Объяснения: <b>{'да' if settings.get('show_explanations', True) else 'нет'}</b>",
-            f"🔔 Утренний сигнал: <b>{'вкл' if user.daily_reminder else 'выкл'}</b>",
-            f"⏰ Время сигнала: <b>{user.reminder_hour}:00</b>",
-            f"🎨 Тема: <b>{escape(user.theme)}</b>",
-            f"🏷 Значок: <b>{escape(user.badge or 'нет')}</b>",
-            f"📊 Статус: <b>{'Open Beta' if FREE_MODE else ('Premium' if user.access_level == 'premium' else 'Free')}</b>",
+            f"Questions per session: <b>{settings.get('questions_per_session', 20)}</b>",
+            f"Timer: <b>{timer_text}</b>",
+            f"Explanations: <b>{'yes' if settings.get('show_explanations', True) else 'no'}</b>",
+            f"Morning reminder: <b>{'on' if user.daily_reminder else 'off'}</b>",
+            f"Reminder hour: <b>{user.reminder_hour}:00</b>",
+            f"Theme: <b>{escape(user.theme)}</b>",
+            f"Badge: <b>{escape(user.badge or 'none')}</b>",
+            f"Access: <b>{'Open Beta' if FREE_MODE else ('Premium' if user.access_level == 'premium' else 'Free')}</b>",
         ]
     )
     await respond(target, text, reply_markup=settings_markup(user))
@@ -1395,25 +1601,40 @@ async def show_settings(target: Message | CallbackQuery) -> None:
 
 async def show_help(target: Message | CallbackQuery) -> None:
     premium_line = (
-        "Сейчас весь функционал открыт бесплатно, позже платный доступ можно вернуть одним флагом в .env."
+        "Everything is free right now. Paid access can be switched back later with one .env flag."
         if FREE_MODE
-        else "Вопрос дня доступен всем, а маршрут, вызовы, карточки и продвинутые режимы — в Premium."
+        else "Full access and extra scenarios can be enabled through Premium."
     )
+    if BOT_SHELL_MODE:
+        text = "\n".join(
+            [
+                "<b>Help</b>",
+                "",
+                "The main ONEHUNT interface now lives in the Mini App.",
+                "This bot keeps only profile, reminders, access and the quick app entry.",
+                premium_line,
+                "Commands: /start, /help, /admin",
+                "Support: @onehunt_support",
+            ]
+        )
+        await respond(target, text, reply_markup=section_back_markup("Back to profile", "menu_profile"))
+        return
+
     text = "\n".join(
         [
-            "<b>❓ Справка охотника</b>",
+            "<b>Hunter help</b>",
             "",
-            "ONEHUNT — бот-тренажёр для подготовки к охотничьему минимуму.",
-            "Режимы: быстрый вопрос, тренировки, блиц, ошибки, избранное, экзамен, маршрут и карточки.",
-            "Также доступен Telegram Mini App с теми же ключевыми сценариями в отдельном интерфейсе.",
+            "ONEHUNT is a training bot for the hunting minimum exam.",
+            "Modes include quick question, training, blitz, mistakes, starred, exam, route and cards.",
+            "There is also a Telegram Mini App with the same main scenarios in a separate interface.",
             premium_line,
-            "Рекомендация: 14 дней по 15–20 минут дают устойчивый рост до 80%+.",
+            "Recommendation: 14 days of 15-20 minutes usually gives stable growth to 80%+.",
             "",
-            "Команды: /start, /help, /admin",
-            "Поддержка: @onehunt_support",
+            "Commands: /start, /help, /admin",
+            "Support: @onehunt_support",
         ]
     )
-    await respond(target, text, reply_markup=section_back_markup("↩️ Профиль", "menu_profile"))
+    await respond(target, text, reply_markup=section_back_markup("Back to profile", "menu_profile"))
 
 
 async def show_premium(target: Message | CallbackQuery) -> None:
@@ -1665,7 +1886,10 @@ async def callback_menu_profile(callback: CallbackQuery) -> None:
 
 @dp.callback_query(F.data == "trail_menu")
 async def callback_trail_menu(callback: CallbackQuery) -> None:
-    await respond(callback, "<b>🗺 Тропа знаний</b>\n\nВыберите блок для последовательного прохождения.", reply_markup=trail_menu_markup())
+    if await redirect_to_miniapp_if_shell_mode(callback, "Knowledge Trail"):
+        return
+    await respond(callback, "<b>Knowledge Trail</b>\n\nPick a block for sequential practice.", reply_markup=trail_menu_markup())
+
 
 
 @dp.callback_query(F.data.startswith("trail_block_"))
@@ -2216,12 +2440,13 @@ async def register_bot_commands() -> None:
         )
     except Exception:
         logger.exception("Failed to set bot commands, continuing startup.")
-    if MINIAPP_URL and MINIAPP_URL.lower().startswith("https://"):
+    miniapp_url = get_miniapp_webapp_url()
+    if miniapp_url:
         try:
             await bot.set_chat_menu_button(
                 menu_button=MenuButtonWebApp(
                     text="ONEHUNT App",
-                    web_app=WebAppInfo(url=MINIAPP_URL),
+                    web_app=WebAppInfo(url=miniapp_url),
                 ),
                 request_timeout=30,
             )
