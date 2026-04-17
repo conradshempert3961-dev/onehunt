@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -104,6 +105,9 @@ class SettingsUpdateRequest(BaseModel):
     daily_reminder: bool | None = None
     reminder_hour: int | None = None
 
+
+class AIChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=400)
 
 app = FastAPI(title="ONEHUNT Mini App", version="1.0.0")
 app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
@@ -349,7 +353,7 @@ def route_task_to_session_params(task_callback: str) -> dict[str, Any] | None:
 def require_full_access(user: Any, feature: str) -> None:
     if has_full_access(user):
         return
-    raise HTTPException(status_code=403, detail=f"Функция {feature} доступна в полном доступе.")
+    raise HTTPException(status_code=403, detail=f"Р¤СѓРЅРєС†РёСЏ {feature} РґРѕСЃС‚СѓРїРЅР° РІ РїРѕР»РЅРѕРј РґРѕСЃС‚СѓРїРµ.")
 
 
 def browser_demo_allowed(hostname: str | None) -> bool:
@@ -391,7 +395,7 @@ async def resolve_identity(
         identity = validate_init_data(x_telegram_init_data)
         if identity:
             return identity
-        raise HTTPException(status_code=401, detail="Не удалось подтвердить Telegram WebApp.")
+        raise HTTPException(status_code=401, detail="РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґС‚РІРµСЂРґРёС‚СЊ Telegram WebApp.")
 
     if request.url.hostname in LOCAL_HOSTS:
         identity = build_dev_identity()
@@ -401,7 +405,7 @@ async def resolve_identity(
     if browser_demo_allowed(request.url.hostname):
         return build_browser_demo_identity(request, response)
 
-    raise HTTPException(status_code=401, detail="Mini App доступен из Telegram или локально в режиме разработки.")
+    raise HTTPException(status_code=401, detail="Mini App РґРѕСЃС‚СѓРїРµРЅ РёР· Telegram РёР»Рё Р»РѕРєР°Р»СЊРЅРѕ РІ СЂРµР¶РёРјРµ СЂР°Р·СЂР°Р±РѕС‚РєРё.")
 
 
 async def current_user(identity: MiniAppIdentity = Depends(resolve_identity)):
@@ -424,13 +428,13 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
 
     if mode == "trail":
         if not block_id or block_id not in BLOCKS:
-            raise HTTPException(status_code=400, detail="Для тропы нужен корректный блок.")
+            raise HTTPException(status_code=400, detail="Р”Р»СЏ С‚СЂРѕРїС‹ РЅСѓР¶РµРЅ РєРѕСЂСЂРµРєС‚РЅС‹Р№ Р±Р»РѕРє.")
         answered_ids = await get_answered_question_ids(user.telegram_id, mode="trail", block_id=block_id)
         sequence = await get_question_sequence_for_block(block_id)
         questions = [item for item in sequence if item.id not in answered_ids] or sequence
         if not questions:
-            raise HTTPException(status_code=400, detail="В этом блоке пока нет вопросов.")
-        title = f"{BLOCKS[block_id]['icon']} Тропа: {BLOCKS[block_id]['name']}"
+            raise HTTPException(status_code=400, detail="Р’ СЌС‚РѕРј Р±Р»РѕРєРµ РїРѕРєР° РЅРµС‚ РІРѕРїСЂРѕСЃРѕРІ.")
+        title = f"{BLOCKS[block_id]['icon']} РўСЂРѕРїР°: {BLOCKS[block_id]['name']}"
     elif mode == "training":
         settings = dict(user.settings or {})
         limit = int(settings.get("questions_per_session", 20))
@@ -443,41 +447,41 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
             )
         questions = await get_random_questions(limit, block_id=weak_block)
         block_id = weak_block
-        title = "🎯 Стрельбище — слабые темы" if payload.weak else "🎯 Стрельбище"
+        title = "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ вЂ” СЃР»Р°Р±С‹Рµ С‚РµРјС‹" if payload.weak else "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ"
         if payload.timed:
             total_timer_seconds = limit * 60
-            title = "🎯 Стрельбище с таймером" if not payload.weak else "🎯 Слабые темы + таймер"
+            title = "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ СЃ С‚Р°Р№РјРµСЂРѕРј" if not payload.weak else "рџЋЇ РЎР»Р°Р±С‹Рµ С‚РµРјС‹ + С‚Р°Р№РјРµСЂ"
     elif mode == "blitz":
         require_full_access(user, "blitz")
         questions = await get_random_questions(20)
         total_timer_seconds = 300
-        title = "⚡ Блиц"
+        title = "вљЎ Р‘Р»РёС†"
     elif mode == "exam":
         questions = await get_official_exam_questions(EXAM_QUESTIONS, shuffle=False)
         total_timer_seconds = 90 * 60
-        title = f"📝 Экзамен — все {EXAM_QUESTIONS} вопросов"
+        title = f"рџ“ќ Р­РєР·Р°РјРµРЅ вЂ” РІСЃРµ {EXAM_QUESTIONS} РІРѕРїСЂРѕСЃРѕРІ"
     elif mode == "mistakes":
         require_full_access(user, "mistakes")
         questions = await get_wrong_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "🔄 Промахи"
+        title = "рџ”„ РџСЂРѕРјР°С…Рё"
     elif mode == "starred":
         require_full_access(user, "starred")
         questions = await get_starred_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "⭐ Трудные следы"
+        title = "в­ђ РўСЂСѓРґРЅС‹Рµ СЃР»РµРґС‹"
     elif mode == "repetition":
         require_full_access(user, "repetition")
         questions = await get_due_repetition_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "🧠 Повторение"
+        title = "рџ§  РџРѕРІС‚РѕСЂРµРЅРёРµ"
     elif mode == "duel":
         require_full_access(user, "duel")
         questions = await get_random_questions(10)
-        title = "⚔️ Дуэль с Михалычем"
+        title = "вљ”пёЏ Р”СѓСЌР»СЊ СЃ РњРёС…Р°Р»С‹С‡РµРј"
     elif mode == "quick":
         questions = await get_random_questions(1)
-        title = "🦆 Быстрый вопрос"
+        title = "рџ¦† Р‘С‹СЃС‚СЂС‹Р№ РІРѕРїСЂРѕСЃ"
 
     if not questions:
-        raise HTTPException(status_code=400, detail="Для этого режима пока нет вопросов.")
+        raise HTTPException(status_code=400, detail="Р”Р»СЏ СЌС‚РѕРіРѕ СЂРµР¶РёРјР° РїРѕРєР° РЅРµС‚ РІРѕРїСЂРѕСЃРѕРІ.")
 
     return create_session(
         user_id=user.telegram_id,
@@ -489,6 +493,122 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
     )
 
 
+
+def build_ai_block_snapshot(journal: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {"id": 1, "icon": "📜", "name": "Правовые основы", "percent": journal["block1"]},
+        {"id": 2, "icon": "🔫", "name": "Оружие и безопасность", "percent": journal["block2"]},
+        {"id": 3, "icon": "🦌", "name": "Биология и практика", "percent": journal["block3"]},
+    ]
+
+
+def normalize_ai_prompt(message: str) -> str:
+    return re.sub(r"\s+", " ", message.lower()).strip()
+
+
+def prompt_has_any(prompt: str, *tokens: str) -> bool:
+    return any(token in prompt for token in tokens)
+
+
+async def build_ai_assistant_reply(message: str, user: Any) -> dict[str, Any]:
+    journal = await get_journal_stats(user.telegram_id)
+    route = await get_route_overview(user.telegram_id)
+    route_task = await get_route_task(user.telegram_id)
+    today = await get_today_stats(user.telegram_id)
+    achievements = await count_achievements(user.telegram_id)
+    starred = await count_starred(user.telegram_id)
+
+    blocks = build_ai_block_snapshot(journal)
+    weakest = min(blocks, key=lambda item: item["percent"])
+    strongest = max(blocks, key=lambda item: item["percent"])
+    weak_topics = journal.get("weak_topics") or []
+    settings = dict(user.settings or {})
+
+    route_line = (
+        f"Сегодня в маршруте день {route['current_day']}: {route_task['task']['icon']} {route_task['task']['name']} — {route_task['task']['goal']}."
+        if route_task
+        else "Маршрут пока не активирован, поэтому можно начать с тренировки на 10-20 вопросов и вопроса дня."
+    )
+    weak_topics_line = ", ".join(weak_topics[:4]) if weak_topics else "пока статистики мало, поэтому стоит сделать 15-20 обычных вопросов"
+    today_line = (
+        f"Сегодня уже дано {today['answers_today']} ответов, вопрос дня {'уже закрыт' if today['daily_answered'] else 'еще ждет вас'}, исправлено ошибок {today['mistakes_fixed_today']}."
+    )
+
+    prompt = normalize_ai_prompt(message)
+
+    if prompt_has_any(prompt, "экзамен", "сдать", "257", "порог", "пройду", "завал"):
+        reply = "\n".join(
+            [
+                f"Лучший результат по экзамену сейчас: {user.best_exam_score}% при проходном пороге {EXAM_PASS_PERCENT}%.",
+                f"Сильнее всего у вас идет блок «{strongest['icon']} {strongest['name']}» ({strongest['percent']}%), а первым делом стоит дожать «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
+                "Быстрый план: 1) короткая тренировка 15-20 вопросов, 2) отдельный проход по слабому блоку, 3) затем пробный экзамен без пауз.",
+                route_line,
+            ]
+        )
+        quick = ["Что подтянуть первым?", "Составь план на сегодня", "Как закрыть слабые темы?"]
+    elif prompt_has_any(prompt, "ошиб", "слаб", "тема", "просед", "подтянуть", "исправ"):
+        reply = "\n".join(
+            [
+                f"Сейчас самый слабый блок — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
+                f"Слабые темы по журналу: {weak_topics_line}.",
+                "Лучше всего работает короткая серия по слабому блоку, затем один смешанный сет для закрепления и только потом экзаменационный режим.",
+                today_line,
+            ]
+        )
+        quick = ["Составь план на сегодня", "Как готовиться к экзамену?", "Что у меня с прогрессом?"]
+    elif prompt_has_any(prompt, "сегодня", "план", "маршрут", "дальше", "начать", "что делать"):
+        reply = "\n".join(
+            [
+                "Вот спокойный план на текущий день без перегруза:",
+                route_line,
+                f"После этого добейте 10-20 вопросов по теме «{weakest['icon']} {weakest['name']}», потому что она даст самый заметный прирост.",
+                f"Финиш — вопрос дня и короткий разбор ошибок. {today_line}",
+            ]
+        )
+        quick = ["Какая у меня слабая тема?", "Готов ли я к экзамену?", "Что с напоминаниями?"]
+    elif prompt_has_any(prompt, "ранг", "xp", "уров", "прогресс", "монет", "серия", "достижен"):
+        reply = "\n".join(
+            [
+                f"Сейчас у вас {user.questions_completed}/257 по прогрессу, точность {user.accuracy}%, серия {user.streak_days} дн., XP {user.xp_total}, монеты {user.coins}.",
+                f"Открыто достижений: {achievements}, в избранном сложных вопросов: {starred}.",
+                f"Сильный блок — «{strongest['icon']} {strongest['name']}», а главный резерв роста сейчас в «{weakest['icon']} {weakest['name']}».",
+                "Если хотите расти быстрее, держите короткие, но регулярные сессии и не пропускайте разбор ошибок после ответа.",
+            ]
+        )
+        quick = ["Что мне подтянуть первым?", "Составь план на сегодня", "Как выйти на экзамен?"]
+    elif prompt_has_any(prompt, "напомин", "настрой", "таймер", "объяснен"):
+        reminder_state = "включены" if user.daily_reminder else "выключены"
+        timer_seconds = int(settings.get("timer_seconds", 0))
+        explanations = "включены" if settings.get("show_explanations", True) else "выключены"
+        reply = "\n".join(
+            [
+                f"Напоминания сейчас {reminder_state}, час — {user.reminder_hour}:00.",
+                f"В тренировке стоит {int(settings.get('questions_per_session', 20))} вопросов, таймер — {timer_seconds if timer_seconds else 'выкл'}, объяснения — {explanations}.",
+                "Если нужен спокойный режим, держите 10-20 вопросов и объяснения включенными. Если нужна боевая подготовка — включайте таймер и идите короткими сетами.",
+            ]
+        )
+        quick = ["Составь план на сегодня", "Что подтянуть первым?", "Как выйти на экзамен?"]
+    elif prompt_has_any(prompt, "карточк", "животн", "след", "биолог", "сезон"):
+        reply = "\n".join(
+            [
+                "Карточки лучше использовать как короткий добор после вопросов, а не вместо них.",
+                f"Сильнее всего они помогут в блоке «{weakest['icon']} {weakest['name']}», особенно если там есть пробелы по темам: {weak_topics_line}.",
+                "Оптимально: 10-15 вопросов, потом 3-5 карточек по близкой теме и финальный быстрый вопрос для самопроверки.",
+            ]
+        )
+        quick = ["Какая у меня слабая тема?", "Составь план на сегодня", "Как лучше разобрать ошибки?"]
+    else:
+        reply = "\n".join(
+            [
+                "Я могу помочь по маршруту, ошибкам, экзамену, карточкам и слабым темам.",
+                f"Сейчас главный резерв роста — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
+                route_line,
+                today_line,
+            ]
+        )
+        quick = ["Что мне подтянуть первым?", "Как лучше разобрать ошибки?", "Готов ли я к экзамену?"]
+
+    return {"reply": reply, "quick_replies": quick[:3]}
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
@@ -653,10 +773,10 @@ async def route_view(user=Depends(current_user)) -> dict[str, Any]:
 async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
     payload = await get_route_task(user.telegram_id)
     if payload is None:
-        raise HTTPException(status_code=404, detail="Текущая задача маршрута не найдена.")
+        raise HTTPException(status_code=404, detail="РўРµРєСѓС‰Р°СЏ Р·Р°РґР°С‡Р° РјР°СЂС€СЂСѓС‚Р° РЅРµ РЅР°Р№РґРµРЅР°.")
     params = route_task_to_session_params(payload["task"]["callback"])
     if params is None:
-        raise HTTPException(status_code=400, detail="Эту задачу пока нельзя открыть в Mini App.")
+        raise HTTPException(status_code=400, detail="Р­С‚Сѓ Р·Р°РґР°С‡Сѓ РїРѕРєР° РЅРµР»СЊР·СЏ РѕС‚РєСЂС‹С‚СЊ РІ Mini App.")
     session = await prepare_session(
         user,
         SessionStartRequest(
@@ -668,7 +788,7 @@ async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
     )
     question = await get_question(session.question_ids[0])
     if question is None:
-        raise HTTPException(status_code=404, detail="Вопрос не найден.")
+        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
     return serialize_session_question(session, question)
 
 
@@ -690,7 +810,7 @@ async def card_details(card_id: int, user=Depends(current_user)) -> dict[str, An
     require_full_access(user, "cards")
     payload = await get_card_details(user.telegram_id, card_id)
     if payload is None:
-        raise HTTPException(status_code=404, detail="Карточка не найдена.")
+        raise HTTPException(status_code=404, detail="РљР°СЂС‚РѕС‡РєР° РЅРµ РЅР°Р№РґРµРЅР°.")
     return {
         "card": serialize_card(payload["card"]),
         "question_count": payload["question_count"],
@@ -727,7 +847,7 @@ async def settings_update(payload: SettingsUpdateRequest, user=Depends(current_u
         reminder_hour=user.reminder_hour if payload.reminder_hour is None else max(0, min(int(payload.reminder_hour), 23)),
     )
     if updated is None:
-        raise HTTPException(status_code=404, detail="Пользователь не найден.")
+        raise HTTPException(status_code=404, detail="РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ.")
     return {
         "ok": True,
         "settings": dict(updated.settings or {}),
@@ -740,7 +860,7 @@ async def settings_update(payload: SettingsUpdateRequest, user=Depends(current_u
 async def reset_progress(user=Depends(current_user)) -> dict[str, Any]:
     success = await reset_user_progress(user.telegram_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Профиль не найден.")
+        raise HTTPException(status_code=404, detail="РџСЂРѕС„РёР»СЊ РЅРµ РЅР°Р№РґРµРЅ.")
     return {"ok": True}
 
 
@@ -750,12 +870,19 @@ async def star_toggle(payload: StarToggleRequest, user=Depends(current_user)) ->
     return {"starred": starred}
 
 
+
+@app.post("/api/ai/chat")
+async def ai_chat(payload: AIChatRequest, user=Depends(current_user)) -> dict[str, Any]:
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Введите сообщение для ассистента.")
+    return await build_ai_assistant_reply(message, user)
 @app.post("/api/session/start")
 async def session_start(payload: SessionStartRequest, user=Depends(current_user)) -> dict[str, Any]:
     session = await prepare_session(user, payload)
     question = await get_question(session.question_ids[0])
     if question is None:
-        raise HTTPException(status_code=404, detail="Вопрос не найден.")
+        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
     return serialize_session_question(session, question)
 
 
@@ -763,9 +890,9 @@ async def session_start(payload: SessionStartRequest, user=Depends(current_user)
 async def session_answer(payload: SessionAnswerRequest, user=Depends(current_user)) -> dict[str, Any]:
     session = get_session(payload.session_id, user.telegram_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Сессия уже завершена или устарела.")
+        raise HTTPException(status_code=404, detail="РЎРµСЃСЃРёСЏ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅР° РёР»Рё СѓСЃС‚Р°СЂРµР»Р°.")
     if session.current >= len(session.question_ids):
-        raise HTTPException(status_code=400, detail="Сессия уже завершена.")
+        raise HTTPException(status_code=400, detail="РЎРµСЃСЃРёСЏ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅР°.")
 
     timer_left = session_time_left(session)
     if timer_left is not None and timer_left <= 0:
@@ -775,11 +902,11 @@ async def session_answer(payload: SessionAnswerRequest, user=Depends(current_use
 
     expected_question_id = session.question_ids[session.current]
     if expected_question_id != payload.question_id:
-        raise HTTPException(status_code=409, detail="Открыт уже другой вопрос. Обновите экран.")
+        raise HTTPException(status_code=409, detail="РћС‚РєСЂС‹С‚ СѓР¶Рµ РґСЂСѓРіРѕР№ РІРѕРїСЂРѕСЃ. РћР±РЅРѕРІРёС‚Рµ СЌРєСЂР°РЅ.")
 
     question = await get_question(payload.question_id)
     if question is None:
-        raise HTTPException(status_code=404, detail="Вопрос не найден.")
+        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
 
     selected_answer = payload.answer.lower()
     time_spent = int((datetime.utcnow() - session.question_started_at).total_seconds())
@@ -836,13 +963,13 @@ async def session_answer(payload: SessionAnswerRequest, user=Depends(current_use
 async def session_next(payload: SessionNextRequest, user=Depends(current_user)) -> dict[str, Any]:
     session = get_session(payload.session_id, user.telegram_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Сессия уже завершена или устарела.")
+        raise HTTPException(status_code=404, detail="РЎРµСЃСЃРёСЏ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅР° РёР»Рё СѓСЃС‚Р°СЂРµР»Р°.")
     if session.current >= len(session.question_ids):
-        raise HTTPException(status_code=400, detail="В сессии больше нет вопросов.")
+        raise HTTPException(status_code=400, detail="Р’ СЃРµСЃСЃРёРё Р±РѕР»СЊС€Рµ РЅРµС‚ РІРѕРїСЂРѕСЃРѕРІ.")
 
     question = await get_question(session.question_ids[session.current])
     if question is None:
-        raise HTTPException(status_code=404, detail="Вопрос не найден.")
+        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
     session.question_started_at = datetime.utcnow()
     return serialize_session_question(session, question)
 
@@ -851,14 +978,14 @@ async def session_next(payload: SessionNextRequest, user=Depends(current_user)) 
 async def question_media(question_id: int):
     question = await get_question(question_id)
     if question is None or not question.image_url:
-        raise HTTPException(status_code=404, detail="Иллюстрация не найдена.")
+        raise HTTPException(status_code=404, detail="РР»Р»СЋСЃС‚СЂР°С†РёСЏ РЅРµ РЅР°Р№РґРµРЅР°.")
     image_ref = str(question.image_url).strip()
     if image_ref.startswith(("http://", "https://")):
-        raise HTTPException(status_code=400, detail="Это внешняя ссылка, используйте её напрямую.")
+        raise HTTPException(status_code=400, detail="Р­С‚Рѕ РІРЅРµС€РЅСЏСЏ СЃСЃС‹Р»РєР°, РёСЃРїРѕР»СЊР·СѓР№С‚Рµ РµС‘ РЅР°РїСЂСЏРјСѓСЋ.")
 
     image_path = Path(image_ref)
     if not image_path.is_absolute():
         image_path = (Path(__file__).resolve().parents[1] / image_ref).resolve()
     if not image_path.exists():
-        raise HTTPException(status_code=404, detail="Файл изображения не найден.")
+        raise HTTPException(status_code=404, detail="Р¤Р°Р№Р» РёР·РѕР±СЂР°Р¶РµРЅРёСЏ РЅРµ РЅР°Р№РґРµРЅ.")
     return FileResponse(image_path)

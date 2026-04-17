@@ -11,7 +11,9 @@
     <div class="app-shell">
         <header class="app-header">
             <div class="brand-block">
-                <span class="brand-mark">OH</span>
+                <span class="brand-mark">
+                    <img src="/assets/brand-logo.jpg" alt="ONEHUNT logo">
+                </span>
                 <div>
                     <strong>ONEHUNT</strong>
                     <small id="statusLabel">Mini App</small>
@@ -47,16 +49,16 @@
                             <span>Один вопрос прямо сейчас</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" type="button">
-                            <strong>🎯 Стрельбище</strong>
-                            <span>Обычная тренировка</span>
+                            <strong>🎯 Тренировка</strong>
+                            <span>Спокойная серия по вашим настройкам</span>
                         </button>
                         <button class="action-tile" data-start-mode="exam" type="button">
                             <strong>📝 Экзамен</strong>
-                            <span>Все 257 вопросов</span>
+                            <span>Полный прогон официальных вопросов</span>
                         </button>
                         <button class="action-tile" id="routeTaskButton" type="button">
-                            <strong>📍 Задача маршрута</strong>
-                            <span>Открыть текущий шаг</span>
+                            <strong>📍 Маршрут дня</strong>
+                            <span>Открыть текущий шаг подготовки</span>
                         </button>
                     </div>
                 </div>
@@ -68,40 +70,40 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Режимы практики</h2>
-                        <span>Всё, что есть в боте</span>
+                        <span>Всё для спокойной и быстрой подготовки</span>
                     </div>
                     <div class="actions-grid" id="practiceModes">
                         <button class="action-tile" data-start-mode="training" type="button">
-                            <strong>🎯 Стрельбище</strong>
-                            <span>По вашим настройкам</span>
+                            <strong>🎯 Тренировка</strong>
+                            <span>Обычная сессия по вашим настройкам</span>
                         </button>
                         <button class="action-tile" data-start-mode="blitz" type="button">
                             <strong>⚡ Блиц</strong>
-                            <span>Короткий и быстрый режим</span>
+                            <span>Быстрый режим на скорость</span>
                         </button>
                         <button class="action-tile" data-start-mode="mistakes" type="button">
                             <strong>🔄 Промахи</strong>
-                            <span>Разобрать ошибки</span>
+                            <span>Разобрать ошибки отдельно</span>
                         </button>
                         <button class="action-tile" data-start-mode="starred" type="button">
-                            <strong>⭐ Трудные следы</strong>
-                            <span>Избранные вопросы</span>
+                            <strong>⭐ Избранное</strong>
+                            <span>Сложные и сохраненные вопросы</span>
                         </button>
                         <button class="action-tile" data-start-mode="repetition" type="button">
                             <strong>🧠 Повторение</strong>
-                            <span>Интервальная память</span>
+                            <span>Интервальная память и закрепление</span>
                         </button>
                         <button class="action-tile" data-start-mode="duel" type="button">
                             <strong>⚔️ Дуэль</strong>
-                            <span>Против Михалыча</span>
+                            <span>Соревнование с Михалычем</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" data-weak="true" type="button">
                             <strong>🎯 Слабые темы</strong>
-                            <span>Самые проседающие блоки</span>
+                            <span>Фокус на проседающих блоках</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" data-timed="true" type="button">
                             <strong>⏱ Таймер</strong>
-                            <span>Тренировка на время</span>
+                            <span>Тренировка с ограничением по времени</span>
                         </button>
                     </div>
                 </div>
@@ -109,7 +111,7 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Тропа знаний</h2>
-                        <span>Последовательное прохождение</span>
+                        <span>Последовательное прохождение по блокам</span>
                     </div>
                     <div class="block-grid" id="blockGrid"></div>
                 </div>
@@ -117,7 +119,7 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Карточки охотника</h2>
-                        <span>Животные, следы, сезонность</span>
+                        <span>Животные, следы и сезонность</span>
                     </div>
                     <div class="info-line" id="cardsSummary">Загружаем карточки...</div>
                     <div class="category-list" id="cardCategories"></div>
@@ -131,13 +133,47 @@
                 <div class="card" id="routeCard"></div>
             </section>
 
+            <section class="screen" id="screen-ai">
+                <div class="card ai-hero-card">
+                    <p class="eyebrow">AI-ассистент</p>
+                    <div class="section-head">
+                        <h2>ONEHUNT AI</h2>
+                        <span>Подскажет, что учить дальше и где теряются баллы</span>
+                    </div>
+                    <p class="hero-text">
+                        Задавайте вопросы про прогресс, ошибки, слабые темы, режим экзамена и план на день.
+                        Ассистент смотрит на ваш текущий профиль внутри ONEHUNT и отвечает по делу.
+                    </p>
+                    <div class="ai-prompt-grid" id="aiPromptGrid"></div>
+                </div>
+
+                <div class="card ai-chat-card">
+                    <div class="section-head">
+                        <h2>Чат</h2>
+                        <span id="aiStatus">Готов разобрать прогресс, ошибки и маршрут подготовки</span>
+                    </div>
+                    <div class="ai-thread" id="aiThread"></div>
+                    <form class="ai-composer" id="aiForm">
+                        <label class="ai-input-shell">
+                            <textarea
+                                id="aiInput"
+                                rows="1"
+                                maxlength="400"
+                                placeholder="Например: что мне подтянуть перед экзаменом?"
+                            ></textarea>
+                        </label>
+                        <button class="primary-button" id="aiSendButton" type="submit">Отправить</button>
+                    </form>
+                </div>
+            </section>
+
             <section class="screen" id="screen-profile">
                 <div class="stats-grid" id="profileStats"></div>
 
                 <div class="card">
                     <div class="section-head">
                         <h2>Прогресс по блокам</h2>
-                        <span>Где уже хорошо, а где нужно дожать</span>
+                        <span>Где уже хорошо, а где еще нужно дожать</span>
                     </div>
                     <div id="blockProgress"></div>
                 </div>
@@ -212,7 +248,8 @@
         <nav class="bottom-nav">
             <button class="nav-button active" data-screen="home" type="button"><span>🏕</span><small>Главная</small></button>
             <button class="nav-button" data-screen="practice" type="button"><span>📚</span><small>Практика</small></button>
-            <button class="nav-button" data-screen="daily" type="button"><span>📅</span><small>Ежедневно</small></button>
+            <button class="nav-button" data-screen="daily" type="button"><span>📅</span><small>День</small></button>
+            <button class="nav-button" data-screen="ai" type="button"><span>✨</span><small>AI</small></button>
             <button class="nav-button" data-screen="profile" type="button"><span>👤</span><small>Профиль</small></button>
         </nav>
     </div>
@@ -229,11 +266,14 @@
             <div class="session-meta" id="sessionMeta"></div>
             <img class="session-image hidden" id="sessionImage" alt="Иллюстрация">
             <article class="question-card">
+                <div class="question-caption-row">
+                    <span class="question-caption" id="questionCaption">Выберите один вариант ответа</span>
+                </div>
                 <p class="question-text" id="questionText"></p>
                 <div class="option-list" id="questionOptions"></div>
             </article>
             <div class="answer-toolbar">
-                <div class="answer-buttons" id="answerButtons"></div>
+                <div class="answer-hint" id="answerHint">Нажмите на вариант под вопросом, а мы сразу покажем результат.</div>
                 <button class="ghost-button" id="starQuestionButton" type="button">⭐ В избранное</button>
             </div>
             <div class="result-panel hidden" id="resultPanel"></div>

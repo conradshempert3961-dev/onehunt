@@ -17,9 +17,13 @@ const state = {
     history: null,
     cards: null,
     activeSession: null,
-    pendingNextQuestion: null,
+    pendingNextQuestion: false,
     lastQuestionId: null,
     selectedCategory: null,
+    answerLocked: false,
+    aiBusy: false,
+    aiHistory: [],
+    aiSuggestions: [],
 };
 
 const screens = document.querySelectorAll(".screen");
@@ -27,6 +31,12 @@ const navButtons = document.querySelectorAll(".nav-button");
 const toast = document.getElementById("toast");
 const sessionOverlay = document.getElementById("sessionOverlay");
 const detailSheet = document.getElementById("detailSheet");
+const aiThread = document.getElementById("aiThread");
+const aiPromptGrid = document.getElementById("aiPromptGrid");
+const aiForm = document.getElementById("aiForm");
+const aiInput = document.getElementById("aiInput");
+const aiSendButton = document.getElementById("aiSendButton");
+const aiStatus = document.getElementById("aiStatus");
 
 function pulse(style = "light") {
     try {
@@ -34,6 +44,52 @@ function pulse(style = "light") {
     } catch (_error) {
         // ignore
     }
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value).replace(/`/g, "&#96;");
+}
+
+function formatRichText(value) {
+    return escapeHtml(value).replace(/\n/g, "<br>");
+}
+
+function nowLabel() {
+    return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+}
+
+function sessionModeLabel(mode) {
+    const labels = {
+        trail: "Тропа знаний",
+        training: "Тренировка",
+        blitz: "Блиц",
+        exam: "Экзамен",
+        mistakes: "Разбор ошибок",
+        starred: "Избранные вопросы",
+        duel: "Дуэль",
+        repetition: "Повторение",
+        quick: "Быстрый вопрос",
+    };
+    return labels[mode] || "Практика";
+}
+
+function baseAnswerHint(mode) {
+    if (mode === "exam") {
+        return "Выберите ответ и сразу увидите, где попали или промахнулись. Кнопка перехода уже будет наверху.";
+    }
+    if (mode === "quick") {
+        return "Один точный выстрел: нажмите на вариант и сразу получите разбор.";
+    }
+    return "Нажмите на вариант прямо под вопросом. После выбора мы подсветим правильный ответ.";
 }
 
 function syncTelegramBackButton() {
@@ -86,11 +142,147 @@ async function api(path, options = {}) {
 function switchScreen(screenId) {
     screens.forEach((screen) => screen.classList.toggle("screen-active", screen.id === `screen-${screenId}`));
     navButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
+    if (screenId === "ai") {
+        window.setTimeout(() => aiInput?.focus(), 120);
+    }
     pulse("light");
 }
 
 function createStatCard(label, value) {
     return `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`;
+}
+
+function createAiPromptButton(label) {
+    return `<button class="ai-prompt-chip" type="button" data-ai-prompt="${escapeAttribute(label)}">${escapeHtml(label)}</button>`;
+}
+
+function buildAiWelcomeMessage() {
+    if (!state.bootstrap || !state.journal) {
+        return "Я помогу по маршруту, ошибкам, экзамену и слабым темам. Сначала подгружу ваш прогресс.";
+    }
+
+    const user = state.bootstrap.user;
+    const blocks = [
+        { icon: "📜", name: "Правовые основы", percent: state.journal.block1 },
+        { icon: "🔫", name: "Оружие и безопасность", percent: state.journal.block2 },
+        { icon: "🦌", name: "Биология и практика", percent: state.journal.block3 },
+    ];
+    const weakest = [...blocks].sort((left, right) => left.percent - right.percent)[0];
+    const routeTask = state.bootstrap.route?.current_task?.task;
+
+    return [
+        `Сейчас у вас ${user.questions_completed}/257 по прогрессу и ${user.accuracy}% точности.`,
+        `Больше всего внимания просит блок «${weakest.icon} ${weakest.name}» (${weakest.percent}%).`,
+        routeTask
+            ? `Сегодня в маршруте: ${routeTask.icon} ${routeTask.name} — ${routeTask.goal}.`
+            : "Маршрут можно использовать как основу плана на день.",
+        "Спросите, что подтянуть первым, как выйти на стабильный экзамен или как лучше разобрать ошибки.",
+    ].join("\n");
+}
+
+function buildDefaultAiPrompts() {
+    return [
+        "Что мне подтянуть первым?",
+        "Составь план на сегодня",
+        "Как лучше разобрать ошибки?",
+        "Готов ли я к экзамену?",
+    ];
+}
+
+function renderAiPrompts(prompts = []) {
+    state.aiSuggestions = prompts;
+    aiPromptGrid.innerHTML = prompts.map((prompt) => createAiPromptButton(prompt)).join("");
+}
+
+function renderAiThread() {
+    if (!state.aiHistory.length) {
+        aiThread.innerHTML = '<div class="empty-state">Здесь будет ваш диалог с ассистентом. Можно спросить про ошибки, темп подготовки и план на день.</div>';
+        return;
+    }
+
+    aiThread.innerHTML = state.aiHistory
+        .map((item) => {
+            const isUser = item.role === "user";
+            return `
+                <article class="ai-message ${isUser ? "is-user" : "is-assistant"}">
+                    ${isUser ? "" : '<span class="ai-avatar">AI</span>'}
+                    <div class="ai-bubble-wrap">
+                        <div class="ai-bubble ${isUser ? "is-user" : "is-assistant"}">${formatRichText(item.text)}</div>
+                        <div class="ai-meta">${isUser ? "Вы" : "ONEHUNT AI"} · ${escapeHtml(item.time)}</div>
+                    </div>
+                </article>
+            `;
+        })
+        .join("");
+    aiThread.scrollTop = aiThread.scrollHeight;
+}
+
+function pushAiMessage(role, text) {
+    state.aiHistory.push({ role, text, time: nowLabel() });
+    renderAiThread();
+}
+
+function ensureAiBootstrapped(force = false) {
+    if (!force && state.aiHistory.length) {
+        if (!state.aiSuggestions.length) {
+            renderAiPrompts(buildDefaultAiPrompts());
+        }
+        return;
+    }
+
+    state.aiHistory = [
+        {
+            role: "assistant",
+            text: buildAiWelcomeMessage(),
+            time: nowLabel(),
+        },
+    ];
+    renderAiPrompts(buildDefaultAiPrompts());
+    renderAiThread();
+}
+
+function setAiBusy(isBusy) {
+    state.aiBusy = isBusy;
+    aiSendButton.disabled = isBusy;
+    aiInput.disabled = isBusy;
+    aiStatus.textContent = isBusy
+        ? "Думаю над ответом..."
+        : "Готов разобрать прогресс, ошибки и маршрут подготовки";
+}
+
+function autosizeAiInput() {
+    aiInput.style.height = "0px";
+    aiInput.style.height = `${Math.min(aiInput.scrollHeight, 148)}px`;
+}
+
+async function submitAiMessage(rawMessage) {
+    const message = String(rawMessage || "").trim();
+    if (!message || state.aiBusy) {
+        return;
+    }
+
+    pushAiMessage("user", message);
+    renderAiPrompts([]);
+    aiInput.value = "";
+    autosizeAiInput();
+    setAiBusy(true);
+    pulse("light");
+
+    try {
+        const payload = await api("/api/ai/chat", {
+            method: "POST",
+            body: JSON.stringify({ message }),
+        });
+        pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
+        renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
+        pulse("success");
+    } catch (error) {
+        pushAiMessage("assistant", `Не удалось получить ответ: ${error.message}`);
+        renderAiPrompts(buildDefaultAiPrompts());
+        showToast(error.message);
+    } finally {
+        setAiBusy(false);
+    }
 }
 
 function renderBootstrap() {
@@ -100,13 +292,13 @@ function renderBootstrap() {
     }
 
     const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() || "Охотник";
-    document.getElementById("statusLabel").textContent = data.free_mode ? "Open Beta" : "Mini App";
+    document.getElementById("statusLabel").textContent = data.free_mode ? "Открытая бета" : "Mini App";
     document.getElementById("heroTitle").textContent = `${data.user.rank.icon} ${fullName}`;
     document.getElementById("heroText").textContent = `Пройдено ${data.user.questions_completed}/257, точность ${data.user.accuracy}%, XP ${data.user.xp_total}.`;
     document.getElementById("heroBadges").innerHTML = `
-        <div class="hero-badge"><strong>${data.summary.questions_count}</strong><span>вопросов в базе</span></div>
+        <div class="hero-badge"><strong>${data.summary.questions_count}</strong><span>вопросов доступно</span></div>
         <div class="hero-badge"><strong>${data.summary.achievements}</strong><span>достижений открыто</span></div>
-        <div class="hero-badge"><strong>${data.summary.starred}</strong><span>избранных вопросов</span></div>
+        <div class="hero-badge"><strong>${data.summary.starred}</strong><span>сложных вопросов отмечено</span></div>
         <div class="hero-badge"><strong>${data.exam.questions}/${data.exam.pass_percent}%</strong><span>экзамен / порог</span></div>
     `;
     document.getElementById("homeStats").innerHTML = `
@@ -177,6 +369,7 @@ function renderDaily() {
     if (!daily) {
         return;
     }
+
     const questionCard = document.getElementById("dailyQuestionCard");
     if (!daily.question) {
         questionCard.innerHTML = `<p class="eyebrow">Вопрос дня</p><div class="info-line">Сегодня вопрос дня не найден.</div>`;
@@ -190,7 +383,7 @@ function renderDaily() {
         questionCard.innerHTML = `
             <p class="eyebrow">Вопрос дня</p>
             <div class="section-head"><h2>${daily.question.text}</h2><span>+20 XP за правильный ответ</span></div>
-            <div class="answer-buttons">
+            <div class="answer-buttons answer-buttons-inline">
                 ${daily.question.options.map((item) => `<button class="answer-pick" data-daily-answer="${item.key}" type="button">${item.label}</button>`).join("")}
             </div>
         `;
@@ -208,14 +401,14 @@ function renderDaily() {
 
     renderRouteCard(daily.route, document.getElementById("routeCard"), true);
 }
-
 function renderCards() {
     if (!state.cards) {
         return;
     }
-    if (!state.selectedCategory && state.cards.categories.length) {
-        state.selectedCategory = state.cards.categories[0].name;
+    if (!state.selectedCategory || !state.cards.categories.some((item) => item.name === state.selectedCategory)) {
+        state.selectedCategory = state.cards.categories[0]?.name || null;
     }
+
     document.getElementById("cardsSummary").textContent = `Изучено ${state.cards.viewed}/${state.cards.total} карточек (${state.cards.percent}%).`;
     document.getElementById("cardCategories").innerHTML = state.cards.categories
         .map(
@@ -286,7 +479,7 @@ function renderProfile() {
                   `,
               )
               .join("")
-        : `<div class="info-line">Достижения пока ещё не появились.</div>`;
+        : `<div class="info-line">Достижения пока еще не появились.</div>`;
 
     const history = state.history?.items || [];
     document.getElementById("historyList").innerHTML = history.length
@@ -309,14 +502,69 @@ function renderProfile() {
     document.getElementById("settingHour").value = bootstrap.user.reminder_hour ?? 9;
 }
 
+function updateAnswerHint(message, tone = "neutral") {
+    const hint = document.getElementById("answerHint");
+    hint.textContent = message;
+    hint.classList.remove("is-success", "is-error");
+    if (tone === "success") {
+        hint.classList.add("is-success");
+    } else if (tone === "error") {
+        hint.classList.add("is-error");
+    }
+}
+
+function setQuestionOptionsEnabled(enabled) {
+    document.querySelectorAll("#questionOptions .option-item").forEach((button) => {
+        button.disabled = !enabled;
+    });
+}
+
+function applyAnswerFeedback(result) {
+    const options = document.querySelectorAll("#questionOptions .option-item");
+    options.forEach((button) => {
+        const answer = button.dataset.answer;
+        button.classList.remove("is-pending");
+        button.classList.add("is-muted");
+
+        if (answer === result.correct_answer) {
+            button.classList.add("is-correct");
+            button.classList.remove("is-muted");
+        }
+
+        if (answer === result.selected_answer) {
+            button.classList.add("is-selected");
+            button.classList.remove("is-muted");
+            if (!result.is_correct) {
+                button.classList.add("is-wrong");
+            }
+        }
+    });
+
+    if (result.is_correct) {
+        updateAnswerHint(
+            `Верно. +${result.xp_added} XP и +${result.coins_added} монет. Можно сразу идти дальше.`,
+            "success",
+        );
+    } else {
+        updateAnswerHint(
+            `Промах. Верный ответ — ${result.correct_answer.toUpperCase()}. Сверху уже есть кнопка перехода к следующему вопросу.`,
+            "error",
+        );
+    }
+}
+
 function renderQuestion(questionState) {
     state.activeSession = questionState;
-    state.pendingNextQuestion = null;
+    state.pendingNextQuestion = false;
     state.lastQuestionId = questionState.question.id;
+    state.answerLocked = false;
+
     sessionOverlay.classList.remove("hidden");
     syncTelegramBackButton();
     pulse("medium");
+
     document.getElementById("sessionTitle").textContent = questionState.title;
+    document.getElementById("questionCaption").textContent = sessionModeLabel(questionState.mode);
     document.getElementById("sessionMeta").innerHTML = `
         <span class="meta-pill">${questionState.progress.current}/${questionState.progress.total}</span>
         <span class="meta-pill">✅ ${questionState.progress.correct}</span>
@@ -327,15 +575,15 @@ function renderQuestion(questionState) {
     document.getElementById("questionOptions").innerHTML = questionState.question.options
         .map(
             (item) => `
-                <article class="option-item">
+                <button class="option-item" type="button" data-answer="${item.key}">
                     <span class="option-key">${item.label}</span>
-                    <div><strong>${item.text}</strong><small>${questionState.question.block_name || ""}</small></div>
-                </article>
+                    <div class="option-body">
+                        <strong>${item.text}</strong>
+                        <small class="option-meta">${questionState.question.block_name || "ONEHUNT"}</small>
+                    </div>
+                </button>
             `,
         )
-        .join("");
-    document.getElementById("answerButtons").innerHTML = questionState.question.options
-        .map((item) => `<button class="answer-pick" data-answer="${item.key}" type="button">${item.label}</button>`)
         .join("");
 
     const image = document.getElementById("sessionImage");
@@ -347,10 +595,13 @@ function renderQuestion(questionState) {
         image.removeAttribute("src");
     }
 
-    const resultPanel = document.getElementById("resultPanel");
-    resultPanel.classList.add("hidden");
-    resultPanel.innerHTML = "";
     document.getElementById("starQuestionButton").textContent = "⭐ В избранное";
+    updateAnswerHint(baseAnswerHint(questionState.mode));
+
+    const resultPanel = document.getElementById("resultPanel");
+    resultPanel.className = "result-panel hidden";
+    resultPanel.innerHTML = "";
+    setQuestionOptionsEnabled(true);
 }
 
 function buildSummaryHtml(summary) {
@@ -358,43 +609,49 @@ function buildSummaryHtml(summary) {
         return "";
     }
     if (summary.type === "exam") {
-        return `<div class="achievement-item"><strong>${summary.passed ? "🏆 Экзамен пройден" : "📘 Экзамен завершён"}</strong><span>${summary.correct_count}/${summary.questions_count} · ${summary.score_percent}% · ${summary.time_spent_minutes} мин</span></div>`;
+        return `<div class="achievement-item"><strong>${summary.passed ? "🏆 Экзамен пройден" : "📘 Экзамен завершен"}</strong><span>${summary.correct_count}/${summary.questions_count} · ${summary.score_percent}% · ${summary.time_spent_minutes} мин</span></div>`;
     }
     if (summary.type === "duel") {
-        return `<div class="achievement-item"><strong>${summary.user_won ? "🏆 Вы победили" : "🦌 Михалыч оказался сильнее"}</strong><span>Ваш счёт ${summary.user_score}, Михалыч ${summary.bot_score}, время ${summary.duration}</span></div>`;
+        return `<div class="achievement-item"><strong>${summary.user_won ? "🏆 Вы победили" : "🦌 Михалыч оказался сильнее"}</strong><span>Ваш счет ${summary.user_score}, Михалыч ${summary.bot_score}, время ${summary.duration}</span></div>`;
     }
     return `<div class="achievement-item"><strong>${summary.timeout ? "⏱ Время вышло" : "🏁 Сессия завершена"}</strong><span>${summary.correct} верно · ${summary.wrong} ошибок · ${summary.accuracy}% · ${summary.duration}</span></div>`;
 }
 
 function renderResult(result, hasNext, summary) {
     const resultPanel = document.getElementById("resultPanel");
-    resultPanel.className = `result-panel ${result?.is_correct ? "result-correct" : "result-wrong"}`;
+    const modeClass = result ? (result.is_correct ? "result-correct" : "result-wrong") : "result-neutral";
+    resultPanel.className = `result-panel ${modeClass}`;
     resultPanel.innerHTML = `
-        ${
-            result
-                ? `
-                    <h3 class="result-title">${result.is_correct ? "✅ Верно" : "❌ Промах"}</h3>
-                    <p class="result-copy">Ваш ответ: ${result.selected_answer.toUpperCase()} · Правильный: ${result.correct_answer.toUpperCase()}</p>
-                    <p class="result-copy">+${result.xp_added} XP · +${result.coins_added} монет</p>
-                    ${result.explanation ? `<p class="result-copy"><strong>Объяснение:</strong> ${result.explanation}</p>` : ""}
-                    ${result.mnemonic ? `<p class="result-copy"><strong>Подсказка:</strong> ${result.mnemonic}</p>` : ""}
-                `
-                : ""
-        }
-        ${buildSummaryHtml(summary)}
-        <div class="result-actions">
+        <div class="result-grabber"></div>
+        <div class="result-actions result-actions-top">
             ${hasNext ? `<button class="primary-button" id="nextQuestionButton" type="button">Следующий вопрос</button>` : `<button class="primary-button" id="finishSessionButton" type="button">Завершить</button>`}
-            <button class="ghost-button" id="backToAppButton" type="button">Назад в приложение</button>
+            <button class="ghost-button" id="backToAppButton" type="button">В приложение</button>
+        </div>
+        <div class="result-scroll">
+            ${
+                result
+                    ? `
+                        <h3 class="result-title">${result.is_correct ? "Ответ засчитан" : "Есть промах"}</h3>
+                        <p class="result-copy">Ваш ответ: ${result.selected_answer.toUpperCase()} · Верный: ${result.correct_answer.toUpperCase()}</p>
+                        <p class="result-copy">+${result.xp_added} XP · +${result.coins_added} монет</p>
+                        ${result.explanation ? `<p class="result-copy"><strong>Почему так:</strong> ${result.explanation}</p>` : ""}
+                        ${result.mnemonic ? `<p class="result-copy"><strong>Подсказка:</strong> ${result.mnemonic}</p>` : ""}
+                    `
+                    : ""
+            }
+            ${buildSummaryHtml(summary)}
         </div>
     `;
     resultPanel.classList.remove("hidden");
+    resultPanel.scrollTop = 0;
     state.pendingNextQuestion = hasNext;
 }
 
 function closeSessionOverlay() {
     sessionOverlay.classList.add("hidden");
     state.activeSession = null;
-    state.pendingNextQuestion = null;
+    state.pendingNextQuestion = false;
+    state.answerLocked = false;
     syncTelegramBackButton();
 }
 
@@ -409,10 +666,17 @@ async function startSession(mode, extra = {}) {
 }
 
 async function answerQuestion(answer) {
-    if (!state.activeSession) {
+    if (!state.activeSession || state.answerLocked) {
         return;
     }
+
+    state.answerLocked = true;
+    const selectedButton = document.querySelector(`#questionOptions .option-item[data-answer="${answer}"]`);
+    selectedButton?.classList.add("is-pending");
+    setQuestionOptionsEnabled(false);
+    updateAnswerHint("Проверяем ответ...", "neutral");
     pulse("medium");
+
     try {
         const data = await api("/api/session/answer", {
             method: "POST",
@@ -422,8 +686,16 @@ async function answerQuestion(answer) {
                 answer,
             }),
         });
-        renderResult(data.result, data.has_next, data.summary);
+
+        if (data.result) {
+            applyAnswerFeedback(data.result);
+        }
+        renderResult(data.result, Boolean(data.has_next), data.summary);
     } catch (error) {
+        state.answerLocked = false;
+        selectedButton?.classList.remove("is-pending");
+        setQuestionOptionsEnabled(true);
+        updateAnswerHint("Не удалось проверить ответ. Попробуйте еще раз.", "error");
         showToast(error.message);
     }
 }
@@ -443,23 +715,23 @@ async function loadNextQuestion() {
         showToast(error.message);
     }
 }
-
 async function loadCardsCategory(category) {
     try {
         state.selectedCategory = category;
         renderCards();
-        document.getElementById("cardsList").innerHTML = `<div class="empty-state">Загружаем карточки категории «${category}»...</div>`;
+        document.getElementById("cardsList").innerHTML = `<div class="empty-state">Загружаем карточки категории «${escapeHtml(category)}»...</div>`;
         const payload = await api(`/api/cards/${encodeURIComponent(category)}`);
-        document.getElementById("cardsList").innerHTML = payload.items
-            .map(
-                (item) => `
-                    <button class="card-tile" type="button" data-card-id="${item.id}">
-                        <strong>${item.name}</strong>
-                        <span>${item.latin_name || "Без латинского названия"}</span>
-                    </button>
-                `,
-            )
-            .join("") || `<div class="empty-state">В этой категории пока нет карточек.</div>`;
+        document.getElementById("cardsList").innerHTML =
+            payload.items
+                .map(
+                    (item) => `
+                        <button class="card-tile" type="button" data-card-id="${item.id}">
+                            <strong>${item.name}</strong>
+                            <span>${item.latin_name || "Без латинского названия"}</span>
+                        </button>
+                    `,
+                )
+                .join("") || `<div class="empty-state">В этой категории пока нет карточек.</div>`;
     } catch (error) {
         showToast(error.message);
     }
@@ -588,7 +860,7 @@ async function hydrate() {
             }
         }
         renderProfile();
-        document.getElementById("homeRouteStart")?.addEventListener("click", launchRouteTask);
+        ensureAiBootstrapped(state.aiHistory.length === 0);
     } catch (error) {
         showToast(error.message);
         document.getElementById("heroText").textContent = error.message;
@@ -596,12 +868,23 @@ async function hydrate() {
 }
 
 document.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id]");
+    const target = event.target.closest(
+        "[data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id], [data-ai-prompt], #homeRouteStart",
+    );
     if (!target) {
         return;
     }
+
     if (target.dataset.screen) {
         switchScreen(target.dataset.screen);
+        return;
+    }
+    if (target.dataset.aiPrompt) {
+        submitAiMessage(target.dataset.aiPrompt);
+        return;
+    }
+    if (target.id === "homeRouteStart" || target.classList.contains("route-task-launch")) {
+        launchRouteTask();
         return;
     }
     if (target.dataset.startMode) {
@@ -618,10 +901,6 @@ document.addEventListener("click", (event) => {
     }
     if (target.dataset.dailyAnswer) {
         submitDailyAnswer(target.dataset.dailyAnswer);
-        return;
-    }
-    if (target.classList.contains("route-task-launch")) {
-        launchRouteTask();
         return;
     }
     if (target.dataset.category) {
@@ -651,6 +930,19 @@ document.getElementById("saveSettingsButton").addEventListener("click", saveSett
 document.getElementById("resetProgressButton").addEventListener("click", resetProgress);
 document.getElementById("starQuestionButton").addEventListener("click", toggleStar);
 
+aiForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    submitAiMessage(aiInput.value);
+});
+
+aiInput.addEventListener("input", autosizeAiInput);
+aiInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        aiForm.requestSubmit();
+    }
+});
+
 document.addEventListener("click", (event) => {
     if (event.target.id === "nextQuestionButton" && state.pendingNextQuestion) {
         loadNextQuestion();
@@ -662,4 +954,5 @@ document.addEventListener("click", (event) => {
     }
 });
 
+autosizeAiInput();
 hydrate();
