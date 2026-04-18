@@ -9,19 +9,6 @@
 </head>
 <body>
     <div class="app-shell">
-        <header class="app-header">
-            <div class="brand-block">
-                <span class="brand-mark">
-                    <img src="/assets/brand-logo.jpg" alt="ONEHUNT logo">
-                </span>
-                <div>
-                    <strong>ONEHUNT</strong>
-                    <small id="statusLabel">Mini App</small>
-                </div>
-            </div>
-            <button class="ghost-chip" id="refreshButton" type="button">Обновить</button>
-        </header>
-
         <main class="app-main">
             <section class="screen screen-active" id="screen-home">
                 <div class="hero-card card">
@@ -64,6 +51,14 @@
                 </div>
 
                 <div class="card" id="homeRouteCard"></div>
+
+                <button class="offer-banner" id="guideBannerButton" type="button">
+                    <span class="offer-banner-copy">
+                        <strong>📖 Полный путь до первой охоты</strong>
+                        <small>Гайд + 12 чек-листов → 990₽</small>
+                    </span>
+                    <span class="offer-banner-arrow">→</span>
+                </button>
             </section>
 
             <section class="screen" id="screen-practice">

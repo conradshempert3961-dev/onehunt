@@ -139,9 +139,16 @@ async function api(path, options = {}) {
     return payload;
 }
 
+function scrollAppToTop() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+}
+
 function switchScreen(screenId) {
     screens.forEach((screen) => screen.classList.toggle("screen-active", screen.id === `screen-${screenId}`));
     navButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
+    window.requestAnimationFrame(scrollAppToTop);
     if (screenId === "ai") {
         window.setTimeout(() => aiInput?.focus(), 120);
     }
@@ -292,22 +299,27 @@ function renderBootstrap() {
     }
 
     const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() || "Охотник";
-    document.getElementById("statusLabel").textContent = data.free_mode ? "Открытая бета" : "Mini App";
-    document.getElementById("heroTitle").textContent = `${data.user.rank.icon} ${fullName}`;
-    document.getElementById("heroText").textContent = `Пройдено ${data.user.questions_completed}/257, точность ${data.user.accuracy}%, XP ${data.user.xp_total}.`;
+    const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
+    const heroName = displayName.length > 16 ? (data.user.first_name || displayName.split(" ")[0]) : displayName;
+    const routeTask = data.route?.current_task?.task;
+    document.getElementById("statusLabel")?.replaceChildren(document.createTextNode(data.free_mode ? "Бета" : "Mini App"));
+    document.getElementById("heroTitle").textContent = "Твоя подготовка";
+    document.getElementById("heroText").textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`;
     document.getElementById("heroBadges").innerHTML = `
-        <div class="hero-badge"><strong>${data.summary.questions_count}</strong><span>вопросов доступно</span></div>
-        <div class="hero-badge"><strong>${data.summary.achievements}</strong><span>достижений открыто</span></div>
-        <div class="hero-badge"><strong>${data.summary.starred}</strong><span>сложных вопросов отмечено</span></div>
-        <div class="hero-badge"><strong>${data.exam.questions}/${data.exam.pass_percent}%</strong><span>экзамен / порог</span></div>
+        <div class="hero-badge"><strong>${data.user.rank.icon} ${data.user.rank.name}</strong><span>текущий ранг</span></div>
+        <div class="hero-badge"><strong>${data.route.percent}%</strong><span>маршрут на 14 дней</span></div>
+        <div class="hero-badge"><strong>${data.user.streak_days}</strong><span>дней подряд</span></div>
+        <div class="hero-badge"><strong>${data.exam.pass_percent}%</strong><span>порог экзамена</span></div>
     `;
     document.getElementById("homeStats").innerHTML = `
-        ${createStatCard("Звание", `${data.user.rank.icon} ${data.user.rank.name}`)}
-        ${createStatCard("Серия дней", `${data.user.streak_days}`)}
+        ${createStatCard("Пройдено", `${data.user.questions_completed}/257`)}
+        ${createStatCard("Точность", `${data.user.accuracy}%`)}
+        ${createStatCard("XP", `${data.user.xp_total}`)}
         ${createStatCard("Монеты", `${data.user.coins}`)}
-        ${createStatCard("Лучший экзамен", `${data.user.best_exam_score}%`)}
     `;
-    document.getElementById("quoteText").textContent = data.summary.quote;
+    document.getElementById("quoteText").textContent = routeTask
+        ? `Сегодня в фокусе: ${routeTask.icon} ${routeTask.name}. ${routeTask.goal}.`
+        : data.summary.quote;
     document.getElementById("homeRouteCard").innerHTML = `
         <p class="eyebrow">Маршрут</p>
         <div class="section-head">
@@ -921,11 +933,11 @@ document.getElementById("closeSheetButton").addEventListener("click", () => {
     detailSheet.classList.add("hidden");
     syncTelegramBackButton();
 });
-document.getElementById("refreshButton").addEventListener("click", () => {
-    pulse("light");
-    hydrate();
-});
 document.getElementById("routeTaskButton").addEventListener("click", launchRouteTask);
+document.getElementById("guideBannerButton").addEventListener("click", () => {
+    pulse("medium");
+    showToast("Гайд скоро подключим в Mini App");
+});
 document.getElementById("saveSettingsButton").addEventListener("click", saveSettings);
 document.getElementById("resetProgressButton").addEventListener("click", resetProgress);
 document.getElementById("starQuestionButton").addEventListener("click", toggleStar);
@@ -950,9 +962,9 @@ document.addEventListener("click", (event) => {
     }
     if (event.target.id === "finishSessionButton" || event.target.id === "backToAppButton") {
         closeSessionOverlay();
-        hydrate();
+        hydrate().finally(() => window.requestAnimationFrame(scrollAppToTop));
     }
 });
 
 autosizeAiInput();
-hydrate();
+hydrate().finally(() => window.requestAnimationFrame(scrollAppToTop));
