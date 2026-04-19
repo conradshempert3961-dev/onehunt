@@ -428,13 +428,13 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
 
     if mode == "trail":
         if not block_id or block_id not in BLOCKS:
-            raise HTTPException(status_code=400, detail="Р”Р»СЏ С‚СЂРѕРїС‹ РЅСѓР¶РµРЅ РєРѕСЂСЂРµРєС‚РЅС‹Р№ Р±Р»РѕРє.")
+            raise HTTPException(status_code=400, detail="Для тропы нужен корректный блок.")
         answered_ids = await get_answered_question_ids(user.telegram_id, mode="trail", block_id=block_id)
         sequence = await get_question_sequence_for_block(block_id)
         questions = [item for item in sequence if item.id not in answered_ids] or sequence
         if not questions:
-            raise HTTPException(status_code=400, detail="Р’ СЌС‚РѕРј Р±Р»РѕРєРµ РїРѕРєР° РЅРµС‚ РІРѕРїСЂРѕСЃРѕРІ.")
-        title = f"{BLOCKS[block_id]['icon']} РўСЂРѕРїР°: {BLOCKS[block_id]['name']}"
+            raise HTTPException(status_code=400, detail="В этом блоке пока нет вопросов.")
+        title = f"{BLOCKS[block_id]['icon']} Тропа: {BLOCKS[block_id]['name']}"
     elif mode == "training":
         settings = dict(user.settings or {})
         limit = int(settings.get("questions_per_session", 20))
@@ -447,41 +447,41 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
             )
         questions = await get_random_questions(limit, block_id=weak_block)
         block_id = weak_block
-        title = "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ вЂ” СЃР»Р°Р±С‹Рµ С‚РµРјС‹" if payload.weak else "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ"
+        title = "🎯 Тренировка — слабые темы" if payload.weak else "🎯 Тренировка"
         if payload.timed:
             total_timer_seconds = limit * 60
-            title = "рџЋЇ РЎС‚СЂРµР»СЊР±РёС‰Рµ СЃ С‚Р°Р№РјРµСЂРѕРј" if not payload.weak else "рџЋЇ РЎР»Р°Р±С‹Рµ С‚РµРјС‹ + С‚Р°Р№РјРµСЂ"
+            title = "🎯 Тренировка с таймером" if not payload.weak else "🎯 Слабые темы + таймер"
     elif mode == "blitz":
         require_full_access(user, "blitz")
         questions = await get_random_questions(20)
         total_timer_seconds = 300
-        title = "вљЎ Р‘Р»РёС†"
+        title = "⚡ Блиц"
     elif mode == "exam":
         questions = await get_official_exam_questions(EXAM_QUESTIONS, shuffle=False)
         total_timer_seconds = 90 * 60
-        title = f"рџ“ќ Р­РєР·Р°РјРµРЅ вЂ” РІСЃРµ {EXAM_QUESTIONS} РІРѕРїСЂРѕСЃРѕРІ"
+        title = f"📝 Экзамен — все {EXAM_QUESTIONS} вопросов"
     elif mode == "mistakes":
         require_full_access(user, "mistakes")
         questions = await get_wrong_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "рџ”„ РџСЂРѕРјР°С…Рё"
+        title = "🔄 Промахи"
     elif mode == "starred":
         require_full_access(user, "starred")
         questions = await get_starred_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "в­ђ РўСЂСѓРґРЅС‹Рµ СЃР»РµРґС‹"
+        title = "⭐ Избранные вопросы"
     elif mode == "repetition":
         require_full_access(user, "repetition")
         questions = await get_due_repetition_questions(user.telegram_id, BLOCK_QUESTIONS)
-        title = "рџ§  РџРѕРІС‚РѕСЂРµРЅРёРµ"
+        title = "🧠 Повторение"
     elif mode == "duel":
         require_full_access(user, "duel")
         questions = await get_random_questions(10)
-        title = "вљ”пёЏ Р”СѓСЌР»СЊ СЃ РњРёС…Р°Р»С‹С‡РµРј"
+        title = "⚔️ Дуэль с Михалычем"
     elif mode == "quick":
         questions = await get_random_questions(1)
-        title = "рџ¦† Р‘С‹СЃС‚СЂС‹Р№ РІРѕРїСЂРѕСЃ"
+        title = "🦆 Быстрый вопрос"
 
     if not questions:
-        raise HTTPException(status_code=400, detail="Р”Р»СЏ СЌС‚РѕРіРѕ СЂРµР¶РёРјР° РїРѕРєР° РЅРµС‚ РІРѕРїСЂРѕСЃРѕРІ.")
+        raise HTTPException(status_code=400, detail="Для этого режима пока нет вопросов.")
 
     return create_session(
         user_id=user.telegram_id,
@@ -773,10 +773,10 @@ async def route_view(user=Depends(current_user)) -> dict[str, Any]:
 async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
     payload = await get_route_task(user.telegram_id)
     if payload is None:
-        raise HTTPException(status_code=404, detail="РўРµРєСѓС‰Р°СЏ Р·Р°РґР°С‡Р° РјР°СЂС€СЂСѓС‚Р° РЅРµ РЅР°Р№РґРµРЅР°.")
+        raise HTTPException(status_code=404, detail="Текущая задача маршрута не найдена.")
     params = route_task_to_session_params(payload["task"]["callback"])
     if params is None:
-        raise HTTPException(status_code=400, detail="Р­С‚Сѓ Р·Р°РґР°С‡Сѓ РїРѕРєР° РЅРµР»СЊР·СЏ РѕС‚РєСЂС‹С‚СЊ РІ Mini App.")
+        raise HTTPException(status_code=400, detail="Эту задачу пока нельзя открыть в Mini App.")
     session = await prepare_session(
         user,
         SessionStartRequest(
@@ -788,7 +788,7 @@ async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
     )
     question = await get_question(session.question_ids[0])
     if question is None:
-        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
+        raise HTTPException(status_code=404, detail="Вопрос не найден.")
     return serialize_session_question(session, question)
 
 
