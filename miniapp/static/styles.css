@@ -2346,17 +2346,19 @@ body::after {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 14px;
-    padding: 20px 22px;
+    min-height: 132px;
+    padding: 28px 26px;
     border: 0;
-    border-radius: 26px;
+    border-radius: 30px;
     text-align: left;
     color: #fff7ea;
     background:
         radial-gradient(circle at 12% 18%, rgba(255, 215, 140, 0.34), transparent 28%),
-        linear-gradient(135deg, #2f2016 0%, #543520 46%, #b86823 100%);
+        radial-gradient(circle at 100% 0%, rgba(255, 231, 180, 0.2), transparent 26%),
+        linear-gradient(135deg, #2f2016 0%, #5b3419 42%, #cc7a22 100%);
     box-shadow:
         inset 0 1px 0 rgba(255, 244, 220, 0.22),
-        0 16px 34px rgba(129, 77, 23, 0.24);
+        0 22px 44px rgba(129, 77, 23, 0.28);
     overflow: hidden;
 }
 
@@ -2364,7 +2366,7 @@ body::after {
     content: "";
     position: absolute;
     inset: 1px;
-    border-radius: 25px;
+    border-radius: 29px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0));
     pointer-events: none;
 }
@@ -2384,35 +2386,143 @@ body::after {
     position: relative;
     z-index: 1;
     display: grid;
-    gap: 4px;
+    gap: 8px;
+    max-width: 82%;
 }
 
 .offer-banner-copy strong {
-    font-size: 1.02rem;
-    line-height: 1.3;
+    font-size: 1.2rem;
+    line-height: 1.28;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
 
 .offer-banner-copy small {
     color: rgba(255, 241, 220, 0.82);
-    font-size: 0.84rem;
+    font-size: 0.94rem;
     line-height: 1.4;
 }
 
 .offer-banner-arrow {
     position: relative;
     z-index: 1;
-    width: 42px;
-    height: 42px;
+    width: 54px;
+    height: 54px;
     display: inline-grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 18px;
     background: rgba(255, 245, 229, 0.14);
     color: #fff6e8;
-    font-size: 1.12rem;
+    font-size: 1.35rem;
     font-weight: 700;
     backdrop-filter: blur(12px);
+}
+
+.profile-identity-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.profile-identity-copy h2 {
+    margin: 2px 0 8px;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    letter-spacing: -0.05em;
+}
+
+.profile-identity-side {
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+    text-align: right;
+}
+
+.profile-identity-side small {
+    max-width: 220px;
+    color: var(--text-soft);
+    line-height: 1.45;
+}
+
+.access-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.access-pill.is-premium {
+    background: linear-gradient(135deg, rgba(255, 210, 130, 0.22), rgba(204, 122, 34, 0.16));
+    color: #8a4b14;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.access-pill.is-beta {
+    background: rgba(52, 199, 89, 0.12);
+    color: var(--primary-strong);
+}
+
+.access-pill.is-basic {
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-soft);
+}
+
+.premium-sheet {
+    display: grid;
+    gap: 18px;
+}
+
+.premium-sheet-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.premium-sheet-head h2 {
+    margin: 4px 0 8px;
+    font-size: clamp(1.6rem, 5vw, 2.3rem);
+    letter-spacing: -0.05em;
+}
+
+.premium-benefits {
+    display: grid;
+    gap: 12px;
+}
+
+.premium-benefit-card,
+.premium-checkout-box {
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    border-radius: 22px;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.4)),
+        rgba(255, 255, 255, 0.32);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.premium-benefit-card strong,
+.premium-checkout-box strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.98rem;
+}
+
+.premium-benefit-card span,
+.premium-checkout-box span {
+    color: var(--text-soft);
+    line-height: 1.55;
+}
+
+.premium-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .bottom-nav {
@@ -2472,7 +2582,8 @@ body::after {
     }
 
     .offer-banner {
-        padding: 18px 18px;
+        min-height: 118px;
+        padding: 22px 18px;
         border-radius: 22px;
     }
 
@@ -2481,17 +2592,28 @@ body::after {
     }
 
     .offer-banner-copy strong {
-        font-size: 0.96rem;
+        font-size: 1.04rem;
     }
 
     .offer-banner-copy small {
-        font-size: 0.8rem;
+        font-size: 0.86rem;
     }
 
     .offer-banner-arrow {
-        width: 38px;
-        height: 38px;
+        width: 46px;
+        height: 46px;
         border-radius: 12px;
+    }
+
+    .profile-identity-card,
+    .premium-sheet-head {
+        grid-template-columns: 1fr;
+        display: grid;
+    }
+
+    .profile-identity-side {
+        justify-items: start;
+        text-align: left;
     }
 
     .bottom-nav {

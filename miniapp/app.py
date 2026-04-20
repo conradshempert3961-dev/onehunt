@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from config import (
     APP_TIMEZONE,
     BLOCK_QUESTIONS,
+    CRYPTO_PAY_API_TOKEN,
     EXAM_PASS_PERCENT,
     EXAM_QUESTIONS,
     FREE_MODE,
@@ -26,6 +27,7 @@ from services.game import (
     answer_daily_question,
     count_achievements,
     count_starred,
+    create_payment,
     finish_exam_attempt,
     get_achievement_overview,
     get_answered_question_ids,
@@ -49,6 +51,7 @@ from services.game import (
     get_route_task,
     get_starred_questions,
     get_today_stats,
+    get_payment_record,
     get_user,
     get_user_block_progress,
     get_wrong_questions,
@@ -59,8 +62,16 @@ from services.game import (
     reset_user_progress,
     save_answer,
     seed_reference_data,
+    complete_payment,
     toggle_star,
+    update_payment_status,
     update_user,
+)
+from services.crypto_pay import (
+    CryptoPayError,
+    create_premium_invoice,
+    get_invoice,
+    invoice_checkout_url,
 )
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
@@ -164,6 +175,9 @@ def serialize_route_task_payload(payload: dict[str, Any] | None) -> dict[str, An
 def serialize_user(user: Any) -> dict[str, Any]:
     rank = get_rank_by_correct(user.correct_answers)
     current_level, level_name = get_xp_level(user.xp_total)
+    access_level = user.access_level
+    if access_level != "premium" and FREE_MODE:
+        access_level = "open_beta"
     return {
         "telegram_id": user.telegram_id,
         "username": user.username,
@@ -179,7 +193,8 @@ def serialize_user(user: Any) -> dict[str, Any]:
         "coins": user.coins,
         "streak_days": user.streak_days,
         "best_exam_score": user.best_exam_score,
-        "access_level": "open_beta" if FREE_MODE else user.access_level,
+        "access_level": access_level,
+        "has_premium": user.access_level == "premium",
         "theme": user.theme,
         "badge": user.badge,
         "daily_reminder": user.daily_reminder,
@@ -665,6 +680,13 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             for block_id, block in BLOCKS.items()
         ],
         "free_mode": FREE_MODE,
+        "premium_offer": {
+            "title": "Полный путь до первой охоты",
+            "subtitle": "Гайд + 12 чек-листов",
+            "price_rub": PREMIUM_PRICES["rub"],
+            "price_stars": PREMIUM_PRICES["stars"],
+            "crypto_enabled": bool(CRYPTO_PAY_API_TOKEN),
+        },
         "exam": {
             "questions": EXAM_QUESTIONS,
             "pass_percent": EXAM_PASS_PERCENT,
@@ -756,6 +778,91 @@ async def achievements_view(user=Depends(current_user)) -> dict[str, Any]:
         "unlocked": overview["unlocked"],
         "items": [serialize_achievement(item) for item in overview["items"]],
         "nearest": [serialize_achievement(item) for item in overview["nearest"]],
+    }
+
+
+@app.post("/api/premium/crypto/invoice")
+async def premium_crypto_invoice(user=Depends(current_user)) -> dict[str, Any]:
+    if user.access_level == "premium":
+        return {
+            "status": "completed",
+            "activated": True,
+            "already_premium": True,
+            "user": serialize_user(user),
+        }
+
+    try:
+        invoice = await create_premium_invoice(user.telegram_id)
+    except CryptoPayError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    invoice_id = str(invoice.get("invoice_id") or "").strip()
+    if not invoice_id:
+        raise HTTPException(status_code=502, detail="Crypto Bot did not return an invoice id.")
+
+    payment = await create_payment(
+        user.telegram_id,
+        PREMIUM_PRICES["rub"],
+        "RUB",
+        "crypto_bot",
+        invoice_id,
+    )
+
+    return {
+        "status": "pending",
+        "activated": False,
+        "payment_id": payment.id,
+        "invoice_id": invoice_id,
+        "pay_url": invoice_checkout_url(invoice, prefer="miniapp"),
+        "bot_invoice_url": invoice.get("bot_invoice_url"),
+        "mini_app_invoice_url": invoice.get("mini_app_invoice_url"),
+        "price_rub": PREMIUM_PRICES["rub"],
+    }
+
+
+@app.get("/api/premium/crypto/status/{payment_id}")
+async def premium_crypto_status(payment_id: int, user=Depends(current_user)) -> dict[str, Any]:
+    payment = await get_payment_record(payment_id, user.telegram_id)
+    if payment is None or payment.provider != "crypto_bot":
+        raise HTTPException(status_code=404, detail="Payment was not found.")
+
+    if payment.status == "completed":
+        fresh_user = await get_user(user.telegram_id) or user
+        return {
+            "status": "completed",
+            "activated": True,
+            "payment_id": payment.id,
+            "user": serialize_user(fresh_user),
+        }
+
+    try:
+        invoice = await get_invoice(int(payment.provider_payment_id or 0))
+    except (CryptoPayError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    status = str(invoice.get("status") or payment.status or "pending").lower()
+    if status == "paid":
+        await complete_payment(str(payment.provider_payment_id))
+        fresh_user = await get_user(user.telegram_id) or user
+        return {
+            "status": "completed",
+            "activated": True,
+            "payment_id": payment.id,
+            "user": serialize_user(fresh_user),
+        }
+
+    if status == "expired":
+        await update_payment_status(payment.id, "expired")
+    else:
+        await update_payment_status(payment.id, "pending")
+
+    return {
+        "status": status,
+        "activated": False,
+        "payment_id": payment.id,
+        "pay_url": invoice_checkout_url(invoice, prefer="miniapp"),
+        "bot_invoice_url": invoice.get("bot_invoice_url"),
+        "mini_app_invoice_url": invoice.get("mini_app_invoice_url"),
     }
 
 

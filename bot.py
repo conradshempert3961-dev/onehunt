@@ -99,6 +99,7 @@ from services.game import (
     get_user,
     get_user_block_progress,
     get_user_card,
+    get_payment_record,
     get_wrong_questions,
     grant_premium,
     is_starred,
@@ -115,7 +116,15 @@ from services.game import (
     seed_reference_data,
     should_send_reminder,
     toggle_star,
+    update_payment_status,
     update_user,
+)
+from services.crypto_pay import (
+    CryptoPayError,
+    create_premium_invoice,
+    get_invoice,
+    invoice_checkout_url,
+    invoice_status_label,
 )
 from states.states import AppStates
 from utils.constants import (
@@ -267,6 +276,18 @@ def is_premium(user) -> bool:
 
 def has_full_access(user) -> bool:
     return FREE_MODE or is_premium(user)
+
+
+def access_status_label(user) -> str:
+    if is_premium(user):
+        return "PREMIUM"
+    if FREE_MODE:
+        return "OPEN BETA"
+    return "Базовый"
+
+
+def premium_title_text(user) -> str:
+    return "🏕 <b>ONEHUNT PREMIUM</b>" if is_premium(user) else "🏕 <b>ONEHUNT</b>"
 
 
 def get_miniapp_webapp_url() -> str | None:
@@ -491,12 +512,21 @@ def premium_menu_markup() -> InlineKeyboardMarkup:
         )
     return InlineKeyboardMarkup(
         inline_keyboard=[
+            [InlineKeyboardButton(text=f"₿ Crypto Bot ({PREMIUM_PRICE_RUB} ₽)", callback_data="buy_premium_crypto")],
             [InlineKeyboardButton(text=f"⭐ Telegram Stars ({PREMIUM_PRICE_STARS} ⭐)", callback_data="buy_premium_stars")],
-            [InlineKeyboardButton(text=f"💳 Банковская карта ({PREMIUM_PRICE_RUB} ₽)", callback_data="buy_premium_card")],
             [InlineKeyboardButton(text="🔑 Ввести промокод", callback_data="promo_code")],
             *section_footer_rows("↩️ Профиль", "menu_profile"),
         ]
     )
+
+
+def crypto_checkout_markup(pay_url: str | None, payment_id: int) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    if pay_url:
+        rows.append([InlineKeyboardButton(text="💸 Открыть счет", url=pay_url)])
+    rows.append([InlineKeyboardButton(text="✅ Проверить оплату", callback_data=f"check_crypto_payment_{payment_id}")])
+    rows.extend(section_footer_rows("↩️ Профиль", "menu_profile"))
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def settings_markup(user) -> InlineKeyboardMarkup:
@@ -574,11 +604,11 @@ def reset_progress_markup() -> InlineKeyboardMarkup:
 def camp_text(user, questions_count: int) -> str:
     rank = get_rank_by_correct(user.correct_answers)
     unlocked = user.correct_answers
-    access_label = "Сейчас бесплатно" if FREE_MODE else ("Премиум" if user.access_level == "premium" else "Базовый")
+    access_label = access_status_label(user)
     if BOT_SHELL_MODE:
         return "\n".join(
             [
-                "🏕 <b>ONEHUNT</b>",
+                premium_title_text(user),
                 "",
                 f"🎖 Ранг: {rank['icon']} <b>{escape(rank['name'])}</b>",
                 f"📈 Прогресс: <b>{user.questions_completed}/257</b>",
@@ -591,7 +621,7 @@ def camp_text(user, questions_count: int) -> str:
 
     return "\n".join(
         [
-            "<b>ONEHUNT</b>",
+            premium_title_text(user),
             "",
             f"База вопросов: <b>{questions_count}</b>",
             f"Доступ: <b>{access_label}</b>",
@@ -630,7 +660,7 @@ def premium_required_text(feature_name: str, user) -> str:
         [
             feature_texts.get(feature_name, "🔒 Эта функция доступна в Премиум."),
             "",
-            f"💰 {PREMIUM_PRICE_RUB} ₽ один раз или {PREMIUM_PRICE_STARS} ⭐ через Telegram.",
+            f"💰 {PREMIUM_PRICE_RUB} ₽ через Crypto Bot или {PREMIUM_PRICE_STARS} ⭐ через Telegram Stars.",
             "Полное снаряжение открывает все режимы навсегда.",
         ]
     )
@@ -1568,7 +1598,7 @@ async def show_settings(target: Message | CallbackQuery) -> None:
                 "",
                 f"Статус: <b>{'вкл' if user.daily_reminder else 'выкл'}</b>",
                 f"Час: <b>{user.reminder_hour}:00</b>",
-                f"Доступ: <b>{'Сейчас бесплатно' if FREE_MODE else ('Премиум' if user.access_level == 'premium' else 'Базовый')}</b>",
+                f"Доступ: <b>{access_status_label(user)}</b>",
                 "",
                 "Здесь можно управлять напоминаниями и быстро переходить в Mini App.",
             ]
@@ -1587,7 +1617,7 @@ async def show_settings(target: Message | CallbackQuery) -> None:
             f"Час: <b>{user.reminder_hour}:00</b>",
             f"Тема: <b>{escape(user.theme)}</b>",
             f"Значок: <b>{escape(user.badge or 'нет')}</b>",
-            f"Доступ: <b>{'Сейчас бесплатно' if FREE_MODE else ('Премиум' if user.access_level == 'premium' else 'Базовый')}</b>",
+            f"Доступ: <b>{access_status_label(user)}</b>",
         ]
     )
     await respond(target, text, reply_markup=settings_markup(user))
@@ -1644,7 +1674,7 @@ async def show_premium(target: Message | CallbackQuery) -> None:
             "<b>💎 Полное снаряжение</b>",
             "",
             "Все 257 вопросов, 9 режимов, маршрут 14 дней, дуэли, интервальное повторение, карточки животных, вызов дня и расширенная аналитика.",
-            f"Цена: <b>{PREMIUM_PRICE_RUB} ₽</b> или <b>{PREMIUM_PRICE_STARS} ⭐</b>.",
+            f"Цена: <b>{PREMIUM_PRICE_RUB} ₽</b> через <b>Crypto Bot</b> или <b>{PREMIUM_PRICE_STARS} ⭐</b> через Telegram Stars.",
         ]
     )
     await respond(target, text, reply_markup=premium_menu_markup())
@@ -2099,6 +2129,34 @@ async def callback_promo(callback: CallbackQuery, state: FSMContext) -> None:
     await respond(callback, "🔑 Введите промокод:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏕 В лагерь", callback_data="camp")]]))
 
 
+@dp.callback_query(F.data == "buy_premium_crypto")
+async def callback_buy_crypto(callback: CallbackQuery) -> None:
+    try:
+        invoice = await create_premium_invoice(callback.from_user.id)
+    except CryptoPayError as exc:
+        await respond(callback, f"Не удалось создать счет Crypto Bot: {escape(str(exc))}", reply_markup=premium_menu_markup())
+        return
+
+    invoice_id = str(invoice.get("invoice_id") or "").strip()
+    if not invoice_id:
+        await respond(callback, "Crypto Bot не вернул номер счета. Попробуйте еще раз.", reply_markup=premium_menu_markup())
+        return
+
+    payment = await create_payment(callback.from_user.id, PREMIUM_PRICE_RUB, "RUB", "crypto_bot", invoice_id)
+    pay_url = invoice_checkout_url(invoice, prefer="bot")
+    text = "\n".join(
+        [
+            "<b>₿ ONEHUNT PREMIUM</b>",
+            "",
+            f"Счет на <b>{PREMIUM_PRICE_RUB} ₽</b> создан через Crypto Bot.",
+            "1. Откройте счет",
+            "2. Оплатите его в Crypto Bot",
+            "3. Вернитесь и нажмите проверку",
+        ]
+    )
+    await respond(callback, text, reply_markup=crypto_checkout_markup(pay_url, payment.id))
+
+
 @dp.callback_query(F.data == "buy_premium_card")
 async def callback_buy_card(callback: CallbackQuery) -> None:
     payment_id = str(uuid.uuid4())
@@ -2107,6 +2165,49 @@ async def callback_buy_card(callback: CallbackQuery) -> None:
         callback,
         "💳 Платёж для банковской карты подготовлен.\n\nПодключите реальные реквизиты ЮKassa в .env, чтобы активировать этот сценарий автоматически.",
         reply_markup=premium_menu_markup(),
+    )
+
+
+@dp.callback_query(F.data.startswith("check_crypto_payment_"))
+async def callback_check_crypto_payment(callback: CallbackQuery) -> None:
+    raw_payment_id = callback.data.rsplit("_", 1)[-1]
+    if not raw_payment_id.isdigit():
+        await callback.answer("Некорректный платеж", show_alert=True)
+        return
+
+    payment = await get_payment_record(int(raw_payment_id), callback.from_user.id)
+    if payment is None or payment.provider != "crypto_bot":
+        await respond(callback, "Платеж не найден. Создайте новый счет.", reply_markup=premium_menu_markup())
+        return
+
+    if payment.status == "completed":
+        await grant_premium(callback.from_user.id)
+        await respond(callback, "🎉 PREMIUM уже активирован. Статус обновлен.", reply_markup=main_menu_markup())
+        return
+
+    try:
+        invoice = await get_invoice(int(payment.provider_payment_id or 0))
+    except (CryptoPayError, ValueError) as exc:
+        await respond(callback, f"Не удалось проверить оплату: {escape(str(exc))}", reply_markup=crypto_checkout_markup(None, payment.id))
+        return
+
+    status = str(invoice.get("status") or payment.status or "pending").lower()
+    if status == "paid":
+        await complete_payment(str(payment.provider_payment_id))
+        await grant_premium(callback.from_user.id)
+        await respond(callback, "🎉 Оплата подтверждена. Статус PREMIUM активирован.", reply_markup=main_menu_markup())
+        return
+
+    if status == "expired":
+        await update_payment_status(payment.id, "expired")
+    else:
+        await update_payment_status(payment.id, "pending")
+
+    pay_url = invoice_checkout_url(invoice, prefer="bot")
+    await respond(
+        callback,
+        f"Статус счета: <b>{escape(invoice_status_label(status))}</b>.\n\nПосле оплаты нажмите проверку еще раз.",
+        reply_markup=crypto_checkout_markup(pay_url, payment.id),
     )
 
 

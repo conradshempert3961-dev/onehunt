@@ -32,7 +32,7 @@ set_env "MINIAPP_URL" "https://${DOMAIN}/"
 set_env "MINIAPP_BROWSER_DEMO" "true"
 set_env "MINIAPP_BROWSER_DEMO_HOSTS" "${DOMAIN},www.${DOMAIN},localhost,127.0.0.1"
 set_env "USE_REDIS_FSM" "false"
-set_env "FREE_MODE" "true"
+set_env "FREE_MODE" "false"
 
 echo "== Stop services that are not needed on this VDS =="
 docker compose -f "${COMPOSE_FILE}" stop bot site || true

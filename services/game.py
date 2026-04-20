@@ -1641,6 +1641,36 @@ async def create_payment(user_id: int, amount: int, currency: str, provider: str
         return payment
 
 
+async def get_payment_record(payment_id: int, user_id: int | None = None) -> Payment | None:
+    async with async_session() as session:
+        query = select(Payment).where(Payment.id == payment_id)
+        if user_id is not None:
+            query = query.where(Payment.user_id == user_id)
+        payment = (await session.execute(query)).scalar_one_or_none()
+        return payment
+
+
+async def get_payment_by_provider_payment_id(provider_payment_id: str) -> Payment | None:
+    async with async_session() as session:
+        payment = (
+            await session.execute(select(Payment).where(Payment.provider_payment_id == provider_payment_id))
+        ).scalar_one_or_none()
+        return payment
+
+
+async def update_payment_status(payment_id: int, status: str) -> Payment | None:
+    async with async_session() as session:
+        payment = (await session.execute(select(Payment).where(Payment.id == payment_id))).scalar_one_or_none()
+        if payment is None:
+            return None
+        payment.status = status
+        if status == "completed" and payment.completed_at is None:
+            payment.completed_at = utcnow()
+        await session.commit()
+        await session.refresh(payment)
+        return payment
+
+
 async def complete_payment(provider_payment_id: str) -> Payment | None:
     async with async_session() as session:
         payment = (
@@ -1648,6 +1678,8 @@ async def complete_payment(provider_payment_id: str) -> Payment | None:
         ).scalar_one_or_none()
         if payment is None:
             return None
+        if payment.status == "completed":
+            return payment
         payment.status = "completed"
         payment.completed_at = utcnow()
         user = (

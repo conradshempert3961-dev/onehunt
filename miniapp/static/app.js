@@ -24,6 +24,7 @@ const state = {
     aiBusy: false,
     aiHistory: [],
     aiSuggestions: [],
+    premiumCheckout: null,
 };
 
 const screens = document.querySelectorAll(".screen");
@@ -37,6 +38,55 @@ const aiForm = document.getElementById("aiForm");
 const aiInput = document.getElementById("aiInput");
 const aiSendButton = document.getElementById("aiSendButton");
 const aiStatus = document.getElementById("aiStatus");
+
+function currentUser() {
+    return state.bootstrap?.user || null;
+}
+
+function hasPremiumAccess() {
+    return currentUser()?.access_level === "premium" || Boolean(currentUser()?.has_premium);
+}
+
+function currentAccessBadge() {
+    if (hasPremiumAccess()) {
+        return { label: "PREMIUM", className: "is-premium", note: "Пожизненный доступ активен" };
+    }
+    if (state.bootstrap?.free_mode) {
+        return { label: "OPEN BETA", className: "is-beta", note: "Сейчас доступ открыт, но premium уже можно подключить" };
+    }
+    return { label: "БАЗОВЫЙ", className: "is-basic", note: "Premium откроет весь маршрут, карточки и расширенные режимы" };
+}
+
+function premiumOffer() {
+    return state.bootstrap?.premium_offer || {
+        title: "Полный путь до первой охоты",
+        subtitle: "Гайд + 12 чек-листов",
+        price_rub: 990,
+        crypto_enabled: false,
+    };
+}
+
+function closeDetailSheet() {
+    detailSheet.classList.add("hidden");
+    syncTelegramBackButton();
+}
+
+function openExternalLink(url) {
+    if (!url) {
+        showToast("Ссылка на оплату пока не пришла");
+        return;
+    }
+
+    if (tg?.openTelegramLink && url.includes("t.me/")) {
+        tg.openTelegramLink(url);
+        return;
+    }
+    if (tg?.openLink) {
+        tg.openLink(url);
+        return;
+    }
+    window.open(url, "_blank", "noopener");
+}
 
 function pulse(style = "light") {
     try {
@@ -123,6 +173,100 @@ function showToast(message) {
     toast.classList.remove("hidden");
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(() => toast.classList.add("hidden"), 2400);
+}
+
+function renderPremiumSheet() {
+    const offer = premiumOffer();
+    const access = currentAccessBadge();
+    const checkout = state.premiumCheckout;
+    const buttonLabel = hasPremiumAccess()
+        ? "PREMIUM уже активен"
+        : `Оплатить ${offer.price_rub} ₽ через Crypto Bot`;
+    const canPay = Boolean(offer.crypto_enabled && !hasPremiumAccess());
+
+    document.getElementById("sheetContent").innerHTML = `
+        <div class="premium-sheet">
+            <div class="premium-sheet-head">
+                <div>
+                    <p class="eyebrow">Премиум-доступ</p>
+                    <h2>${offer.title}</h2>
+                    <p class="info-line">${offer.subtitle} · пожизненный доступ · ${offer.price_rub} ₽</p>
+                </div>
+                <span class="access-pill ${access.className}">${access.label}</span>
+            </div>
+            <div class="premium-benefits">
+                <article class="premium-benefit-card">
+                    <strong>Полный маршрут</strong>
+                    <span>Экзамен, карточки, ошибки, AI и все расширенные режимы без лимитов.</span>
+                </article>
+                <article class="premium-benefit-card">
+                    <strong>Гайд + 12 чек-листов</strong>
+                    <span>От первой подготовки до выезда, документов и базового снаряжения.</span>
+                </article>
+                <article class="premium-benefit-card">
+                    <strong>Статус в профиле</strong>
+                    <span>После успешной оплаты у ника сразу появляется статус PREMIUM.</span>
+                </article>
+            </div>
+            <div class="premium-checkout-box">
+                <strong>${access.note}</strong>
+                <span>${checkout ? `Счет #${checkout.payment_id} уже создан. После оплаты нажмите проверку.` : "Оплата проходит через Crypto Bot и синхронизируется с ботом и Mini App."}</span>
+            </div>
+            <div class="premium-actions">
+                <button class="primary-button" type="button" data-premium-action="create" ${canPay ? "" : "disabled"}>${buttonLabel}</button>
+                ${checkout?.pay_url && !hasPremiumAccess() ? `<button class="ghost-button" type="button" data-premium-action="open">Открыть счет</button>` : ""}
+                ${checkout?.payment_id && !hasPremiumAccess() ? `<button class="ghost-button" type="button" data-premium-action="check">Проверить оплату</button>` : ""}
+            </div>
+        </div>
+    `;
+    detailSheet.classList.remove("hidden");
+    syncTelegramBackButton();
+}
+
+async function createPremiumInvoice() {
+    if (hasPremiumAccess()) {
+        renderPremiumSheet();
+        return;
+    }
+
+    try {
+        const payload = await api("/api/premium/crypto/invoice", {
+            method: "POST",
+            body: JSON.stringify({}),
+        });
+        state.premiumCheckout = payload;
+        renderPremiumSheet();
+        if (payload.pay_url) {
+            openExternalLink(payload.pay_url);
+        } else {
+            showToast("Счет создан. Откройте его кнопкой ниже.");
+        }
+    } catch (error) {
+        showToast(error.message);
+    }
+}
+
+async function checkPremiumInvoice() {
+    if (!state.premiumCheckout?.payment_id) {
+        showToast("Сначала создайте счет");
+        return;
+    }
+
+    try {
+        const payload = await api(`/api/premium/crypto/status/${state.premiumCheckout.payment_id}`);
+        state.premiumCheckout = { ...state.premiumCheckout, ...payload };
+        if (payload.activated) {
+            pulse("success");
+            await hydrate();
+            renderPremiumSheet();
+            showToast("PREMIUM активирован");
+            return;
+        }
+        renderPremiumSheet();
+        showToast(payload.status === "expired" ? "Счет истек, создайте новый" : "Оплата пока еще не подтверждена");
+    } catch (error) {
+        showToast(error.message);
+    }
 }
 
 async function api(path, options = {}) {
@@ -297,6 +441,8 @@ function renderBootstrap() {
     if (!data) {
         return;
     }
+    const offer = premiumOffer();
+    const access = currentAccessBadge();
 
     const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() || "Охотник";
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
@@ -333,6 +479,14 @@ function renderBootstrap() {
                 : `<div class="info-line">Текущая задача пока не найдена.</div>`
         }
     `;
+
+    const guideBanner = document.getElementById("guideBannerButton");
+    const bannerTitle = hasPremiumAccess() ? "✨ PREMIUM уже активирован" : `📖 ${offer.title}`;
+    const bannerSubtitle = hasPremiumAccess()
+        ? `${access.note} · откройте профиль и проверьте статус`
+        : `${offer.subtitle} → ${offer.price_rub}₽`;
+    guideBanner.querySelector("strong").textContent = bannerTitle;
+    guideBanner.querySelector("small").textContent = bannerSubtitle;
 
     document.getElementById("blockGrid").innerHTML = data.blocks
         .map(
@@ -440,6 +594,22 @@ function renderProfile() {
     if (!bootstrap || !journal) {
         return;
     }
+
+    const access = currentAccessBadge();
+    const fullName = [bootstrap.user.first_name, bootstrap.user.last_name].filter(Boolean).join(" ").trim() || "ONEHUNT";
+    const username = bootstrap.user.username ? `@${bootstrap.user.username}` : "профиль ONEHUNT";
+
+    document.getElementById("profileIdentityCard").innerHTML = `
+        <div class="profile-identity-copy">
+            <p class="eyebrow">Профиль</p>
+            <h2>${escapeHtml(fullName)}</h2>
+            <p class="info-line">${escapeHtml(username)} · ${bootstrap.user.rank.icon} ${escapeHtml(bootstrap.user.rank.name)}</p>
+        </div>
+        <div class="profile-identity-side">
+            <span class="access-pill ${access.className}">${access.label}</span>
+            <small>${access.note}</small>
+        </div>
+    `;
 
     document.getElementById("profileStats").innerHTML = `
         ${createStatCard("Уровень", `${journal.level}`)}
@@ -925,18 +1095,12 @@ document.addEventListener("click", (event) => {
 });
 
 document.getElementById("closeSessionButton").addEventListener("click", closeSessionOverlay);
-document.getElementById("sheetBackdrop").addEventListener("click", () => {
-    detailSheet.classList.add("hidden");
-    syncTelegramBackButton();
-});
-document.getElementById("closeSheetButton").addEventListener("click", () => {
-    detailSheet.classList.add("hidden");
-    syncTelegramBackButton();
-});
+document.getElementById("sheetBackdrop").addEventListener("click", closeDetailSheet);
+document.getElementById("closeSheetButton").addEventListener("click", closeDetailSheet);
 document.getElementById("routeTaskButton").addEventListener("click", launchRouteTask);
 document.getElementById("guideBannerButton").addEventListener("click", () => {
     pulse("medium");
-    showToast("Гайд скоро подключим в Mini App");
+    renderPremiumSheet();
 });
 document.getElementById("saveSettingsButton").addEventListener("click", saveSettings);
 document.getElementById("resetProgressButton").addEventListener("click", resetProgress);
@@ -963,6 +1127,18 @@ document.addEventListener("click", (event) => {
     if (event.target.id === "finishSessionButton" || event.target.id === "backToAppButton") {
         closeSessionOverlay();
         hydrate().finally(() => window.requestAnimationFrame(scrollAppToTop));
+        return;
+    }
+    if (event.target.closest("[data-premium-action='create']")) {
+        createPremiumInvoice();
+        return;
+    }
+    if (event.target.closest("[data-premium-action='open']")) {
+        openExternalLink(state.premiumCheckout?.pay_url);
+        return;
+    }
+    if (event.target.closest("[data-premium-action='check']")) {
+        checkPremiumInvoice();
     }
 });
 

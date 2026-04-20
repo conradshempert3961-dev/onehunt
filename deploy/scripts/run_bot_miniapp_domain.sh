@@ -32,7 +32,7 @@ set_env "MINIAPP_URL" "https://${DOMAIN}/"
 set_env "MINIAPP_BROWSER_DEMO" "true"
 set_env "MINIAPP_BROWSER_DEMO_HOSTS" "${DOMAIN},www.${DOMAIN},localhost,127.0.0.1"
 set_env "USE_REDIS_FSM" "false"
-set_env "FREE_MODE" "true"
+set_env "FREE_MODE" "false"
 
 BOT_TOKEN_VALUE="$(grep '^BOT_TOKEN=' .env | cut -d= -f2- || true)"
 if [ -z "${BOT_TOKEN_VALUE}" ] || [ "${BOT_TOKEN_VALUE}" = "your_telegram_bot_token" ]; then
