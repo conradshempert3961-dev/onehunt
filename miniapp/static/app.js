@@ -62,7 +62,9 @@ function premiumOffer() {
         title: "Полный путь до первой охоты",
         subtitle: "Гайд + 12 чек-листов",
         price_rub: 990,
+        price_stars: 700,
         crypto_enabled: false,
+        stars_enabled: true,
     };
 }
 
@@ -175,14 +177,47 @@ function showToast(message) {
     showToast.timer = window.setTimeout(() => toast.classList.add("hidden"), 2400);
 }
 
+function sleep(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isPremiumLocked(error) {
+    return Number(error?.status) === 403;
+}
+
+function maybeOpenPremiumFromError(error, fallbackMessage = "Эта функция доступна в PREMIUM") {
+    if (!isPremiumLocked(error)) {
+        return false;
+    }
+    renderPremiumSheet();
+    showToast(error.message || fallbackMessage);
+    return true;
+}
+
+function premiumCheckoutStatusText(checkout) {
+    if (!checkout) {
+        return "Оплата синхронизируется между ботом и Mini App. После успешного платежа статус в профиле сразу станет PREMIUM.";
+    }
+    if (checkout.provider === "telegram_stars") {
+        return `Счет #${checkout.payment_id} создан в Telegram Stars. Если окно оплаты уже закрыли, можно открыть его снова или проверить статус ниже.`;
+    }
+    return `Счет #${checkout.payment_id} создан через Crypto Bot. После оплаты вернитесь сюда и нажмите проверку.`;
+}
+
+function premiumPrimaryActionLabel(offer) {
+    if (hasPremiumAccess()) {
+        return "PREMIUM уже активен";
+    }
+    return `Оплатить ${offer.price_stars} ⭐ в Telegram`;
+}
+
 function renderPremiumSheet() {
     const offer = premiumOffer();
     const access = currentAccessBadge();
     const checkout = state.premiumCheckout;
-    const buttonLabel = hasPremiumAccess()
-        ? "PREMIUM уже активен"
-        : `Оплатить ${offer.price_rub} ₽ через Crypto Bot`;
-    const canPay = Boolean(offer.crypto_enabled && !hasPremiumAccess());
+    const premiumActive = hasPremiumAccess();
+    const canPayStars = Boolean(offer.stars_enabled && !premiumActive);
+    const canPayCrypto = Boolean(offer.crypto_enabled && !premiumActive);
 
     document.getElementById("sheetContent").innerHTML = `
         <div class="premium-sheet">
@@ -190,32 +225,33 @@ function renderPremiumSheet() {
                 <div>
                     <p class="eyebrow">Премиум-доступ</p>
                     <h2>${offer.title}</h2>
-                    <p class="info-line">${offer.subtitle} · пожизненный доступ · ${offer.price_rub} ₽</p>
+                    <p class="info-line">${offer.subtitle} · пожизненный доступ · ${offer.price_rub} ₽ / ${offer.price_stars} ⭐</p>
                 </div>
                 <span class="access-pill ${access.className}">${access.label}</span>
             </div>
             <div class="premium-benefits">
                 <article class="premium-benefit-card">
                     <strong>Полный маршрут</strong>
-                    <span>Экзамен, карточки, ошибки, AI и все расширенные режимы без лимитов.</span>
+                    <span>Экзамен, маршрут на 14 дней, карточки, AI и все продвинутые режимы без лимитов.</span>
                 </article>
                 <article class="premium-benefit-card">
                     <strong>Гайд + 12 чек-листов</strong>
-                    <span>От первой подготовки до выезда, документов и базового снаряжения.</span>
+                    <span>Документы, первая охота, снаряжение, сезонные заметки и готовый путь без лишней суеты.</span>
                 </article>
                 <article class="premium-benefit-card">
-                    <strong>Статус в профиле</strong>
-                    <span>После успешной оплаты у ника сразу появляется статус PREMIUM.</span>
+                    <strong>Статус у профиля</strong>
+                    <span>После оплаты в профиле и Mini App сразу появится статус PREMIUM.</span>
                 </article>
             </div>
             <div class="premium-checkout-box">
                 <strong>${access.note}</strong>
-                <span>${checkout ? `Счет #${checkout.payment_id} уже создан. После оплаты нажмите проверку.` : "Оплата проходит через Crypto Bot и синхронизируется с ботом и Mini App."}</span>
+                <span>${premiumCheckoutStatusText(checkout)}</span>
             </div>
             <div class="premium-actions">
-                <button class="primary-button" type="button" data-premium-action="create" ${canPay ? "" : "disabled"}>${buttonLabel}</button>
-                ${checkout?.pay_url && !hasPremiumAccess() ? `<button class="ghost-button" type="button" data-premium-action="open">Открыть счет</button>` : ""}
-                ${checkout?.payment_id && !hasPremiumAccess() ? `<button class="ghost-button" type="button" data-premium-action="check">Проверить оплату</button>` : ""}
+                <button class="primary-button" type="button" data-premium-action="stars" ${canPayStars ? "" : "disabled"}>${premiumPrimaryActionLabel(offer)}</button>
+                <button class="ghost-button premium-alt-button" type="button" data-premium-action="crypto" ${canPayCrypto ? "" : "disabled"}>Оплатить ${offer.price_rub} ₽ через Crypto Bot</button>
+                ${checkout?.payment_id && !premiumActive ? `<button class="ghost-button" type="button" data-premium-action="open">${checkout.provider === "telegram_stars" ? "Открыть Stars-счет" : "Открыть счет"}</button>` : ""}
+                ${checkout?.payment_id && !premiumActive ? `<button class="ghost-button" type="button" data-premium-action="check">Проверить оплату</button>` : ""}
             </div>
         </div>
     `;
@@ -223,24 +259,67 @@ function renderPremiumSheet() {
     syncTelegramBackButton();
 }
 
-async function createPremiumInvoice() {
+function openPremiumCheckout(checkout = state.premiumCheckout) {
+    if (!checkout) {
+        showToast("Сначала создайте счет");
+        return;
+    }
+    if (checkout.provider === "telegram_stars" && checkout.invoice_link) {
+        if (tg?.openInvoice) {
+            tg.openInvoice(checkout.invoice_link, async (status) => {
+                if (status === "paid") {
+                    await pollPremiumStatus("stars", checkout.payment_id, 5, 1200);
+                    return;
+                }
+                if (status === "cancelled" || status === "failed") {
+                    showToast("Оплата не завершена");
+                    return;
+                }
+                showToast("Счет открыт. После оплаты вернитесь в Mini App.");
+            });
+            return;
+        }
+        openExternalLink(checkout.invoice_link);
+        return;
+    }
+    openExternalLink(checkout.pay_url || checkout.invoice_link);
+}
+
+async function pollPremiumStatus(provider, paymentId, attempts = 4, delayMs = 1200) {
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const payload = await api(`/api/premium/${provider}/status/${paymentId}`);
+        state.premiumCheckout = { ...state.premiumCheckout, ...payload };
+        if (payload.activated) {
+            pulse("success");
+            await hydrate();
+            renderPremiumSheet();
+            showToast("PREMIUM активирован");
+            return payload;
+        }
+        if (attempt < attempts - 1) {
+            await sleep(delayMs);
+        }
+    }
+    renderPremiumSheet();
+    showToast("Платеж пока еще не подтвержден");
+    return null;
+}
+
+async function createPremiumInvoice(provider = "crypto") {
     if (hasPremiumAccess()) {
         renderPremiumSheet();
         return;
     }
 
     try {
-        const payload = await api("/api/premium/crypto/invoice", {
+        const path = provider === "telegram_stars" ? "/api/premium/stars/invoice" : "/api/premium/crypto/invoice";
+        const payload = await api(path, {
             method: "POST",
             body: JSON.stringify({}),
         });
         state.premiumCheckout = payload;
         renderPremiumSheet();
-        if (payload.pay_url) {
-            openExternalLink(payload.pay_url);
-        } else {
-            showToast("Счет создан. Откройте его кнопкой ниже.");
-        }
+        openPremiumCheckout(payload);
     } catch (error) {
         showToast(error.message);
     }
@@ -253,17 +332,10 @@ async function checkPremiumInvoice() {
     }
 
     try {
-        const payload = await api(`/api/premium/crypto/status/${state.premiumCheckout.payment_id}`);
-        state.premiumCheckout = { ...state.premiumCheckout, ...payload };
-        if (payload.activated) {
-            pulse("success");
-            await hydrate();
-            renderPremiumSheet();
-            showToast("PREMIUM активирован");
-            return;
-        }
-        renderPremiumSheet();
-        showToast(payload.status === "expired" ? "Счет истек, создайте новый" : "Оплата пока еще не подтверждена");
+        await pollPremiumStatus(
+            state.premiumCheckout.provider === "telegram_stars" ? "stars" : "crypto",
+            state.premiumCheckout.payment_id,
+        );
     } catch (error) {
         showToast(error.message);
     }
@@ -278,7 +350,10 @@ async function api(path, options = {}) {
     const response = await fetch(path, { ...options, headers });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        throw new Error(payload.detail || "Не удалось выполнить запрос.");
+        const error = new Error(payload.detail || "Не удалось выполнить запрос.");
+        error.status = response.status;
+        error.payload = payload;
+        throw error;
     }
     return payload;
 }
@@ -376,8 +451,21 @@ function pushAiMessage(role, text) {
 function ensureAiBootstrapped(force = false) {
     if (!force && state.aiHistory.length) {
         if (!state.aiSuggestions.length) {
-            renderAiPrompts(buildDefaultAiPrompts());
+            renderAiPrompts(!hasPremiumAccess() && !state.bootstrap?.free_mode ? [] : buildDefaultAiPrompts());
         }
+        return;
+    }
+
+    if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
+        state.aiHistory = [
+            {
+                role: "assistant",
+                text: "AI-ассистент входит в PREMIUM. После оплаты он откроет персональные подсказки по ошибкам, маршруту и экзамену.",
+                time: nowLabel(),
+            },
+        ];
+        renderAiPrompts([]);
+        renderAiThread();
         return;
     }
 
@@ -412,6 +500,12 @@ async function submitAiMessage(rawMessage) {
         return;
     }
 
+    if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
+        renderPremiumSheet();
+        showToast("AI-ассистент доступен только в PREMIUM");
+        return;
+    }
+
     pushAiMessage("user", message);
     renderAiPrompts([]);
     aiInput.value = "";
@@ -428,6 +522,12 @@ async function submitAiMessage(rawMessage) {
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
         pulse("success");
     } catch (error) {
+        if (maybeOpenPremiumFromError(error, "AI-ассистент доступен только в PREMIUM")) {
+            state.aiHistory.pop();
+            renderAiThread();
+            setAiBusy(false);
+            return;
+        }
         pushAiMessage("assistant", `Не удалось получить ответ: ${error.message}`);
         renderAiPrompts(buildDefaultAiPrompts());
         showToast(error.message);
@@ -443,6 +543,7 @@ function renderBootstrap() {
     }
     const offer = premiumOffer();
     const access = currentAccessBadge();
+    const premiumLocked = !hasPremiumAccess() && !data.free_mode;
 
     const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() || "Охотник";
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
@@ -472,10 +573,14 @@ function renderBootstrap() {
             <h2>Текущий ритм подготовки</h2>
             <span>${data.route.completed}/14 дней выполнено</span>
         </div>
-        <div class="info-line">Сегодняшний день маршрута: ${data.route.current_day}. Прогресс ${data.route.percent}%.</div>
+        <div class="info-line">${
+            premiumLocked
+                ? `Маршрут на 14 дней входит в PREMIUM. После активации откроется текущий день ${data.route.current_day}.`
+                : `Сегодняшний день маршрута: ${data.route.current_day}. Прогресс ${data.route.percent}%.`
+        }</div>
         ${
             data.route.current_task
-                ? `<button class="primary-button" id="homeRouteStart" type="button">Открыть задачу дня</button>`
+                ? `<button class="primary-button" id="homeRouteStart" type="button">${premiumLocked ? "Открыть PREMIUM" : "Открыть задачу дня"}</button>`
                 : `<div class="info-line">Текущая задача пока не найдена.</div>`
         }
     `;
@@ -484,9 +589,17 @@ function renderBootstrap() {
     const bannerTitle = hasPremiumAccess() ? "✨ PREMIUM уже активирован" : `📖 ${offer.title}`;
     const bannerSubtitle = hasPremiumAccess()
         ? `${access.note} · откройте профиль и проверьте статус`
-        : `${offer.subtitle} → ${offer.price_rub}₽`;
+        : `${offer.subtitle} → ${offer.price_rub} ₽ / ${offer.price_stars} ⭐`;
     guideBanner.querySelector("strong").textContent = bannerTitle;
     guideBanner.querySelector("small").textContent = bannerSubtitle;
+
+    const routeTaskButton = document.getElementById("routeTaskButton");
+    if (routeTaskButton) {
+        routeTaskButton.querySelector("strong").textContent = premiumLocked ? "🔒 Маршрут дня" : "📌 Маршрут дня";
+        routeTaskButton.querySelector("span").textContent = premiumLocked
+            ? "Открывается после активации PREMIUM"
+            : "Открыть текущий шаг подготовки";
+    }
 
     document.getElementById("blockGrid").innerHTML = data.blocks
         .map(
@@ -501,6 +614,7 @@ function renderBootstrap() {
 }
 
 function renderRouteCard(route, container, compact = false) {
+    const premiumLocked = !hasPremiumAccess() && !state.bootstrap?.free_mode;
     const days = (route.days || []).slice(0, compact ? 6 : route.days.length);
     container.innerHTML = `
         <p class="eyebrow">Маршрут</p>
@@ -510,8 +624,12 @@ function renderRouteCard(route, container, compact = false) {
         </div>
         ${
             route.current_task
-                ? `<div class="info-line">Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}</div>
-                   <button class="primary-button route-task-launch" type="button">Начать задачу дня</button>`
+                ? `<div class="info-line">${
+                      premiumLocked
+                          ? "Маршрут на 14 дней откроется после активации PREMIUM."
+                          : `Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}`
+                  }</div>
+                   <button class="primary-button route-task-launch" type="button">${premiumLocked ? "Открыть PREMIUM" : "Начать задачу дня"}</button>`
                 : `<div class="info-line">Текущая задача не найдена.</div>`
         }
         <div class="route-grid">
@@ -569,6 +687,12 @@ function renderDaily() {
 }
 function renderCards() {
     if (!state.cards) {
+        if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
+            document.getElementById("cardsSummary").textContent = "Карточки охотника входят в PREMIUM.";
+            document.getElementById("cardCategories").innerHTML = "";
+            document.getElementById("cardsList").innerHTML =
+                '<button class="ghost-button" type="button" data-premium-entry="cards">Открыть PREMIUM</button>';
+        }
         return;
     }
     if (!state.selectedCategory || !state.cards.categories.some((item) => item.name === state.selectedCategory)) {
@@ -645,6 +769,9 @@ function renderProfile() {
                 `,
             )
             .join("");
+    } else if (!hasPremiumAccess() && !bootstrap.free_mode) {
+        document.getElementById("progressChart").innerHTML =
+            '<div class="empty-state">График прогресса открывается после активации PREMIUM.</div>';
     }
 
     const nearest = state.achievements?.nearest || [];
@@ -843,6 +970,9 @@ async function startSession(mode, extra = {}) {
         const data = await api("/api/session/start", { method: "POST", body: JSON.stringify({ mode, ...extra }) });
         renderQuestion(data);
     } catch (error) {
+        if (maybeOpenPremiumFromError(error)) {
+            return;
+        }
         showToast(error.message);
     }
 }
@@ -915,6 +1045,9 @@ async function loadCardsCategory(category) {
                 )
                 .join("") || `<div class="empty-state">В этой категории пока нет карточек.</div>`;
     } catch (error) {
+        if (maybeOpenPremiumFromError(error, "Карточки доступны только в PREMIUM")) {
+            return;
+        }
         showToast(error.message);
     }
 }
@@ -938,6 +1071,9 @@ async function openCardDetails(cardId) {
         syncTelegramBackButton();
         pulse("light");
     } catch (error) {
+        if (maybeOpenPremiumFromError(error, "Карточки доступны только в PREMIUM")) {
+            return;
+        }
         showToast(error.message);
     }
 }
@@ -988,10 +1124,18 @@ async function submitDailyAnswer(answer) {
 }
 
 async function launchRouteTask() {
+    if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
+        renderPremiumSheet();
+        showToast("Маршрут дня открывается только в PREMIUM");
+        return;
+    }
     try {
         const data = await api("/api/route/start-task", { method: "POST", body: JSON.stringify({}) });
         renderQuestion(data);
     } catch (error) {
+        if (maybeOpenPremiumFromError(error, "Маршрут дня открывается только в PREMIUM")) {
+            return;
+        }
         showToast(error.message);
     }
 }
@@ -1035,11 +1179,9 @@ async function hydrate() {
 
         renderBootstrap();
         renderDaily();
-        if (cards) {
-            renderCards();
-            if (cards.categories.length && !document.getElementById("cardsList").innerHTML.trim()) {
-                loadCardsCategory(state.selectedCategory || cards.categories[0].name);
-            }
+        renderCards();
+        if (cards && cards.categories.length && !document.getElementById("cardsList").innerHTML.trim()) {
+            loadCardsCategory(state.selectedCategory || cards.categories[0].name);
         }
         renderProfile();
         ensureAiBootstrapped(state.aiHistory.length === 0);
@@ -1051,7 +1193,7 @@ async function hydrate() {
 
 document.addEventListener("click", (event) => {
     const target = event.target.closest(
-        "[data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id], [data-ai-prompt], #homeRouteStart",
+        "[data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id], [data-ai-prompt], [data-premium-entry], #homeRouteStart",
     );
     if (!target) {
         return;
@@ -1067,6 +1209,10 @@ document.addEventListener("click", (event) => {
     }
     if (target.id === "homeRouteStart" || target.classList.contains("route-task-launch")) {
         launchRouteTask();
+        return;
+    }
+    if (target.dataset.premiumEntry) {
+        renderPremiumSheet();
         return;
     }
     if (target.dataset.startMode) {
@@ -1129,12 +1275,16 @@ document.addEventListener("click", (event) => {
         hydrate().finally(() => window.requestAnimationFrame(scrollAppToTop));
         return;
     }
-    if (event.target.closest("[data-premium-action='create']")) {
-        createPremiumInvoice();
+    if (event.target.closest("[data-premium-action='stars']")) {
+        createPremiumInvoice("telegram_stars");
+        return;
+    }
+    if (event.target.closest("[data-premium-action='crypto']")) {
+        createPremiumInvoice("crypto");
         return;
     }
     if (event.target.closest("[data-premium-action='open']")) {
-        openExternalLink(state.premiumCheckout?.pay_url);
+        openPremiumCheckout();
         return;
     }
     if (event.target.closest("[data-premium-action='check']")) {

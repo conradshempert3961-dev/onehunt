@@ -30,8 +30,8 @@ FREE_LIMITS = {
 }
 
 PREMIUM_PRICES = {
-    "rub": 490,
-    "stars": 350,
+    "rub": 990,
+    "stars": 700,
 }
 
 RANKS = [

@@ -2346,8 +2346,8 @@ body::after {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 14px;
-    min-height: 132px;
-    padding: 28px 26px;
+    min-height: 168px;
+    padding: 34px 30px;
     border: 0;
     border-radius: 30px;
     text-align: left;
@@ -2391,7 +2391,7 @@ body::after {
 }
 
 .offer-banner-copy strong {
-    font-size: 1.2rem;
+    font-size: 1.34rem;
     line-height: 1.28;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -2399,15 +2399,15 @@ body::after {
 
 .offer-banner-copy small {
     color: rgba(255, 241, 220, 0.82);
-    font-size: 0.94rem;
+    font-size: 1rem;
     line-height: 1.4;
 }
 
 .offer-banner-arrow {
     position: relative;
     z-index: 1;
-    width: 54px;
-    height: 54px;
+    width: 62px;
+    height: 62px;
     display: inline-grid;
     place-items: center;
     border-radius: 18px;
@@ -2525,6 +2525,11 @@ body::after {
     gap: 10px;
 }
 
+.premium-actions .primary-button,
+.premium-actions .ghost-button {
+    flex: 1 1 100%;
+}
+
 .bottom-nav {
     padding: 8px;
     border-radius: 28px;
@@ -2582,8 +2587,8 @@ body::after {
     }
 
     .offer-banner {
-        min-height: 118px;
-        padding: 22px 18px;
+        min-height: 146px;
+        padding: 26px 20px;
         border-radius: 22px;
     }
 
@@ -2592,16 +2597,16 @@ body::after {
     }
 
     .offer-banner-copy strong {
-        font-size: 1.04rem;
+        font-size: 1.14rem;
     }
 
     .offer-banner-copy small {
-        font-size: 0.86rem;
+        font-size: 0.92rem;
     }
 
     .offer-banner-arrow {
-        width: 46px;
-        height: 46px;
+        width: 52px;
+        height: 52px;
         border-radius: 12px;
     }
 

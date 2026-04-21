@@ -21,6 +21,8 @@ from config import (
     FREE_MODE,
     MINIAPP_BROWSER_DEMO,
     MINIAPP_BROWSER_DEMO_HOSTS,
+    TRAINING_FREE_LIMIT,
+    TRAIL_FREE_LIMIT,
 )
 from database.database import init_db
 from services.game import (
@@ -72,6 +74,11 @@ from services.crypto_pay import (
     create_premium_invoice,
     get_invoice,
     invoice_checkout_url,
+)
+from services.telegram_stars import (
+    TelegramStarsError,
+    create_premium_stars_invoice,
+    telegram_stars_configured,
 )
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
@@ -132,6 +139,24 @@ async def startup_event() -> None:
 
 def has_full_access(user: Any) -> bool:
     return FREE_MODE or bool(user and user.access_level == "premium")
+
+
+def premium_lock_detail(feature: str) -> str:
+    messages = {
+        "ai": "AI-ассистент доступен только в PREMIUM.",
+        "blitz": "Блиц доступен только в PREMIUM.",
+        "cards": "Карточки охотника доступны только в PREMIUM.",
+        "duel": "Дуэль с Михалычем доступна только в PREMIUM.",
+        "exam": "Экзамен доступен только в PREMIUM.",
+        "mistakes": "Разбор ошибок доступен только в PREMIUM.",
+        "progress": "График прогресса доступен только в PREMIUM.",
+        "repetition": "Интервальное повторение доступно только в PREMIUM.",
+        "route": "Маршрут на 14 дней открывается только в PREMIUM.",
+        "starred": "Избранные вопросы доступны только в PREMIUM.",
+        "trail_limit": "Бесплатный лимит по тропе уже исчерпан. Откройте PREMIUM, чтобы идти дальше.",
+        "training_limit": "Бесплатный лимит тренировок уже исчерпан. Откройте PREMIUM, чтобы продолжить.",
+    }
+    return messages.get(feature, "Эта функция доступна только в PREMIUM.")
 
 
 def resolve_local_image(question) -> str | None:
@@ -304,6 +329,11 @@ async def finalize_session(session: WebQuizSession, timeout: bool = False) -> di
         ended_at=ended_at,
     )
 
+    if session.mode == "training":
+        user = await get_user(session.user_id)
+        if user and not has_full_access(user):
+            await update_user(user.telegram_id, free_trainings_used=user.free_trainings_used + 1)
+
     if session.mode == "exam":
         result = await finish_exam_attempt(
             session.user_id,
@@ -378,6 +408,12 @@ def browser_demo_allowed(hostname: str | None) -> bool:
     return "*" in MINIAPP_BROWSER_DEMO_HOSTS or host in MINIAPP_BROWSER_DEMO_HOSTS
 
 
+def require_full_access(user: Any, feature: str) -> None:
+    if has_full_access(user):
+        return
+    raise HTTPException(status_code=403, detail=premium_lock_detail(feature))
+
+
 def build_browser_demo_identity(request: Request, response: Response) -> MiniAppIdentity:
     raw_id = request.cookies.get(DEMO_COOKIE_NAME, "")
     if raw_id.isdigit():
@@ -444,13 +480,20 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
     if mode == "trail":
         if not block_id or block_id not in BLOCKS:
             raise HTTPException(status_code=400, detail="Для тропы нужен корректный блок.")
+        progress = await get_user_block_progress(user.telegram_id, block_id)
+        if not has_full_access(user) and progress >= TRAIL_FREE_LIMIT:
+            raise HTTPException(status_code=403, detail=premium_lock_detail("trail_limit"))
         answered_ids = await get_answered_question_ids(user.telegram_id, mode="trail", block_id=block_id)
         sequence = await get_question_sequence_for_block(block_id)
         questions = [item for item in sequence if item.id not in answered_ids] or sequence
+        if not has_full_access(user):
+            questions = questions[:TRAIL_FREE_LIMIT]
         if not questions:
             raise HTTPException(status_code=400, detail="В этом блоке пока нет вопросов.")
         title = f"{BLOCKS[block_id]['icon']} Тропа: {BLOCKS[block_id]['name']}"
     elif mode == "training":
+        if not has_full_access(user) and user.free_trainings_used >= TRAINING_FREE_LIMIT:
+            raise HTTPException(status_code=403, detail=premium_lock_detail("training_limit"))
         settings = dict(user.settings or {})
         limit = int(settings.get("questions_per_session", 20))
         weak_block = None
@@ -472,6 +515,7 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
         total_timer_seconds = 300
         title = "⚡ Блиц"
     elif mode == "exam":
+        require_full_access(user, "exam")
         questions = await get_official_exam_questions(EXAM_QUESTIONS, shuffle=False)
         total_timer_seconds = 90 * 60
         title = f"📝 Экзамен — все {EXAM_QUESTIONS} вопросов"
@@ -686,6 +730,7 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "price_rub": PREMIUM_PRICES["rub"],
             "price_stars": PREMIUM_PRICES["stars"],
             "crypto_enabled": bool(CRYPTO_PAY_API_TOKEN),
+            "stars_enabled": telegram_stars_configured(),
         },
         "exam": {
             "questions": EXAM_QUESTIONS,
@@ -788,6 +833,7 @@ async def premium_crypto_invoice(user=Depends(current_user)) -> dict[str, Any]:
             "status": "completed",
             "activated": True,
             "already_premium": True,
+            "provider": "crypto_bot",
             "user": serialize_user(user),
         }
 
@@ -812,6 +858,7 @@ async def premium_crypto_invoice(user=Depends(current_user)) -> dict[str, Any]:
         "status": "pending",
         "activated": False,
         "payment_id": payment.id,
+        "provider": "crypto_bot",
         "invoice_id": invoice_id,
         "pay_url": invoice_checkout_url(invoice, prefer="miniapp"),
         "bot_invoice_url": invoice.get("bot_invoice_url"),
@@ -832,6 +879,7 @@ async def premium_crypto_status(payment_id: int, user=Depends(current_user)) -> 
             "status": "completed",
             "activated": True,
             "payment_id": payment.id,
+            "provider": "crypto_bot",
             "user": serialize_user(fresh_user),
         }
 
@@ -848,6 +896,7 @@ async def premium_crypto_status(payment_id: int, user=Depends(current_user)) -> 
             "status": "completed",
             "activated": True,
             "payment_id": payment.id,
+            "provider": "crypto_bot",
             "user": serialize_user(fresh_user),
         }
 
@@ -860,9 +909,69 @@ async def premium_crypto_status(payment_id: int, user=Depends(current_user)) -> 
         "status": status,
         "activated": False,
         "payment_id": payment.id,
+        "provider": "crypto_bot",
         "pay_url": invoice_checkout_url(invoice, prefer="miniapp"),
         "bot_invoice_url": invoice.get("bot_invoice_url"),
         "mini_app_invoice_url": invoice.get("mini_app_invoice_url"),
+    }
+
+
+@app.post("/api/premium/stars/invoice")
+async def premium_stars_invoice(user=Depends(current_user)) -> dict[str, Any]:
+    if user.access_level == "premium":
+        return {
+            "status": "completed",
+            "activated": True,
+            "already_premium": True,
+            "provider": "telegram_stars",
+            "user": serialize_user(user),
+        }
+
+    try:
+        invoice = await create_premium_stars_invoice(user.telegram_id)
+    except TelegramStarsError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    payment = await create_payment(
+        user.telegram_id,
+        PREMIUM_PRICES["stars"],
+        "XTR",
+        "telegram_stars",
+        invoice["payload"],
+    )
+
+    return {
+        "status": "pending",
+        "activated": False,
+        "payment_id": payment.id,
+        "provider": "telegram_stars",
+        "invoice_link": invoice["invoice_link"],
+        "payload": invoice["payload"],
+        "price_stars": PREMIUM_PRICES["stars"],
+    }
+
+
+@app.get("/api/premium/stars/status/{payment_id}")
+async def premium_stars_status(payment_id: int, user=Depends(current_user)) -> dict[str, Any]:
+    payment = await get_payment_record(payment_id, user.telegram_id)
+    if payment is None or payment.provider != "telegram_stars":
+        raise HTTPException(status_code=404, detail="Payment was not found.")
+
+    if payment.status == "completed":
+        fresh_user = await get_user(user.telegram_id) or user
+        return {
+            "status": "completed",
+            "activated": True,
+            "payment_id": payment.id,
+            "provider": "telegram_stars",
+            "user": serialize_user(fresh_user),
+        }
+
+    return {
+        "status": payment.status or "pending",
+        "activated": False,
+        "payment_id": payment.id,
+        "provider": "telegram_stars",
     }
 
 
@@ -878,6 +987,7 @@ async def route_view(user=Depends(current_user)) -> dict[str, Any]:
 
 @app.post("/api/route/start-task")
 async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
+    require_full_access(user, "route")
     payload = await get_route_task(user.telegram_id)
     if payload is None:
         raise HTTPException(status_code=404, detail="Текущая задача маршрута не найдена.")
@@ -980,6 +1090,7 @@ async def star_toggle(payload: StarToggleRequest, user=Depends(current_user)) ->
 
 @app.post("/api/ai/chat")
 async def ai_chat(payload: AIChatRequest, user=Depends(current_user)) -> dict[str, Any]:
+    require_full_access(user, "ai")
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Введите сообщение для ассистента.")
