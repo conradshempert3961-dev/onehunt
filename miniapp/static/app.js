@@ -38,9 +38,19 @@ const aiForm = document.getElementById("aiForm");
 const aiInput = document.getElementById("aiInput");
 const aiSendButton = document.getElementById("aiSendButton");
 const aiStatus = document.getElementById("aiStatus");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const logoutButton = document.getElementById("logoutButton");
+const headerProfileButton = document.getElementById("headerProfileButton");
+const bottomNav = document.querySelector(".bottom-nav");
+const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
 const AI_AVATAR_IMAGE = "/assets/brand-logo.jpg";
 let sessionTimerInterval = null;
+
+function hasWebSession() {
+    return Boolean(state.bootstrap?.user);
+}
 
 function currentUser() {
     return state.bootstrap?.user || null;
@@ -196,6 +206,9 @@ function baseAnswerHint(mode) {
 }
 
 function syncTelegramBackButton() {
+    if (!hasWebSession()) {
+        return;
+    }
     if (!tg?.BackButton) {
         return;
     }
@@ -247,7 +260,7 @@ function maybeOpenPremiumFromError(error, fallbackMessage = "Эта функци
 
 function premiumCheckoutStatusText(checkout) {
     if (!checkout) {
-        return "Оплата синхронизируется между ботом и Mini App. После успешного платежа статус в профиле сразу станет PREMIUM.";
+        return "Оплата синхронизируется с вашим аккаунтом на сайте. После успешного платежа статус в профиле сразу станет PREMIUM.";
     }
     if (checkout.provider === "telegram_stars") {
         return `Счет #${checkout.payment_id} создан в Telegram Stars. Если окно оплаты уже закрыли, можно открыть его снова или проверить статус ниже.`;
@@ -291,7 +304,7 @@ function renderPremiumSheet() {
                 </article>
                 <article class="premium-benefit-card">
                     <strong>Статус у профиля</strong>
-                    <span>После оплаты в профиле и Mini App сразу появится статус PREMIUM.</span>
+                    <span>После оплаты в профиле сайта сразу появится статус PREMIUM.</span>
                 </article>
             </div>
             <div class="premium-checkout-box">
@@ -326,7 +339,7 @@ function openPremiumCheckout(checkout = state.premiumCheckout) {
                     showToast("Оплата не завершена");
                     return;
                 }
-                showToast("Счет открыт. После оплаты вернитесь в Mini App.");
+                showToast("Счет открыт. После оплаты вернитесь на сайт.");
             });
             return;
         }
@@ -398,7 +411,7 @@ async function api(path, options = {}) {
         headers.set("X-Telegram-Init-Data", tg.initData);
     }
     headers.set("Content-Type", "application/json");
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(path, { credentials: "same-origin", ...options, headers });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
         const error = new Error(payload.detail || "Не удалось выполнить запрос.");
@@ -416,6 +429,9 @@ function scrollAppToTop() {
 }
 
 function switchScreen(screenId) {
+    if (!hasWebSession()) {
+        return;
+    }
     screens.forEach((screen) => screen.classList.toggle("screen-active", screen.id === `screen-${screenId}`));
     navButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
     window.requestAnimationFrame(scrollAppToTop);
@@ -600,7 +616,10 @@ function renderBootstrap() {
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
     const heroName = displayName.length > 16 ? (data.user.first_name || displayName.split(" ")[0]) : displayName;
     const routeTask = data.route?.current_task?.task;
-    document.getElementById("statusLabel")?.replaceChildren(document.createTextNode(data.free_mode ? "Бета" : "Mini App"));
+    if (headerProfileButton) {
+        headerProfileButton.textContent = displayName || "Профиль";
+    }
+    document.getElementById("statusLabel")?.replaceChildren(document.createTextNode(data.free_mode ? "Бета" : "ONEHUNT"));
     document.getElementById("heroTitle").textContent = "Твоя подготовка";
     document.getElementById("heroText").textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`;
     document.getElementById("heroBadges").innerHTML = `
@@ -713,6 +732,63 @@ function renderRouteCard(route, container, compact = false) {
                 .join("")}
         </div>
     `;
+}
+
+function setAuthenticatedUi(authenticated) {
+    document.getElementById("screen-auth").classList.toggle("screen-active", !authenticated);
+    document.getElementById("screen-auth").classList.toggle("hidden", authenticated);
+    bottomNav?.classList.toggle("hidden", !authenticated);
+    siteFooter?.classList.toggle("hidden", !authenticated);
+    logoutButton?.classList.toggle("hidden", !authenticated);
+    headerProfileButton?.classList.toggle("hidden", !authenticated);
+
+    screens.forEach((screen) => {
+        if (screen.id === "screen-auth") {
+            return;
+        }
+        screen.classList.toggle("hidden", !authenticated);
+    });
+
+    if (!authenticated) {
+        navButtons.forEach((button) => button.classList.remove("active"));
+        return;
+    }
+
+    const activeNav = [...navButtons].find((button) => button.classList.contains("active"))?.dataset.screen || "home";
+    switchScreen(activeNav);
+}
+
+async function restoreSession() {
+    const payload = await api("/api/auth/session");
+    return payload.user || null;
+}
+
+async function login(email, password) {
+    return api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    });
+}
+
+async function register(name, email, password) {
+    return api("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ display_name: name, email, password }),
+    });
+}
+
+async function logout() {
+    await api("/api/auth/logout", { method: "POST", body: JSON.stringify({}) });
+    state.bootstrap = null;
+    state.daily = null;
+    state.journal = null;
+    state.progress = null;
+    state.achievements = null;
+    state.history = null;
+    state.cards = null;
+    state.aiHistory = [];
+    setAuthenticatedUi(false);
+    showToast("Вы вышли из аккаунта");
 }
 
 function renderDaily() {
@@ -1262,6 +1338,7 @@ async function hydrate() {
         state.achievements = achievements;
         state.history = history;
         state.cards = cards;
+        setAuthenticatedUi(true);
 
         renderBootstrap();
         renderDaily();
@@ -1272,6 +1349,10 @@ async function hydrate() {
         renderProfile();
         ensureAiBootstrapped(state.aiHistory.length === 0);
     } catch (error) {
+        if (error.status === 401) {
+            setAuthenticatedUi(false);
+            return;
+        }
         showToast(error.message);
         document.getElementById("heroText").textContent = error.message;
     }
@@ -1337,6 +1418,39 @@ document.getElementById("guideBannerButton").addEventListener("click", () => {
 document.getElementById("saveSettingsButton").addEventListener("click", saveSettings);
 document.getElementById("resetProgressButton").addEventListener("click", resetProgress);
 document.getElementById("starQuestionButton").addEventListener("click", toggleStar);
+headerProfileButton?.addEventListener("click", () => switchScreen("profile"));
+logoutButton?.addEventListener("click", () => logout().catch((error) => showToast(error.message)));
+
+loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+        await login(
+            document.getElementById("loginEmail").value,
+            document.getElementById("loginPassword").value,
+        );
+        pulse("success");
+        showToast("Вход выполнен");
+        await hydrate();
+    } catch (error) {
+        showToast(error.message);
+    }
+});
+
+registerForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+        await register(
+            document.getElementById("registerName").value,
+            document.getElementById("registerEmail").value,
+            document.getElementById("registerPassword").value,
+        );
+        pulse("success");
+        showToast("Аккаунт создан");
+        await hydrate();
+    } catch (error) {
+        showToast(error.message);
+    }
+});
 
 aiForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1379,4 +1493,15 @@ document.addEventListener("click", (event) => {
 });
 
 autosizeAiInput();
-hydrate().finally(() => window.requestAnimationFrame(scrollAppToTop));
+restoreSession()
+    .then((user) => {
+        if (!user) {
+            setAuthenticatedUi(false);
+            return;
+        }
+        return hydrate();
+    })
+    .catch(() => {
+        setAuthenticatedUi(false);
+    })
+    .finally(() => window.requestAnimationFrame(scrollAppToTop));

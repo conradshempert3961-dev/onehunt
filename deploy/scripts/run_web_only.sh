@@ -15,15 +15,17 @@ fi
 
 git pull --ff-only || true
 
-echo "== Stop and remove bot =="
+echo "== Stop and remove bot and old landing =="
 docker compose -f "${COMPOSE_FILE}" stop bot || true
 docker compose -f "${COMPOSE_FILE}" rm -f bot || true
+docker compose -f "${COMPOSE_FILE}" stop site || true
+docker compose -f "${COMPOSE_FILE}" rm -f site || true
 
 echo "== Remove bot image if present =="
 docker image rm onehunt-bot:latest 2>/dev/null || true
 
-echo "== Start only web services =="
-docker compose -f "${COMPOSE_FILE}" up -d --build postgres redis miniapp site
+echo "== Start only standalone web services =="
+docker compose -f "${COMPOSE_FILE}" up -d --build postgres redis miniapp
 
 echo "== Safe cleanup =="
 docker system prune -f || true
@@ -35,8 +37,6 @@ docker compose -f "${COMPOSE_FILE}" ps
 echo "== Local checks =="
 printf 'miniapp: '
 curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 10 http://127.0.0.1:8080/ || true
-printf 'site: '
-curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 10 http://127.0.0.1:8088/ || true
 
 echo "== Disk usage =="
 df -h /

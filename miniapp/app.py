@@ -80,6 +80,14 @@ from services.telegram_stars import (
     create_premium_stars_invoice,
     telegram_stars_configured,
 )
+from services.web_auth import (
+    WebAuthError,
+    authenticate_web_account,
+    create_web_account,
+    create_web_session,
+    delete_web_session,
+    get_user_by_session,
+)
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
 from utils.constants import BLOCKS, DAILY_CHALLENGES, PREMIUM_PRICES, ROUTE_TASKS
@@ -89,6 +97,18 @@ BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 DEMO_COOKIE_NAME = "onehunt_demo_id"
+WEB_SESSION_COOKIE = "onehunt_web_session"
+
+
+class WebRegisterRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8, max_length=120)
+    display_name: str = Field(min_length=2, max_length=120)
+
+
+class WebLoginRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8, max_length=120)
 
 
 class SessionStartRequest(BaseModel):
@@ -127,7 +147,7 @@ class SettingsUpdateRequest(BaseModel):
 class AIChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=400)
 
-app = FastAPI(title="ONEHUNT Mini App", version="1.0.0")
+app = FastAPI(title="ONEHUNT Web App", version="2.0.0")
 app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
 
 
@@ -430,6 +450,21 @@ def require_full_access(user: Any, feature: str) -> None:
     raise HTTPException(status_code=403, detail=premium_lock_detail(feature))
 
 
+def set_web_session_cookie(response: Response, request: Request, token: str) -> None:
+    response.set_cookie(
+        WEB_SESSION_COOKIE,
+        token,
+        max_age=60 * 60 * 24 * 30,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="lax",
+    )
+
+
+def clear_web_session_cookie(response: Response) -> None:
+    response.delete_cookie(WEB_SESSION_COOKIE, samesite="lax")
+
+
 def build_browser_demo_identity(request: Request, response: Response) -> MiniAppIdentity:
     raw_id = request.cookies.get(DEMO_COOKIE_NAME, "")
     if raw_id.isdigit():
@@ -475,7 +510,17 @@ async def resolve_identity(
     raise HTTPException(status_code=401, detail="Mini App РґРѕСЃС‚СѓРїРµРЅ РёР· Telegram РёР»Рё Р»РѕРєР°Р»СЊРЅРѕ РІ СЂРµР¶РёРјРµ СЂР°Р·СЂР°Р±РѕС‚РєРё.")
 
 
-async def current_user(identity: MiniAppIdentity = Depends(resolve_identity)):
+async def current_user(
+    request: Request,
+    response: Response,
+    x_telegram_init_data: str | None = Header(default=None, alias="X-Telegram-Init-Data"),
+):
+    web_user = await get_user_by_session(request.cookies.get(WEB_SESSION_COOKIE))
+    if web_user is not None:
+        await mark_user_seen(web_user.telegram_id)
+        return web_user
+
+    identity = await resolve_identity(request, response, x_telegram_init_data)
     user = await get_or_create_user(
         telegram_id=identity.telegram_id,
         username=identity.username,
@@ -700,6 +745,54 @@ async def index() -> HTMLResponse:
 @app.get("/health")
 async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/auth/session")
+async def auth_session(request: Request) -> dict[str, Any]:
+    user = await get_user_by_session(request.cookies.get(WEB_SESSION_COOKIE))
+    return {
+        "authenticated": user is not None,
+        "user": serialize_user(user) if user is not None else None,
+    }
+
+
+@app.post("/api/auth/register")
+async def auth_register(payload: WebRegisterRequest, request: Request, response: Response) -> dict[str, Any]:
+    try:
+        user = await create_web_account(payload.email, payload.password, payload.display_name)
+    except WebAuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    token = await create_web_session(
+        user.telegram_id,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    set_web_session_cookie(response, request, token)
+    return {"ok": True, "user": serialize_user(user)}
+
+
+@app.post("/api/auth/login")
+async def auth_login(payload: WebLoginRequest, request: Request, response: Response) -> dict[str, Any]:
+    try:
+        identity = await authenticate_web_account(payload.email, payload.password)
+    except WebAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    token = await create_web_session(
+        identity.user.telegram_id,
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    set_web_session_cookie(response, request, token)
+    return {"ok": True, "user": serialize_user(identity.user)}
+
+
+@app.post("/api/auth/logout")
+async def auth_logout(request: Request, response: Response) -> dict[str, bool]:
+    await delete_web_session(request.cookies.get(WEB_SESSION_COOKIE))
+    clear_web_session_cookie(response)
+    return {"ok": True}
 
 
 @app.get("/api/bootstrap")

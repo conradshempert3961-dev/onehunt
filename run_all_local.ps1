@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BotMiniAppUrl = "https://huntexam.online/",
     [switch]$NoBot,
     [switch]$NoMiniApp,
@@ -6,6 +6,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if (-not $PSBoundParameters.ContainsKey("NoBot")) {
+    $NoBot = $true
+}
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
@@ -75,6 +79,27 @@ function Ensure-OnehuntVenv {
     return $venvPython
 }
 
+function Import-OnehuntDotEnv {
+    param([string]$Path)
+
+    if (-not (Test-Path $Path)) {
+        return
+    }
+
+    foreach ($line in Get-Content $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith('#')) {
+            continue
+        }
+
+        $parts = $trimmed -split '=', 2
+        if ($parts.Count -ne 2) {
+            continue
+        }
+
+        Set-Item -Path "env:$($parts[0].Trim())" -Value $parts[1].Trim()
+    }
+}
 function Set-OnehuntEnv {
     param([hashtable]$Extra = @{})
 
@@ -156,23 +181,27 @@ $Python = Ensure-OnehuntVenv
 
 if (-not (Test-Path (Join-Path $Root ".env"))) {
     Copy-Item (Join-Path $Root ".env.local.example") (Join-Path $Root ".env")
-    Write-Host ".env was created from .env.local.example. Fill BOT_TOKEN and run this script again."
+    Write-Host ".env was created from .env.local.example. Fill site settings and run this script again."
     exit 1
 }
 
+Import-OnehuntDotEnv -Path (Join-Path $Root '.env')
 Set-OnehuntEnv
 
 & $Python -m pip install --disable-pip-version-check -r (Join-Path $Root "requirements.txt")
 & $Python scripts\load_questions.py
 
-if (-not $NoSite) {
-    Start-OnehuntProcess -Name "site" -Arguments @("-m", "http.server", "8088", "--bind", "127.0.0.1", "--directory", "landing")
-}
-
 if (-not $NoMiniApp) {
     Start-OnehuntProcess -Name "miniapp" -Arguments @("miniapp_server.py") -ExtraEnv @{
         MINIAPP_PORT = "8080"
         MINIAPP_URL = "http://127.0.0.1:8080/"
+    }
+}
+
+if (-not $NoSite) {
+    Start-OnehuntProcess -Name "site" -Arguments @("miniapp_server.py") -ExtraEnv @{
+        MINIAPP_PORT = "8088"
+        MINIAPP_URL = "http://127.0.0.1:8088/"
     }
 }
 
@@ -184,8 +213,9 @@ if (-not $NoBot) {
 
 Write-Host ""
 Write-Host "Local ONEHUNT is running."
-Write-Host "Site:    http://127.0.0.1:8088/"
-Write-Host "MiniApp: http://127.0.0.1:8080/"
-Write-Host "Bot:     local long polling process"
+Write-Host "Main site: http://127.0.0.1:8080/"
+Write-Host "Alt site:  http://127.0.0.1:8088/"
+Write-Host "Bot:       disabled by default"
 Write-Host ""
 Write-Host "Stop everything: powershell -ExecutionPolicy Bypass -File .\stop_all_local.ps1"
+
