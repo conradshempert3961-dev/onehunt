@@ -738,8 +738,13 @@ async def build_ai_assistant_reply(message: str, user: Any) -> dict[str, Any]:
 
     return {"reply": reply, "quick_replies": quick[:3]}
 @app.get("/", response_class=HTMLResponse)
-async def index() -> HTMLResponse:
-    return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
+async def site_index() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "site.html").read_text(encoding="utf-8"))
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def miniapp_index() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "miniapp.html").read_text(encoding="utf-8"))
 
 
 @app.get("/health")

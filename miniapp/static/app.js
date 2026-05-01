@@ -1,3 +1,4 @@
+const APP_MODE = window.ONEHUNT_MODE || "site";
 const tg = window.Telegram?.WebApp ?? null;
 
 if (tg) {
@@ -206,7 +207,10 @@ function baseAnswerHint(mode) {
 }
 
 function syncTelegramBackButton() {
-    if (!hasWebSession()) {
+    if (APP_MODE !== "miniapp") {
+        return;
+    }
+    if (!hasWebSession() && !state.bootstrap?.user) {
         return;
     }
     if (!tg?.BackButton) {
@@ -735,11 +739,13 @@ function renderRouteCard(route, container, compact = false) {
 }
 
 function setAuthenticatedUi(authenticated) {
-    document.getElementById("screen-auth").classList.toggle("screen-active", !authenticated);
-    document.getElementById("screen-auth").classList.toggle("hidden", authenticated);
+    const authScreen = document.getElementById("screen-auth");
+    const standalone = APP_MODE === "site";
+    authScreen?.classList.toggle("screen-active", standalone && !authenticated);
+    authScreen?.classList.toggle("hidden", !standalone || authenticated);
     bottomNav?.classList.toggle("hidden", !authenticated);
-    siteFooter?.classList.toggle("hidden", !authenticated);
-    logoutButton?.classList.toggle("hidden", !authenticated);
+    siteFooter?.classList.toggle("hidden", !authenticated || APP_MODE === "miniapp");
+    logoutButton?.classList.toggle("hidden", !authenticated || APP_MODE !== "site");
     headerProfileButton?.classList.toggle("hidden", !authenticated);
 
     screens.forEach((screen) => {
@@ -759,6 +765,9 @@ function setAuthenticatedUi(authenticated) {
 }
 
 async function restoreSession() {
+    if (APP_MODE !== "site") {
+        return null;
+    }
     const payload = await api("/api/auth/session");
     return payload.user || null;
 }
@@ -1493,15 +1502,23 @@ document.addEventListener("click", (event) => {
 });
 
 autosizeAiInput();
-restoreSession()
-    .then((user) => {
-        if (!user) {
+if (APP_MODE === "miniapp") {
+    hydrate()
+        .catch(() => {
             setAuthenticatedUi(false);
-            return;
-        }
-        return hydrate();
-    })
-    .catch(() => {
-        setAuthenticatedUi(false);
-    })
-    .finally(() => window.requestAnimationFrame(scrollAppToTop));
+        })
+        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+} else {
+    restoreSession()
+        .then((user) => {
+            if (!user) {
+                setAuthenticatedUi(false);
+                return;
+            }
+            return hydrate();
+        })
+        .catch(() => {
+            setAuthenticatedUi(false);
+        })
+        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+}

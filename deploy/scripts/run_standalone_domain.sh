@@ -28,7 +28,7 @@ fi
 
 git pull --ff-only
 
-set_env "MINIAPP_URL" "https://${DOMAIN}/"
+set_env "MINIAPP_URL" "https://${DOMAIN}/app"
 set_env "MINIAPP_BROWSER_DEMO" "false"
 set_env "USE_REDIS_FSM" "false"
 set_env "FREE_MODE" "false"
@@ -62,6 +62,8 @@ printf 'standalone site: '
 curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 10 http://127.0.0.1:8080/ || true
 printf 'domain https: '
 curl -k -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 15 "https://${DOMAIN}/" || true
+printf 'domain app https: '
+curl -k -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 15 "https://${DOMAIN}/app" || true
 df -h /
 
 echo "== Done =="
