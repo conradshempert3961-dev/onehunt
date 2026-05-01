@@ -38,6 +38,9 @@ const aiForm = document.getElementById("aiForm");
 const aiInput = document.getElementById("aiInput");
 const aiSendButton = document.getElementById("aiSendButton");
 const aiStatus = document.getElementById("aiStatus");
+const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
+const AI_AVATAR_IMAGE = "/assets/brand-logo.jpg";
+let sessionTimerInterval = null;
 
 function currentUser() {
     return state.bootstrap?.user || null;
@@ -66,6 +69,54 @@ function premiumOffer() {
         crypto_enabled: false,
         stars_enabled: true,
     };
+}
+
+function formatTimerValue(totalSeconds) {
+    const safe = Math.max(0, Number(totalSeconds || 0));
+    const minutes = Math.floor(safe / 60);
+    const seconds = safe % 60;
+    if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        const restMinutes = minutes % 60;
+        return `${hours}:${String(restMinutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function stopSessionTimer() {
+    if (sessionTimerInterval) {
+        window.clearInterval(sessionTimerInterval);
+        sessionTimerInterval = null;
+    }
+}
+
+function renderSessionTimer(timer) {
+    const timerNode = document.querySelector("[data-session-timer]");
+    if (!timerNode) {
+        return;
+    }
+    if (!timer) {
+        timerNode.remove();
+        return;
+    }
+    timerNode.textContent = `Таймер ${formatTimerValue(timer.left_seconds)} · ${timer.label}`;
+    timerNode.classList.toggle("is-danger", timer.left_seconds <= 15);
+}
+
+function startSessionTimer(timer) {
+    stopSessionTimer();
+    if (!timer) {
+        return;
+    }
+    const liveTimer = { ...timer };
+    renderSessionTimer(liveTimer);
+    sessionTimerInterval = window.setInterval(() => {
+        liveTimer.left_seconds = Math.max(0, liveTimer.left_seconds - 1);
+        renderSessionTimer(liveTimer);
+        if (liveTimer.left_seconds <= 0) {
+            stopSessionTimer();
+        }
+    }, 1000);
 }
 
 function closeDetailSheet() {
@@ -422,7 +473,7 @@ function renderAiPrompts(prompts = []) {
 
 function renderAiThread() {
     if (!state.aiHistory.length) {
-        aiThread.innerHTML = '<div class="empty-state">Здесь будет ваш диалог с ассистентом. Можно спросить про ошибки, темп подготовки и план на день.</div>';
+        aiThread.innerHTML = '<div class="empty-state">Здесь появится разбор по прогрессу, ошибкам и маршруту. Можно спросить, что добить до экзамена, где вы проседаете и с чего лучше начать сегодня.</div>';
         return;
     }
 
@@ -431,7 +482,7 @@ function renderAiThread() {
             const isUser = item.role === "user";
             return `
                 <article class="ai-message ${isUser ? "is-user" : "is-assistant"}">
-                    ${isUser ? "" : '<span class="ai-avatar">AI</span>'}
+                    ${isUser ? "" : `<span class="ai-avatar"><img src="${AI_AVATAR_IMAGE}" alt="ONEHUNT AI"></span>`}
                     <div class="ai-bubble-wrap">
                         <div class="ai-bubble ${isUser ? "is-user" : "is-assistant"}">${formatRichText(item.text)}</div>
                         <div class="ai-meta">${isUser ? "Вы" : "ONEHUNT AI"} · ${escapeHtml(item.time)}</div>
@@ -575,8 +626,8 @@ function renderBootstrap() {
         </div>
         <div class="info-line">${
             premiumLocked
-                ? `Маршрут на 14 дней входит в PREMIUM. После активации откроется текущий день ${data.route.current_day}.`
-                : `Сегодняшний день маршрута: ${data.route.current_day}. Прогресс ${data.route.percent}%.`
+                ? `Маршрут на 14 дней входит в PREMIUM. После активации откроется следующий шаг подготовки без ограничений.`
+                : `Активный шаг: день ${data.route.current_day} из 14. Общий прогресс ${data.route.percent}%.`
         }</div>
         ${
             data.route.current_task
@@ -589,9 +640,13 @@ function renderBootstrap() {
     const bannerTitle = hasPremiumAccess() ? "✨ PREMIUM уже активирован" : `📖 ${offer.title}`;
     const bannerSubtitle = hasPremiumAccess()
         ? `${access.note} · откройте профиль и проверьте статус`
-        : `${offer.subtitle} → ${offer.price_rub} ₽ / ${offer.price_stars} ⭐`;
-    guideBanner.querySelector("strong").textContent = bannerTitle;
-    guideBanner.querySelector("small").textContent = bannerSubtitle;
+        : `Маршрут, экзамен, AI и материалы → ${offer.price_rub} ₽ / ${offer.price_stars} ⭐`;
+    guideBanner.querySelector(".offer-banner-title").textContent = bannerTitle;
+    guideBanner.querySelector(".offer-banner-subtitle").textContent = bannerSubtitle;
+    guideBanner.querySelector(".offer-banner-meta").textContent = hasPremiumAccess()
+        ? "Пожизненный доступ уже у вас"
+        : "Гайд + 12 чек-листов + полный PREMIUM-доступ";
+    guideBanner.querySelector(".offer-banner-image").src = PREMIUM_BANNER_IMAGE;
 
     const routeTaskButton = document.getElementById("routeTaskButton");
     if (routeTaskButton) {
@@ -616,6 +671,15 @@ function renderBootstrap() {
 function renderRouteCard(route, container, compact = false) {
     const premiumLocked = !hasPremiumAccess() && !state.bootstrap?.free_mode;
     const days = (route.days || []).slice(0, compact ? 6 : route.days.length);
+    const statusLabel = (day) => {
+        if (day.status === "done") {
+            return { icon: "✓", copy: "Пройдено" };
+        }
+        if (day.status === "today") {
+            return { icon: "●", copy: "Текущий шаг" };
+        }
+        return { icon: "○", copy: "Еще не открыт" };
+    };
     container.innerHTML = `
         <p class="eyebrow">Маршрут</p>
         <div class="section-head">
@@ -635,13 +699,16 @@ function renderRouteCard(route, container, compact = false) {
         <div class="route-grid">
             ${days
                 .map(
-                    (day) => `
+                    (day) => {
+                        const status = statusLabel(day);
+                        return `
                         <div class="route-day" data-status="${day.status}">
-                            <strong>${day.status === "done" ? "✅" : day.status === "today" ? "👉" : "⬜"} День ${day.day}</strong>
+                            <strong><span>${status.icon} День ${day.day}</span><em>${status.copy}</em></strong>
                             <span>${day.task.icon} ${day.task.name}</span>
                             <small>${day.task.goal}</small>
                         </div>
-                    `,
+                    `;
+                    },
                 )
                 .join("")}
         </div>
@@ -666,9 +733,18 @@ function renderDaily() {
     } else {
         questionCard.innerHTML = `
             <p class="eyebrow">Вопрос дня</p>
-            <div class="section-head"><h2>${daily.question.text}</h2><span>+20 XP за правильный ответ</span></div>
-            <div class="answer-buttons answer-buttons-inline">
-                ${daily.question.options.map((item) => `<button class="answer-pick" data-daily-answer="${item.key}" type="button">${item.label}</button>`).join("")}
+            <div class="section-head"><h2>${daily.question.text}</h2><span>Один ответ на сегодня</span></div>
+            <div class="info-line">Выберите вариант прямо под вопросом. После ответа карточка обновится.</div>
+            <div class="daily-answer-list">
+                ${daily.question.options
+                    .map(
+                        (item) => `
+                            <button class="daily-answer-card" data-daily-answer="${item.key}" type="button">
+                                <span class="daily-answer-key">${item.label}</span>
+                                <strong>${item.text}</strong>
+                            </button>`,
+                    )
+                    .join("")}
             </div>
         `;
     }
@@ -677,10 +753,10 @@ function renderDaily() {
         <p class="eyebrow">Вызов дня</p>
         <div class="section-head">
             <h2>${daily.challenge.config.icon} ${daily.challenge.config.name}</h2>
-            <span>${daily.challenge.completed ? "Выполнен" : "В процессе"}</span>
+            <span>${daily.challenge.completed ? "Закрыт" : daily.challenge.attempts ? "Уже был прогресс" : "Еще не начат"}</span>
         </div>
         <div class="info-line">${daily.challenge.config.description}</div>
-        <div class="info-line">Награда: +${daily.challenge.config.xp} XP и +${daily.challenge.config.coins} монет.</div>
+        <div class="info-line">Награда: +${daily.challenge.config.xp} XP и +${daily.challenge.config.coins} монет. Попыток сегодня: ${daily.challenge.attempts}.</div>
     `;
 
     renderRouteCard(daily.route, document.getElementById("routeCard"), true);
@@ -758,7 +834,7 @@ function renderProfile() {
         )
         .join("");
 
-    if (state.progress?.points) {
+    if (state.progress?.points?.length) {
         document.getElementById("progressChart").innerHTML = state.progress.points
             .map(
                 (point, index) => `
@@ -772,6 +848,9 @@ function renderProfile() {
     } else if (!hasPremiumAccess() && !bootstrap.free_mode) {
         document.getElementById("progressChart").innerHTML =
             '<div class="empty-state">График прогресса открывается после активации PREMIUM.</div>';
+    } else {
+        document.getElementById("progressChart").innerHTML =
+            '<div class="empty-state">График появится после первых ответов за последние 14 дней. Как только накопится активность, здесь начнет рисоваться живой срез.</div>';
     }
 
     const nearest = state.achievements?.nearest || [];
@@ -851,12 +930,12 @@ function applyAnswerFeedback(result) {
 
     if (result.is_correct) {
         updateAnswerHint(
-            `Верно. +${result.xp_added} XP и +${result.coins_added} монет. Можно сразу идти дальше.`,
+            `Верно. +${result.xp_added} XP и +${result.coins_added} монет. Дальше можно идти сразу, кнопка уже наверху.`,
             "success",
         );
     } else {
         updateAnswerHint(
-            `Промах. Верный ответ — ${result.correct_answer.toUpperCase()}. Сверху уже есть кнопка перехода к следующему вопросу.`,
+            `Промах. Правильный вариант: ${result.correct_answer.toUpperCase()}. Сверху уже есть кнопка перехода к следующему вопросу.`,
             "error",
         );
     }
@@ -878,7 +957,11 @@ function renderQuestion(questionState) {
         <span class="meta-pill">${questionState.progress.current}/${questionState.progress.total}</span>
         <span class="meta-pill">✅ ${questionState.progress.correct}</span>
         <span class="meta-pill">❌ ${questionState.progress.wrong}</span>
-        ${questionState.progress.timer_left !== null ? `<span class="meta-pill">⏱ ${questionState.progress.timer_left} сек</span>` : ""}
+        ${
+            questionState.progress.timer
+                ? `<span class="meta-pill" data-session-timer>Таймер ${formatTimerValue(questionState.progress.timer.left_seconds)} · ${questionState.progress.timer.label}</span>`
+                : ""
+        }
     `;
     document.getElementById("questionText").textContent = questionState.question.text;
     document.getElementById("questionOptions").innerHTML = questionState.question.options
@@ -911,6 +994,7 @@ function renderQuestion(questionState) {
     resultPanel.className = "result-panel hidden";
     resultPanel.innerHTML = "";
     setQuestionOptionsEnabled(true);
+    startSessionTimer(questionState.progress.timer || null);
 }
 
 function buildSummaryHtml(summary) {
@@ -927,6 +1011,7 @@ function buildSummaryHtml(summary) {
 }
 
 function renderResult(result, hasNext, summary) {
+    stopSessionTimer();
     const resultPanel = document.getElementById("resultPanel");
     const modeClass = result ? (result.is_correct ? "result-correct" : "result-wrong") : "result-neutral";
     resultPanel.className = `result-panel ${modeClass}`;
@@ -961,6 +1046,7 @@ function closeSessionOverlay() {
     state.activeSession = null;
     state.pendingNextQuestion = false;
     state.answerLocked = false;
+    stopSessionTimer();
     syncTelegramBackButton();
 }
 

@@ -36,6 +36,7 @@ class WebQuizSession:
     current_streak: int = 0
     max_streak: int = 0
     total_timer_seconds: int | None = None
+    question_timer_seconds: int | None = None
     block_id: int | None = None
     pending_question_id: int | None = None
     last_touched_at: datetime = field(default_factory=datetime.utcnow)
@@ -61,6 +62,7 @@ def create_session(
     title: str,
     question_ids: list[int],
     total_timer_seconds: int | None = None,
+    question_timer_seconds: int | None = None,
     block_id: int | None = None,
 ) -> WebQuizSession:
     cleanup_sessions()
@@ -71,6 +73,7 @@ def create_session(
         title=title,
         question_ids=question_ids,
         total_timer_seconds=total_timer_seconds,
+        question_timer_seconds=question_timer_seconds,
         block_id=block_id,
     )
     _sessions[session.session_id] = session

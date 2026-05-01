@@ -274,10 +274,32 @@ def serialize_card(card: Any) -> dict[str, Any]:
 
 
 def session_time_left(session: WebQuizSession) -> int | None:
+    if session.question_timer_seconds is not None:
+        elapsed = int((datetime.utcnow() - session.question_started_at).total_seconds())
+        return max(session.question_timer_seconds - elapsed, 0)
     if session.total_timer_seconds is None:
         return None
     elapsed = int((datetime.utcnow() - session.started_at).total_seconds())
     return max(session.total_timer_seconds - elapsed, 0)
+
+
+def session_timer_meta(session: WebQuizSession) -> dict[str, Any] | None:
+    timer_left = session_time_left(session)
+    if timer_left is None:
+        return None
+    if session.question_timer_seconds is not None:
+        return {
+            "left_seconds": timer_left,
+            "kind": "question",
+            "label": "на вопрос",
+            "limit_seconds": session.question_timer_seconds,
+        }
+    return {
+        "left_seconds": timer_left,
+        "kind": "session",
+        "label": "на сессию",
+        "limit_seconds": session.total_timer_seconds,
+    }
 
 
 def serialize_session_question(session: WebQuizSession, question: Any) -> dict[str, Any]:
@@ -291,7 +313,7 @@ def serialize_session_question(session: WebQuizSession, question: Any) -> dict[s
             "total": len(session.question_ids),
             "correct": session.correct,
             "wrong": session.wrong,
-            "timer_left": session_time_left(session),
+            "timer": session_timer_meta(session),
         },
         "question": serialize_question(question),
     }
@@ -395,12 +417,6 @@ def route_task_to_session_params(task_callback: str) -> dict[str, Any] | None:
     return None
 
 
-def require_full_access(user: Any, feature: str) -> None:
-    if has_full_access(user):
-        return
-    raise HTTPException(status_code=403, detail=f"Р¤СѓРЅРєС†РёСЏ {feature} РґРѕСЃС‚СѓРїРЅР° РІ РїРѕР»РЅРѕРј РґРѕСЃС‚СѓРїРµ.")
-
-
 def browser_demo_allowed(hostname: str | None) -> bool:
     if not MINIAPP_BROWSER_DEMO:
         return False
@@ -475,6 +491,7 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
     title = ""
     block_id = payload.block_id
     total_timer_seconds: int | None = None
+    question_timer_seconds: int | None = None
     questions: list[Any] = []
 
     if mode == "trail":
@@ -507,7 +524,7 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
         block_id = weak_block
         title = "🎯 Тренировка — слабые темы" if payload.weak else "🎯 Тренировка"
         if payload.timed:
-            total_timer_seconds = limit * 60
+            question_timer_seconds = 60
             title = "🎯 Тренировка с таймером" if not payload.weak else "🎯 Слабые темы + таймер"
     elif mode == "blitz":
         require_full_access(user, "blitz")
@@ -517,7 +534,7 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
     elif mode == "exam":
         require_full_access(user, "exam")
         questions = await get_official_exam_questions(EXAM_QUESTIONS, shuffle=False)
-        total_timer_seconds = 90 * 60
+        total_timer_seconds = EXAM_QUESTIONS * 60
         title = f"📝 Экзамен — все {EXAM_QUESTIONS} вопросов"
     elif mode == "mistakes":
         require_full_access(user, "mistakes")
@@ -540,7 +557,13 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
         title = "🦆 Быстрый вопрос"
 
     if not questions:
-        raise HTTPException(status_code=400, detail="Для этого режима пока нет вопросов.")
+        mode_errors = {
+            "mistakes": "Пока нет ошибок для отдельного разбора. Сначала пройдите несколько вопросов.",
+            "starred": "В избранном пока пусто. Добавьте вопросы звездочкой во время практики.",
+            "repetition": "На повторение пока нечего выносить. Система накопит материал после обычных сессий.",
+            "duel": "Для дуэли пока не удалось собрать набор вопросов. Попробуйте обновить экран.",
+        }
+        raise HTTPException(status_code=400, detail=mode_errors.get(mode, "Для этого режима пока нет вопросов."))
 
     return create_session(
         user_id=user.telegram_id,
@@ -548,6 +571,7 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
         title=title,
         question_ids=[item.id for item in questions],
         total_timer_seconds=total_timer_seconds,
+        question_timer_seconds=question_timer_seconds,
         block_id=block_id,
     )
 
@@ -1100,7 +1124,7 @@ async def session_start(payload: SessionStartRequest, user=Depends(current_user)
     session = await prepare_session(user, payload)
     question = await get_question(session.question_ids[0])
     if question is None:
-        raise HTTPException(status_code=404, detail="Р’РѕРїСЂРѕСЃ РЅРµ РЅР°Р№РґРµРЅ.")
+        raise HTTPException(status_code=404, detail="Вопрос не найден.")
     return serialize_session_question(session, question)
 
 
@@ -1108,9 +1132,9 @@ async def session_start(payload: SessionStartRequest, user=Depends(current_user)
 async def session_answer(payload: SessionAnswerRequest, user=Depends(current_user)) -> dict[str, Any]:
     session = get_session(payload.session_id, user.telegram_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="РЎРµСЃСЃРёСЏ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅР° РёР»Рё СѓСЃС‚Р°СЂРµР»Р°.")
+        raise HTTPException(status_code=404, detail="Сессия уже завершена или устарела.")
     if session.current >= len(session.question_ids):
-        raise HTTPException(status_code=400, detail="РЎРµСЃСЃРёСЏ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅР°.")
+        raise HTTPException(status_code=400, detail="Сессия уже завершена.")
 
     timer_left = session_time_left(session)
     if timer_left is not None and timer_left <= 0:
@@ -1120,7 +1144,7 @@ async def session_answer(payload: SessionAnswerRequest, user=Depends(current_use
 
     expected_question_id = session.question_ids[session.current]
     if expected_question_id != payload.question_id:
-        raise HTTPException(status_code=409, detail="РћС‚РєСЂС‹С‚ СѓР¶Рµ РґСЂСѓРіРѕР№ РІРѕРїСЂРѕСЃ. РћР±РЅРѕРІРёС‚Рµ СЌРєСЂР°РЅ.")
+        raise HTTPException(status_code=409, detail="Открыт уже другой вопрос. Обновите экран.")
 
     question = await get_question(payload.question_id)
     if question is None:

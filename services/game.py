@@ -1469,6 +1469,7 @@ async def get_exam_history(user_id: int) -> list[ExamAttempt]:
 
 async def get_progress_chart(user_id: int, days: int = 14) -> dict[str, Any]:
     points: list[int] = []
+    totals: list[int] = []
     async with async_session() as session:
         for offset in range(days - 1, -1, -1):
             day = today() - timedelta(days=offset)
@@ -1484,6 +1485,7 @@ async def get_progress_chart(user_id: int, days: int = 14) -> dict[str, Any]:
                 )
                 or 0
             )
+            totals.append(total)
             correct = int(
                 await session.scalar(
                     select(func.count()).select_from(Answer).where(
@@ -1496,12 +1498,14 @@ async def get_progress_chart(user_id: int, days: int = 14) -> dict[str, Any]:
                 or 0
             )
             points.append(int(calculate_accuracy(correct, total)) if total else 50)
+    has_activity = any(total > 0 for total in totals)
     diff = points[-1] - points[0] if len(points) > 1 else 0
     return {
-        "points": points,
+        "points": points if has_activity else [],
         "chart": generate_ascii_chart(points),
         "diff": diff,
-        "estimate_days": max(1, int((80 - points[-1]) / max(diff, 1))) if points[-1] < 80 else 0,
+        "estimate_days": max(1, int((80 - points[-1]) / max(diff, 1))) if has_activity and points[-1] < 80 else 0,
+        "has_activity": has_activity,
     }
 
 
