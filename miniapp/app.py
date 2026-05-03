@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -27,6 +27,7 @@ from config import (
 from database.database import init_db
 from services.game import (
     answer_daily_question,
+    bind_payment_provider_payment_id,
     count_achievements,
     count_starred,
     create_payment,
@@ -44,6 +45,7 @@ from services.game import (
     get_official_exam_questions,
     get_or_create_daily_challenge,
     get_or_create_user,
+    get_payment_by_provider_payment_id,
     get_progress_chart,
     get_question,
     get_question_count,
@@ -79,6 +81,19 @@ from services.telegram_stars import (
     TelegramStarsError,
     create_premium_stars_invoice,
     telegram_stars_configured,
+)
+from services.yoomoney import (
+    YooMoneyError,
+    build_checkout_html,
+    build_payment_label,
+    get_operation_by_label,
+    is_successful_operation,
+    matches_requested_amount,
+    notification_status_label,
+    verify_notification,
+    yoomoney_configured,
+    yoomoney_history_configured,
+    yoomoney_notifications_configured,
 )
 from services.web_auth import (
     WebAuthError,
@@ -853,6 +868,9 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "price_stars": PREMIUM_PRICES["stars"],
             "crypto_enabled": bool(CRYPTO_PAY_API_TOKEN),
             "stars_enabled": telegram_stars_configured(),
+            "yoomoney_enabled": yoomoney_configured(),
+            "yoomoney_polling_enabled": yoomoney_history_configured(),
+            "yoomoney_notifications_enabled": yoomoney_notifications_configured(),
         },
         "exam": {
             "questions": EXAM_QUESTIONS,
@@ -1036,6 +1054,156 @@ async def premium_crypto_status(payment_id: int, user=Depends(current_user)) -> 
         "bot_invoice_url": invoice.get("bot_invoice_url"),
         "mini_app_invoice_url": invoice.get("mini_app_invoice_url"),
     }
+
+
+@app.post("/api/premium/yoomoney/invoice")
+async def premium_yoomoney_invoice(user=Depends(current_user)) -> dict[str, Any]:
+    if user.access_level == "premium":
+        return {
+            "status": "completed",
+            "activated": True,
+            "already_premium": True,
+            "provider": "yoomoney",
+            "user": serialize_user(user),
+        }
+
+    if not yoomoney_configured():
+        raise HTTPException(status_code=503, detail="YooMoney is not configured yet.")
+
+    payment = await create_payment(
+        user.telegram_id,
+        PREMIUM_PRICES["rub"],
+        "RUB",
+        "yoomoney",
+        "pending",
+    )
+    label = build_payment_label(user.telegram_id, payment.id)
+    payment = await bind_payment_provider_payment_id(payment.id, label)
+    if payment is None:
+        raise HTTPException(status_code=500, detail="Failed to prepare YooMoney payment.")
+    return {
+        "status": "pending",
+        "activated": False,
+        "payment_id": payment.id,
+        "provider": "yoomoney",
+        "label": label,
+        "pay_url": f"/premium/yoomoney/checkout/{payment.id}",
+        "price_rub": PREMIUM_PRICES["rub"],
+        "polling_enabled": yoomoney_history_configured(),
+        "notifications_enabled": yoomoney_notifications_configured(),
+    }
+
+
+@app.get("/premium/yoomoney/checkout/{payment_id}", response_class=HTMLResponse)
+async def premium_yoomoney_checkout(payment_id: int) -> HTMLResponse:
+    payment = await get_payment_record(payment_id)
+    if payment is None or payment.provider != "yoomoney":
+        raise HTTPException(status_code=404, detail="Payment was not found.")
+    label = str(payment.provider_payment_id or "").strip()
+    if not label:
+        raise HTTPException(status_code=409, detail="Payment label is missing.")
+    return HTMLResponse(build_checkout_html(label, payment.amount))
+
+
+@app.get("/api/premium/yoomoney/status/{payment_id}")
+async def premium_yoomoney_status(payment_id: int, user=Depends(current_user)) -> dict[str, Any]:
+    payment = await get_payment_record(payment_id, user.telegram_id)
+    if payment is None or payment.provider != "yoomoney":
+        raise HTTPException(status_code=404, detail="Payment was not found.")
+
+    if payment.status == "completed":
+        fresh_user = await get_user(user.telegram_id) or user
+        return {
+            "status": "completed",
+            "activated": True,
+            "payment_id": payment.id,
+            "provider": "yoomoney",
+            "label": payment.provider_payment_id,
+            "user": serialize_user(fresh_user),
+        }
+
+    if not yoomoney_history_configured():
+        return {
+            "status": payment.status or "pending",
+            "activated": False,
+            "payment_id": payment.id,
+            "provider": "yoomoney",
+            "label": payment.provider_payment_id,
+            "detail": "Polling is disabled. Wait for YooMoney notification or enable the wallet access token.",
+        }
+
+    try:
+        operation = await get_operation_by_label(str(payment.provider_payment_id or ""))
+    except YooMoneyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if operation and is_successful_operation(operation, str(payment.provider_payment_id or "")):
+        if matches_requested_amount(operation, payment.amount):
+            await complete_payment(str(payment.provider_payment_id))
+            fresh_user = await get_user(user.telegram_id) or user
+            return {
+                "status": "completed",
+                "activated": True,
+                "payment_id": payment.id,
+                "provider": "yoomoney",
+                "label": payment.provider_payment_id,
+                "user": serialize_user(fresh_user),
+            }
+
+    status = str((operation or {}).get("status") or payment.status or "pending").lower()
+    if status in {"refused", "failed"}:
+        await update_payment_status(payment.id, "failed")
+    else:
+        await update_payment_status(payment.id, "pending")
+
+    return {
+        "status": status,
+        "status_label": notification_status_label(status),
+        "activated": False,
+        "payment_id": payment.id,
+        "provider": "yoomoney",
+        "label": payment.provider_payment_id,
+        "pay_url": f"/premium/yoomoney/checkout/{payment.id}",
+    }
+
+
+@app.post("/api/premium/yoomoney/webhook")
+async def premium_yoomoney_webhook(
+    notification_type: str = Form(default=""),
+    operation_id: str = Form(default=""),
+    amount: str = Form(default=""),
+    withdraw_amount: str = Form(default=""),
+    currency: str = Form(default=""),
+    datetime_value: str = Form(default="", alias="datetime"),
+    sender: str = Form(default=""),
+    codepro: str = Form(default=""),
+    label: str = Form(default=""),
+    sha1_hash: str = Form(default=""),
+    sign: str = Form(default=""),
+) -> dict[str, bool]:
+    payload = {
+        "notification_type": notification_type,
+        "operation_id": operation_id,
+        "amount": amount,
+        "withdraw_amount": withdraw_amount,
+        "currency": currency,
+        "datetime": datetime_value,
+        "sender": sender,
+        "codepro": codepro,
+        "label": label,
+        "sha1_hash": sha1_hash,
+        "sign": sign,
+    }
+
+    if not verify_notification(payload):
+        raise HTTPException(status_code=401, detail="Invalid YooMoney notification signature.")
+
+    payment = await get_payment_by_provider_payment_id(label)
+    if payment is None or payment.provider != "yoomoney":
+        return {"ok": True}
+
+    await complete_payment(str(payment.provider_payment_id))
+    return {"ok": True}
 
 
 @app.post("/api/premium/stars/invoice")

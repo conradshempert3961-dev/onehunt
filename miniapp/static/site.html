@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#eef6f0">
-    <title>ONEHUNT Site</title>
+    <title>ONEHUNT Web</title>
     <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body>
+<body class="mode-site">
     <div class="app-shell">
         <header class="app-header">
             <div class="brand-block">
@@ -16,7 +16,7 @@
                 </span>
                 <div>
                     <strong>ONEHUNT</strong>
-                    <small>Подготовка к охотминимуму</small>
+                    <small>Отдельная web-версия с регистрацией и личным кабинетом</small>
                 </div>
             </div>
             <div class="header-actions">
@@ -26,21 +26,25 @@
         </header>
         <main class="app-main">
             <section class="screen screen-active" id="screen-auth">
-                <div class="auth-layout">
-                    <div class="hero-card card auth-hero-card">
-                        <p class="eyebrow">Самостоятельная платформа</p>
-                        <h1>ONEHUNT</h1>
+                <div class="auth-layout auth-layout-site">
+                    <div class="hero-card card auth-hero-card auth-hero-card-site">
+                        <p class="eyebrow">Standalone-платформа</p>
+                        <h1>ONEHUNT Web</h1>
                         <p class="hero-text">
-                            Отдельный сайт для подготовки к охотминимуму: практика, маршрут, экзамен, AI и премиум-доступ
-                            без Telegram-бота.
+                            Это отдельная браузерная версия ONEHUNT. Здесь есть регистрация, email-вход, собственный профиль,
+                            покупки и обучение вне Telegram.
                         </p>
                         <div class="hero-badges">
-                            <span class="hero-badge">257 вопросов</span>
-                            <span class="hero-badge">ПК + мобильная версия</span>
-                            <span class="hero-badge">Премиум 990 ₽</span>
+                            <span class="hero-badge"><strong>Регистрация</strong><span>email + пароль для входа</span></span>
+                            <span class="hero-badge"><strong>Личный кабинет</strong><span>прогресс и premium в браузере</span></span>
+                            <span class="hero-badge"><strong>257 вопросов</strong><span>практика, маршрут и экзамен</span></span>
+                            <span class="hero-badge"><strong>ПК и мобильный</strong><span>единый интерфейс сайта</span></span>
+                        </div>
+                        <div class="auth-site-note">
+                            Для Mini App отдельная регистрация не нужна: там вход идет через Telegram. Эта версия нужна именно для браузера.
                         </div>
                     </div>
-                    <div class="card auth-card">
+                    <div class="card auth-card auth-card-login">
                         <div class="section-head">
                             <h2>Войти</h2>
                             <span>Откройте свой прогресс и покупки</span>
@@ -57,7 +61,7 @@
                             <button class="primary-button" type="submit">Войти</button>
                         </form>
                     </div>
-                    <div class="card auth-card">
+                    <div class="card auth-card auth-card-register">
                         <div class="section-head">
                             <h2>Регистрация</h2>
                             <span>Создайте отдельный аккаунт ONEHUNT</span>
@@ -80,6 +84,7 @@
                     </div>
                 </div>
             </section>
+
             <section class="screen screen-active" id="screen-home">
                 <div class="hero-card card">
                     <p class="eyebrow">Лагерь охотника</p>
@@ -102,19 +107,19 @@
                     </div>
                     <div class="actions-grid">
                         <button class="action-tile" data-start-mode="quick" type="button">
-                            <strong>🦆 Быстрый вопрос</strong>
+                            <strong>Быстрый вопрос</strong>
                             <span>Один вопрос прямо сейчас</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" type="button">
-                            <strong>🎯 Тренировка</strong>
+                            <strong>Тренировка</strong>
                             <span>Спокойная серия по вашим настройкам</span>
                         </button>
                         <button class="action-tile" data-start-mode="exam" type="button">
-                            <strong>📝 Экзамен</strong>
+                            <strong>Экзамен</strong>
                             <span>Полный прогон официальных вопросов</span>
                         </button>
                         <button class="action-tile" id="routeTaskButton" type="button">
-                            <strong>📍 Маршрут дня</strong>
+                            <strong>Маршрут дня</strong>
                             <span>Открыть текущий шаг подготовки</span>
                         </button>
                     </div>
@@ -124,8 +129,8 @@
 
                 <button class="offer-banner" id="guideBannerButton" type="button">
                     <span class="offer-banner-copy">
-                        <strong class="offer-banner-title">📖 Полный путь до первой охоты</strong>
-                        <small class="offer-banner-subtitle">Маршрут, экзамен, AI и материалы → 990 ₽</small>
+                        <strong class="offer-banner-title">Полный путь до первой охоты</strong>
+                        <small class="offer-banner-subtitle">Маршрут, экзамен, AI и материалы в отдельном web-кабинете</small>
                         <em class="offer-banner-meta">Гайд + 12 чек-листов + полный PREMIUM-доступ</em>
                     </span>
                     <span class="offer-banner-media-wrap">
@@ -137,7 +142,7 @@
                 <div class="card legal-card">
                     <div class="section-head">
                         <h2>Информация для оплаты</h2>
-                        <span>Что должно быть видно на сайте для подключения платежей</span>
+                        <span>Блок для отдельной web-версии с регистрацией и платежами</span>
                     </div>
                     <div class="legal-grid">
                         <article class="legal-item">
@@ -146,7 +151,7 @@
                         </article>
                         <article class="legal-item">
                             <h3>Как получают доступ</h3>
-                            <p>После успешной оплаты доступ открывается автоматически в аккаунте пользователя. Физическая доставка отсутствует.</p>
+                            <p>После успешной оплаты доступ открывается автоматически в web-аккаунте пользователя. Физическая доставка отсутствует.</p>
                         </article>
                         <article class="legal-item">
                             <h3>Оферта и правила</h3>
@@ -154,7 +159,7 @@
                         </article>
                         <article class="legal-item">
                             <h3>Контакты и реквизиты</h3>
-                            <p>Добавьте email поддержки, Telegram для связи, ФИО владельца проекта и реквизиты в отдельный раздел перед боевым подключением платежей.</p>
+                            <p>Перед боевым запуском сюда нужно добавить email поддержки, Telegram для связи, ФИО владельца проекта и реквизиты.</p>
                         </article>
                     </div>
                 </div>
@@ -164,39 +169,39 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Режимы практики</h2>
-                        <span>Всё для спокойной и быстрой подготовки</span>
+                        <span>Все для спокойной и быстрой подготовки</span>
                     </div>
                     <div class="actions-grid" id="practiceModes">
                         <button class="action-tile" data-start-mode="training" type="button">
-                            <strong>🎯 Тренировка</strong>
+                            <strong>Тренировка</strong>
                             <span>Обычная сессия по вашим настройкам</span>
                         </button>
                         <button class="action-tile" data-start-mode="blitz" type="button">
-                            <strong>⚡ Блиц</strong>
+                            <strong>Блиц</strong>
                             <span>Быстрый режим на скорость</span>
                         </button>
                         <button class="action-tile" data-start-mode="mistakes" type="button">
-                            <strong>🔄 Промахи</strong>
+                            <strong>Промахи</strong>
                             <span>Разобрать ошибки отдельно</span>
                         </button>
                         <button class="action-tile" data-start-mode="starred" type="button">
-                            <strong>⭐ Избранное</strong>
+                            <strong>Избранное</strong>
                             <span>Сложные и сохраненные вопросы</span>
                         </button>
                         <button class="action-tile" data-start-mode="repetition" type="button">
-                            <strong>🧠 Повторение</strong>
+                            <strong>Повторение</strong>
                             <span>Интервальная память и закрепление</span>
                         </button>
                         <button class="action-tile" data-start-mode="duel" type="button">
-                            <strong>⚔️ Дуэль</strong>
+                            <strong>Дуэль</strong>
                             <span>Соревнование с Михалычем</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" data-weak="true" type="button">
-                            <strong>🎯 Слабые темы</strong>
+                            <strong>Слабые темы</strong>
                             <span>Фокус на проседающих блоках</span>
                         </button>
                         <button class="action-tile" data-start-mode="training" data-timed="true" type="button">
-                            <strong>⏱ Таймер</strong>
+                            <strong>Таймер</strong>
                             <span>Тренировка с ограничением по времени</span>
                         </button>
                     </div>
@@ -249,12 +254,7 @@
                     <div class="ai-thread" id="aiThread"></div>
                     <form class="ai-composer" id="aiForm">
                         <label class="ai-input-shell">
-                            <textarea
-                                id="aiInput"
-                                rows="1"
-                                maxlength="400"
-                                placeholder="Например: что мне подтянуть перед экзаменом?"
-                            ></textarea>
+                            <textarea id="aiInput" rows="1" maxlength="400" placeholder="Например: что мне подтянуть перед экзаменом?"></textarea>
                         </label>
                         <button class="primary-button" id="aiSendButton" type="submit">Отправить</button>
                     </form>
@@ -343,15 +343,15 @@
         <nav class="bottom-nav">
             <button class="nav-button active" data-screen="home" type="button"><span>🏕</span><small>Главная</small></button>
             <button class="nav-button" data-screen="practice" type="button"><span>📚</span><small>Практика</small></button>
-            <button class="nav-button" data-screen="daily" type="button"><span>📅</span><small>День</small></button>
+            <button class="nav-button" data-screen="daily" type="button"><span>🗓</span><small>День</small></button>
             <button class="nav-button" data-screen="ai" type="button"><span>✨</span><small>AI</small></button>
             <button class="nav-button" data-screen="profile" type="button"><span>👤</span><small>Профиль</small></button>
         </nav>
 
         <footer class="site-footer">
             <div class="site-footer-card">
-                <strong>ONEHUNT</strong>
-                <p>Standalone-сайт для подготовки к охотминимуму с веб-аккаунтом, покупкой premium и обучением на ПК и мобиле.</p>
+                <strong>ONEHUNT Web</strong>
+                <p>Отдельный сайт для подготовки к охотминимуму с web-аккаунтом, регистрацией, покупкой premium и обучением на ПК и мобильном.</p>
                 <p>Поддержка: support@onehunt.local. Перед боевым запуском сюда нужно вынести оферту, политику и реквизиты.</p>
             </div>
         </footer>
@@ -377,7 +377,7 @@
             </article>
             <div class="answer-toolbar">
                 <div class="answer-hint" id="answerHint">Нажмите на вариант под вопросом, а мы сразу покажем результат.</div>
-                <button class="ghost-button" id="starQuestionButton" type="button">⭐ В избранное</button>
+                <button class="ghost-button" id="starQuestionButton" type="button">★ В избранное</button>
             </div>
             <div class="result-panel hidden" id="resultPanel"></div>
         </div>

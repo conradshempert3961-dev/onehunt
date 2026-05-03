@@ -78,6 +78,7 @@ function premiumOffer() {
         price_rub: 990,
         price_stars: 700,
         crypto_enabled: false,
+        yoomoney_enabled: false,
         stars_enabled: true,
     };
 }
@@ -140,16 +141,17 @@ function openExternalLink(url) {
         showToast("Ссылка на оплату пока не пришла");
         return;
     }
+    const targetUrl = url.startsWith("/") ? `${window.location.origin}${url}` : url;
 
-    if (tg?.openTelegramLink && url.includes("t.me/")) {
-        tg.openTelegramLink(url);
+    if (tg?.openTelegramLink && targetUrl.includes("t.me/")) {
+        tg.openTelegramLink(targetUrl);
         return;
     }
     if (tg?.openLink) {
-        tg.openLink(url);
+        tg.openLink(targetUrl);
         return;
     }
-    window.open(url, "_blank", "noopener");
+    window.open(targetUrl, "_blank", "noopener");
 }
 
 function pulse(style = "light") {
@@ -264,10 +266,15 @@ function maybeOpenPremiumFromError(error, fallbackMessage = "Эта функци
 
 function premiumCheckoutStatusText(checkout) {
     if (!checkout) {
-        return "Оплата синхронизируется с вашим аккаунтом на сайте. После успешного платежа статус в профиле сразу станет PREMIUM.";
+        return APP_MODE === "miniapp"
+            ? "Оплата привязывается к вашему профилю ONEHUNT внутри Telegram. После успешного платежа статус сразу станет PREMIUM."
+            : "Оплата привязывается к вашему web-аккаунту ONEHUNT. После успешного платежа статус сразу станет PREMIUM.";
     }
     if (checkout.provider === "telegram_stars") {
         return `Счет #${checkout.payment_id} создан в Telegram Stars. Если окно оплаты уже закрыли, можно открыть его снова или проверить статус ниже.`;
+    }
+    if (checkout.provider === "yoomoney") {
+        return checkout.detail || `Счет #${checkout.payment_id} создан в YooMoney. Оплатите его картой или кошельком, затем вернитесь и нажмите проверку.`;
     }
     return `Счет #${checkout.payment_id} создан через Crypto Bot. После оплаты вернитесь сюда и нажмите проверку.`;
 }
@@ -276,7 +283,10 @@ function premiumPrimaryActionLabel(offer) {
     if (hasPremiumAccess()) {
         return "PREMIUM уже активен";
     }
-    return `Оплатить ${offer.price_stars} ⭐ в Telegram`;
+    if (APP_MODE === "miniapp" && offer.stars_enabled) {
+        return `Оплатить ${offer.price_stars} ⭐ в Telegram`;
+    }
+    return `Оплатить ${offer.price_rub} ₽ через YooMoney`;
 }
 
 function renderPremiumSheet() {
@@ -286,6 +296,14 @@ function renderPremiumSheet() {
     const premiumActive = hasPremiumAccess();
     const canPayStars = Boolean(offer.stars_enabled && !premiumActive);
     const canPayCrypto = Boolean(offer.crypto_enabled && !premiumActive);
+    const canPayYooMoney = Boolean(offer.yoomoney_enabled && !premiumActive);
+    const primaryProvider = APP_MODE === "miniapp" && canPayStars ? "stars" : (canPayYooMoney ? "yoomoney" : "stars");
+    const openLabel =
+        checkout?.provider === "telegram_stars"
+            ? "Открыть Stars-счет"
+            : checkout?.provider === "yoomoney"
+              ? "Открыть страницу YooMoney"
+              : "Открыть счет";
 
     document.getElementById("sheetContent").innerHTML = `
         <div class="premium-sheet">
@@ -307,8 +325,8 @@ function renderPremiumSheet() {
                     <span>Документы, первая охота, снаряжение, сезонные заметки и готовый путь без лишней суеты.</span>
                 </article>
                 <article class="premium-benefit-card">
-                    <strong>Статус у профиля</strong>
-                    <span>После оплаты в профиле сайта сразу появится статус PREMIUM.</span>
+                    <strong>${APP_MODE === "miniapp" ? "Статус в Telegram" : "Статус в web-профиле"}</strong>
+                    <span>${APP_MODE === "miniapp" ? "После оплаты Premium сразу активируется в Mini App и в связанном профиле ONEHUNT." : "После оплаты Premium сразу активируется в вашем браузерном профиле ONEHUNT."}</span>
                 </article>
             </div>
             <div class="premium-checkout-box">
@@ -316,9 +334,11 @@ function renderPremiumSheet() {
                 <span>${premiumCheckoutStatusText(checkout)}</span>
             </div>
             <div class="premium-actions">
-                <button class="primary-button" type="button" data-premium-action="stars" ${canPayStars ? "" : "disabled"}>${premiumPrimaryActionLabel(offer)}</button>
+                <button class="primary-button" type="button" data-premium-action="${primaryProvider}" ${(primaryProvider === "stars" && !canPayStars) || (primaryProvider === "yoomoney" && !canPayYooMoney) ? "disabled" : ""}>${premiumPrimaryActionLabel(offer)}</button>
+                ${canPayYooMoney && primaryProvider !== "yoomoney" ? `<button class="ghost-button premium-alt-button" type="button" data-premium-action="yoomoney">Оплатить ${offer.price_rub} ₽ через YooMoney</button>` : ""}
+                ${canPayStars && primaryProvider !== "stars" ? `<button class="ghost-button premium-alt-button" type="button" data-premium-action="stars">Оплатить ${offer.price_stars} ⭐ в Telegram</button>` : ""}
                 <button class="ghost-button premium-alt-button" type="button" data-premium-action="crypto" ${canPayCrypto ? "" : "disabled"}>Оплатить ${offer.price_rub} ₽ через Crypto Bot</button>
-                ${checkout?.payment_id && !premiumActive ? `<button class="ghost-button" type="button" data-premium-action="open">${checkout.provider === "telegram_stars" ? "Открыть Stars-счет" : "Открыть счет"}</button>` : ""}
+                ${checkout?.payment_id && !premiumActive ? `<button class="ghost-button" type="button" data-premium-action="open">${openLabel}</button>` : ""}
                 ${checkout?.payment_id && !premiumActive ? `<button class="ghost-button" type="button" data-premium-action="check">Проверить оплату</button>` : ""}
             </div>
         </div>
@@ -343,7 +363,7 @@ function openPremiumCheckout(checkout = state.premiumCheckout) {
                     showToast("Оплата не завершена");
                     return;
                 }
-                showToast("Счет открыт. После оплаты вернитесь на сайт.");
+                showToast("Счет открыт. После оплаты вернитесь в ONEHUNT.");
             });
             return;
         }
@@ -380,7 +400,12 @@ async function createPremiumInvoice(provider = "crypto") {
     }
 
     try {
-        const path = provider === "telegram_stars" ? "/api/premium/stars/invoice" : "/api/premium/crypto/invoice";
+        const pathByProvider = {
+            telegram_stars: "/api/premium/stars/invoice",
+            yoomoney: "/api/premium/yoomoney/invoice",
+            crypto: "/api/premium/crypto/invoice",
+        };
+        const path = pathByProvider[provider] || pathByProvider.crypto;
         const payload = await api(path, {
             method: "POST",
             body: JSON.stringify({}),
@@ -400,8 +425,13 @@ async function checkPremiumInvoice() {
     }
 
     try {
+        const providerMap = {
+            telegram_stars: "stars",
+            yoomoney: "yoomoney",
+            crypto_bot: "crypto",
+        };
         await pollPremiumStatus(
-            state.premiumCheckout.provider === "telegram_stars" ? "stars" : "crypto",
+            providerMap[state.premiumCheckout.provider] || "crypto",
             state.premiumCheckout.payment_id,
         );
     } catch (error) {
@@ -740,9 +770,8 @@ function renderRouteCard(route, container, compact = false) {
 
 function setAuthenticatedUi(authenticated) {
     const authScreen = document.getElementById("screen-auth");
-    const standalone = APP_MODE === "site";
-    authScreen?.classList.toggle("screen-active", standalone && !authenticated);
-    authScreen?.classList.toggle("hidden", !standalone || authenticated);
+    authScreen?.classList.toggle("screen-active", !authenticated);
+    authScreen?.classList.toggle("hidden", authenticated);
     bottomNav?.classList.toggle("hidden", !authenticated);
     siteFooter?.classList.toggle("hidden", !authenticated || APP_MODE === "miniapp");
     logoutButton?.classList.toggle("hidden", !authenticated || APP_MODE !== "site");
@@ -1488,6 +1517,10 @@ document.addEventListener("click", (event) => {
         createPremiumInvoice("telegram_stars");
         return;
     }
+    if (event.target.closest("[data-premium-action='yoomoney']")) {
+        createPremiumInvoice("yoomoney");
+        return;
+    }
     if (event.target.closest("[data-premium-action='crypto']")) {
         createPremiumInvoice("crypto");
         return;
@@ -1506,6 +1539,10 @@ if (APP_MODE === "miniapp") {
     hydrate()
         .catch(() => {
             setAuthenticatedUi(false);
+            const heroText = document.getElementById("heroText");
+            if (heroText) {
+                heroText.textContent = "Откройте ONEHUNT из Telegram, чтобы Mini App получил ваш профиль автоматически.";
+            }
         })
         .finally(() => window.requestAnimationFrame(scrollAppToTop));
 } else {

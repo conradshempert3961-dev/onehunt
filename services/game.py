@@ -1662,6 +1662,17 @@ async def get_payment_by_provider_payment_id(provider_payment_id: str) -> Paymen
         return payment
 
 
+async def bind_payment_provider_payment_id(payment_id: int, provider_payment_id: str) -> Payment | None:
+    async with async_session() as session:
+        payment = (await session.execute(select(Payment).where(Payment.id == payment_id))).scalar_one_or_none()
+        if payment is None:
+            return None
+        payment.provider_payment_id = provider_payment_id
+        await session.commit()
+        await session.refresh(payment)
+        return payment
+
+
 async def update_payment_status(payment_id: int, status: str) -> Payment | None:
     async with async_session() as session:
         payment = (await session.execute(select(Payment).where(Payment.id == payment_id))).scalar_one_or_none()
