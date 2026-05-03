@@ -16,6 +16,43 @@ set_env() {
     fi
 }
 
+resolve_container_ip() {
+    local container_name="$1"
+    local ip
+    ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "${container_name}" 2>/dev/null || true)"
+    if [ -z "${ip}" ]; then
+        echo "Could not resolve IP for ${container_name}"
+        docker ps -a || true
+        return 1
+    fi
+    printf '%s\n' "${ip}"
+}
+
+write_miniapp_nginx_conf() {
+    local domain="$1"
+    local upstream_ip="$2"
+
+    cat > "${NGINX_CONF}" <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name ${domain} www.${domain} _;
+
+    location / {
+        proxy_pass http://${upstream_ip}:8080;
+        proxy_http_version 1.1;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 60;
+        proxy_send_timeout 300;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+}
+
 echo "== ONEHUNT standalone site deploy =="
 echo "Domain: ${DOMAIN}"
 echo "Root: ${ROOT}"
@@ -44,7 +81,9 @@ echo "== Load questions =="
 docker compose -f "${COMPOSE_FILE}" run --rm miniapp python scripts/load_questions.py
 
 echo "== Apply nginx config =="
-install -m 0644 "${ROOT}/deploy/nginx/huntexam.online-miniapp-only.conf" "${NGINX_CONF}"
+MINIAPP_UPSTREAM_IP="$(resolve_container_ip "onehunt_miniapp")"
+echo "Mini App upstream: ${MINIAPP_UPSTREAM_IP}:8080"
+write_miniapp_nginx_conf "${DOMAIN}" "${MINIAPP_UPSTREAM_IP}"
 ln -sf "${NGINX_CONF}" "/etc/nginx/sites-enabled/${DOMAIN}"
 rm -f /etc/nginx/sites-enabled/default
 
@@ -52,8 +91,16 @@ nginx -t
 systemctl reload nginx
 
 if command -v certbot >/dev/null 2>&1; then
-    echo "== Try SSL certificate =="
-    certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
+    if getent ahostsv4 "${DOMAIN}" >/dev/null 2>&1; then
+        echo "== Try SSL certificate =="
+        CERTBOT_ARGS=(-d "${DOMAIN}")
+        if getent ahostsv4 "www.${DOMAIN}" >/dev/null 2>&1; then
+            CERTBOT_ARGS+=(-d "www.${DOMAIN}")
+        fi
+        certbot --nginx "${CERTBOT_ARGS[@]}" --non-interactive --agree-tos --register-unsafely-without-email || true
+    else
+        echo "== Skip SSL for now: ${DOMAIN} does not resolve yet =="
+    fi
 fi
 
 echo "== Checks =="
