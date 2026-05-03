@@ -41,6 +41,20 @@ wait_for_health() {
     return 1
 }
 
+git_pull_or_warn() {
+    if [ "${ONEHUNT_SKIP_GIT_PULL:-}" = "1" ]; then
+        echo "== Skip git pull: ONEHUNT_SKIP_GIT_PULL=1 =="
+        return 0
+    fi
+
+    if git pull --ff-only; then
+        return 0
+    fi
+
+    echo "== Warning: git pull failed, continue with current checkout =="
+    return 0
+}
+
 resolve_container_ip() {
     local container_name="$1"
     local ip
@@ -92,7 +106,7 @@ if [ ! -f .env ]; then
     fi
 fi
 
-git pull --ff-only
+git_pull_or_warn
 
 set_env "MINIAPP_URL" "https://${DOMAIN}/app"
 set_env "MINIAPP_BROWSER_DEMO" "true"
