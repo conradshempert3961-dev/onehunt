@@ -5,6 +5,7 @@ DOMAIN="${1:-huntexam.online}"
 ROOT="${ONEHUNT_ROOT:-/opt/onehunt}"
 COMPOSE_FILE="${ROOT}/docker-compose.prod.yml"
 NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}"
+TRACKED_ENV_TEMPLATE="${ROOT}/deploy/env/${DOMAIN}.env.example"
 
 set_env() {
     local key="$1"
@@ -23,7 +24,11 @@ echo "Root: ${ROOT}"
 cd "${ROOT}"
 
 if [ ! -f .env ]; then
-    cp .env.example .env
+    if [ -f "${TRACKED_ENV_TEMPLATE}" ]; then
+        cp "${TRACKED_ENV_TEMPLATE}" .env
+    else
+        cp .env.example .env
+    fi
 fi
 
 git pull --ff-only

@@ -5,6 +5,7 @@ DOMAIN="${1:-huntexam.online}"
 ROOT="${ONEHUNT_ROOT:-/opt/onehunt}"
 COMPOSE_FILE="${ROOT}/docker-compose.prod.yml"
 NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}"
+TRACKED_ENV_TEMPLATE="${ROOT}/deploy/env/${DOMAIN}.env.example"
 
 set_env() {
     local key="$1"
@@ -23,7 +24,11 @@ echo "Root: ${ROOT}"
 cd "${ROOT}"
 
 if [ ! -f .env ]; then
-    cp .env.example .env
+    if [ -f "${TRACKED_ENV_TEMPLATE}" ]; then
+        cp "${TRACKED_ENV_TEMPLATE}" .env
+    else
+        cp .env.example .env
+    fi
 fi
 
 git pull --ff-only
@@ -40,6 +45,15 @@ if [ -z "${BOT_TOKEN_VALUE}" ] || [ "${BOT_TOKEN_VALUE}" = "your_telegram_bot_to
     echo "Set the real bot token and rerun this script."
     exit 1
 fi
+
+for required_key in CRYPTO_PAY_API_TOKEN YOOMONEY_WALLET YOOMONEY_ACCESS_TOKEN YOOMONEY_NOTIFICATION_SECRET; do
+    required_value="$(grep "^${required_key}=" .env | cut -d= -f2- || true)"
+    if [ -z "${required_value}" ]; then
+        echo "${required_key} is empty in ${ROOT}/.env"
+        echo "Fill the real value and rerun this script."
+        exit 1
+    fi
+done
 
 echo "== Stop services that are not needed on this VDS =="
 docker compose -f "${COMPOSE_FILE}" stop site || true
