@@ -17,6 +17,30 @@ set_env() {
     fi
 }
 
+wait_for_health() {
+    local container_name="$1"
+    local label="$2"
+    local max_attempts="${3:-60}"
+    local attempt=1
+
+    echo "== Wait for ${label} =="
+    while [ "${attempt}" -le "${max_attempts}" ]; do
+        local status
+        status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_name}" 2>/dev/null || true)"
+        if [ "${status}" = "healthy" ] || [ "${status}" = "running" ]; then
+            echo "${label}: ${status}"
+            return 0
+        fi
+        printf '%s attempt %s/%s: %s\n' "${label}" "${attempt}" "${max_attempts}" "${status:-missing}"
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+
+    echo "${label} did not become ready in time."
+    docker ps -a || true
+    return 1
+}
+
 echo "== ONEHUNT Mini App domain deploy =="
 echo "Domain: ${DOMAIN}"
 echo "Root: ${ROOT}"
@@ -47,11 +71,20 @@ echo "== Clean safe Docker cache =="
 docker system prune -f || true
 docker builder prune -f || true
 
-echo "== Start Mini App stack =="
-docker compose -f "${COMPOSE_FILE}" up -d --build postgres redis miniapp
+echo "== Start data services first =="
+docker compose -f "${COMPOSE_FILE}" up -d postgres redis
+wait_for_health "onehunt_postgres" "postgres"
+wait_for_health "onehunt_redis" "redis"
+
+echo "== Build Mini App image =="
+docker compose -f "${COMPOSE_FILE}" build miniapp
 
 echo "== Load questions into Mini App database =="
 docker compose -f "${COMPOSE_FILE}" run --rm miniapp python scripts/load_questions.py
+
+echo "== Start Mini App stack =="
+docker compose -f "${COMPOSE_FILE}" up -d miniapp
+sleep 8
 
 echo "== Apply nginx config =="
 install -m 0644 "${ROOT}/deploy/nginx/huntexam.online-miniapp-only.conf" "${NGINX_CONF}"
@@ -62,12 +95,18 @@ nginx -t
 systemctl reload nginx
 
 if command -v certbot >/dev/null 2>&1; then
-    echo "== Try SSL certificate =="
-    certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
+    if getent ahostsv4 "${DOMAIN}" >/dev/null 2>&1; then
+        echo "== Try SSL certificate =="
+        certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email || true
+    else
+        echo "== Skip SSL for now: ${DOMAIN} does not resolve yet =="
+    fi
 fi
 
 echo "== Checks =="
 docker compose -f "${COMPOSE_FILE}" ps
+printf 'local health: '
+curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 10 http://127.0.0.1:8080/health || true
 printf 'local miniapp: '
 curl -sS -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 10 http://127.0.0.1:8080/
 printf 'nginx host: '
