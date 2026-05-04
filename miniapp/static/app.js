@@ -685,6 +685,7 @@ function renderBootstrap() {
     if (!data) {
         return;
     }
+    document.body.dataset.accessLevel = hasPremiumAccess() ? "premium" : (data.free_mode ? "beta" : "basic");
     const offer = premiumOffer();
     const access = currentAccessBadge();
     const routeLocked = !hasRouteAccess(data.route);
