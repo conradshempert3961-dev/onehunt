@@ -21,6 +21,7 @@ from config import (
     FREE_MODE,
     MINIAPP_BROWSER_DEMO,
     MINIAPP_BROWSER_DEMO_HOSTS,
+    ROUTE_FREE_DAYS,
     TRAINING_FREE_LIMIT,
     TRAIL_FREE_LIMIT,
 )
@@ -176,6 +177,10 @@ def has_full_access(user: Any) -> bool:
     return FREE_MODE or bool(user and user.access_level == "premium")
 
 
+def has_route_access(user: Any, day_number: int | None) -> bool:
+    return has_full_access(user) or bool(day_number and day_number <= ROUTE_FREE_DAYS)
+
+
 def premium_lock_detail(feature: str) -> str:
     messages = {
         "ai": "AI-ассистент доступен только в PREMIUM.",
@@ -186,7 +191,7 @@ def premium_lock_detail(feature: str) -> str:
         "mistakes": "Разбор ошибок доступен только в PREMIUM.",
         "progress": "График прогресса доступен только в PREMIUM.",
         "repetition": "Интервальное повторение доступно только в PREMIUM.",
-        "route": "Маршрут на 14 дней открывается только в PREMIUM.",
+        "route": f"Первые {ROUTE_FREE_DAYS} дня маршрута доступны бесплатно. Дальше нужен PREMIUM.",
         "starred": "Избранные вопросы доступны только в PREMIUM.",
         "trail_limit": "Бесплатный лимит по тропе уже исчерпан. Откройте PREMIUM, чтобы идти дальше.",
         "training_limit": "Бесплатный лимит тренировок уже исчерпан. Откройте PREMIUM, чтобы продолжить.",
@@ -229,6 +234,27 @@ def serialize_route_task_payload(payload: dict[str, Any] | None) -> dict[str, An
     return {
         "day": payload["day"],
         "task": payload["task"],
+    }
+
+
+def decorate_route_payload(route: dict[str, Any], user: Any, route_task: dict[str, Any] | None) -> dict[str, Any]:
+    full_access = has_full_access(user)
+    current_day = route.get("current_day")
+    current_task_payload = serialize_route_task_payload(route_task)
+    route_days: list[dict[str, Any]] = []
+    for day in route.get("days", []):
+        day_number = int(day["day"])
+        day_copy = dict(day)
+        day_copy["is_free"] = day_number <= ROUTE_FREE_DAYS
+        day_copy["locked"] = not full_access and not FREE_MODE and day_number > ROUTE_FREE_DAYS
+        route_days.append(day_copy)
+    return {
+        **route,
+        "days": route_days,
+        "free_days": ROUTE_FREE_DAYS,
+        "has_full_access": full_access,
+        "current_task_locked": not has_route_access(user, current_day),
+        "current_task": current_task_payload,
     }
 
 
@@ -848,10 +874,7 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "starred": journal["starred"],
         },
         "today": today_stats,
-        "route": {
-            **route,
-            "current_task": serialize_route_task_payload(route_task),
-        },
+        "route": decorate_route_payload(route, user, route_task),
         "daily": {
             "answered": daily_answer is not None,
             "question": serialize_question(daily_question) if daily_question else None,
@@ -899,10 +922,7 @@ async def daily_view(user=Depends(current_user)) -> dict[str, Any]:
             "attempts": challenge.attempts,
             "config": challenge_cfg,
         },
-        "route": {
-            **route,
-            "current_task": serialize_route_task_payload(route_task),
-        },
+        "route": decorate_route_payload(route, user, route_task),
     }
 
 
@@ -1269,18 +1289,16 @@ async def premium_stars_status(payment_id: int, user=Depends(current_user)) -> d
 async def route_view(user=Depends(current_user)) -> dict[str, Any]:
     route = await get_route_overview(user.telegram_id)
     route_task = await get_route_task(user.telegram_id)
-    return {
-        **route,
-        "current_task": serialize_route_task_payload(route_task),
-    }
+    return decorate_route_payload(route, user, route_task)
 
 
 @app.post("/api/route/start-task")
 async def route_start_task(user=Depends(current_user)) -> dict[str, Any]:
-    require_full_access(user, "route")
     payload = await get_route_task(user.telegram_id)
     if payload is None:
         raise HTTPException(status_code=404, detail="Текущая задача маршрута не найдена.")
+    if not has_route_access(user, payload["day"]):
+        raise HTTPException(status_code=403, detail=premium_lock_detail("route"))
     params = route_task_to_session_params(payload["task"]["callback"])
     if params is None:
         raise HTTPException(status_code=400, detail="Эту задачу пока нельзя открыть в Mini App.")

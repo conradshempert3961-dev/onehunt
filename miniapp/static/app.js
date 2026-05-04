@@ -66,6 +66,17 @@ function hasPremiumAccess() {
     return currentUser()?.access_level === "premium" || Boolean(currentUser()?.has_premium);
 }
 
+function routeFreeDays() {
+    return Number(state.bootstrap?.route?.free_days || 0);
+}
+
+function hasRouteAccess(route = state.bootstrap?.route) {
+    if (!route) {
+        return false;
+    }
+    return hasPremiumAccess() || Boolean(state.bootstrap?.free_mode) || Number(route.current_day || 0) <= routeFreeDays();
+}
+
 function currentAccessBadge() {
     if (hasPremiumAccess()) {
         return { label: "PREMIUM", className: "is-premium", note: "Пожизненный доступ активен" };
@@ -676,7 +687,8 @@ function renderBootstrap() {
     }
     const offer = premiumOffer();
     const access = currentAccessBadge();
-    const premiumLocked = !hasPremiumAccess() && !data.free_mode;
+    const routeLocked = !hasRouteAccess(data.route);
+    const freeRouteDays = routeFreeDays();
 
     const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ").trim() || "Охотник";
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
@@ -704,9 +716,10 @@ function renderBootstrap() {
         ${createStatCard("XP", `${data.user.xp_total}`)}
         ${createStatCard("Монеты", `${data.user.coins}`)}
     `;
+    document.getElementById("quoteEyebrow").textContent = routeTask ? "Сегодняшний фокус" : "Что такое ONEHUNT";
     document.getElementById("quoteText").textContent = routeTask
         ? `Сегодня в фокусе: ${routeTask.icon} ${routeTask.name}. ${routeTask.goal}.`
-        : data.summary.quote;
+        : "ONEHUNT помогает спокойно подготовиться к охотминимуму: внутри 257 официальных вопросов, 14-дневный путь, тренировки, экзамен, разбор ошибок и AI-помощник.";
     document.getElementById("homeRouteCard").innerHTML = `
         <p class="eyebrow">Маршрут</p>
         <div class="section-head">
@@ -714,13 +727,15 @@ function renderBootstrap() {
             <span>${data.route.completed}/14 дней выполнено</span>
         </div>
         <div class="info-line">${
-            premiumLocked
-                ? `Маршрут на 14 дней входит в PREMIUM. После активации откроется следующий шаг подготовки без ограничений.`
-                : `Активный шаг: день ${data.route.current_day} из 14. Общий прогресс ${data.route.percent}%.`
+            routeLocked
+                ? `Первые ${freeRouteDays} дня маршрута доступны бесплатно. Сейчас открыт день ${data.route.current_day}, а дни с ${freeRouteDays + 1}-го идут в PREMIUM.`
+                : hasPremiumAccess()
+                  ? `Активный шаг: день ${data.route.current_day} из 14. Общий прогресс ${data.route.percent}%.`
+                  : `Вы проходите бесплатную часть маршрута: день ${data.route.current_day} из первых ${freeRouteDays}.`
         }</div>
         ${
             data.route.current_task
-                ? `<button class="primary-button" id="homeRouteStart" type="button">${premiumLocked ? "Открыть PREMIUM" : "Открыть задачу дня"}</button>`
+                ? `<button class="primary-button" id="homeRouteStart" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Открыть задачу дня" : "Открыть бесплатный день"}</button>`
                 : `<div class="info-line">Текущая задача пока не найдена.</div>`
         }
     `;
@@ -729,7 +744,7 @@ function renderBootstrap() {
     const bannerTitle = hasPremiumAccess() ? "✨ PREMIUM уже активирован" : `📖 ${offer.title}`;
     const bannerSubtitle = hasPremiumAccess()
         ? `${access.note} · откройте профиль и проверьте статус`
-        : `Маршрут, экзамен, AI и материалы → ${offer.price_rub} ₽ / ${offer.price_stars} ⭐`;
+        : `${offer.price_rub} ₽ или ${offer.price_stars} ⭐ · маршрут 14 дней, AI и материалы`;
     guideBanner.querySelector(".offer-banner-title").textContent = bannerTitle;
     guideBanner.querySelector(".offer-banner-subtitle").textContent = bannerSubtitle;
     guideBanner.querySelector(".offer-banner-meta").textContent = hasPremiumAccess()
@@ -739,10 +754,12 @@ function renderBootstrap() {
 
     const routeTaskButton = document.getElementById("routeTaskButton");
     if (routeTaskButton) {
-        routeTaskButton.querySelector("strong").textContent = premiumLocked ? "🔒 Маршрут дня" : "📌 Маршрут дня";
-        routeTaskButton.querySelector("span").textContent = premiumLocked
-            ? "Открывается после активации PREMIUM"
-            : "Открыть текущий шаг подготовки";
+        routeTaskButton.querySelector("strong").textContent = routeLocked ? "🔒 Маршрут дня" : hasPremiumAccess() ? "📌 Маршрут дня" : "🗺 Бесплатный день";
+        routeTaskButton.querySelector("span").textContent = routeLocked
+            ? `После ${freeRouteDays}-го дня нужен PREMIUM`
+            : hasPremiumAccess()
+              ? "Открыть текущий шаг подготовки"
+              : `Открыть день ${data.route.current_day} из ${freeRouteDays} бесплатных`;
     }
 
     document.getElementById("blockGrid").innerHTML = data.blocks
@@ -758,9 +775,13 @@ function renderBootstrap() {
 }
 
 function renderRouteCard(route, container, compact = false) {
-    const premiumLocked = !hasPremiumAccess() && !state.bootstrap?.free_mode;
+    const routeLocked = !hasRouteAccess(route);
+    const freeDays = Number(route.free_days || routeFreeDays());
     const days = (route.days || []).slice(0, compact ? 6 : route.days.length);
     const statusLabel = (day) => {
+        if (day.locked) {
+            return { icon: "🔒", copy: "PREMIUM" };
+        }
         if (day.status === "done") {
             return { icon: "✓", copy: "Пройдено" };
         }
@@ -778,11 +799,13 @@ function renderRouteCard(route, container, compact = false) {
         ${
             route.current_task
                 ? `<div class="info-line">${
-                      premiumLocked
-                          ? "Маршрут на 14 дней откроется после активации PREMIUM."
-                          : `Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}`
+                      routeLocked
+                          ? `Первые ${freeDays} дня маршрута доступны бесплатно. Дальше нужен PREMIUM.`
+                          : hasPremiumAccess()
+                            ? `Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}`
+                            : `Сейчас открыт бесплатный день ${route.current_day} из ${freeDays}.`
                   }</div>
-                   <button class="primary-button route-task-launch" type="button">${premiumLocked ? "Открыть PREMIUM" : "Начать задачу дня"}</button>`
+                   <button class="primary-button route-task-launch" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Начать задачу дня" : "Начать бесплатный день"}</button>`
                 : `<div class="info-line">Текущая задача не найдена.</div>`
         }
         <div class="route-grid">
@@ -791,7 +814,7 @@ function renderRouteCard(route, container, compact = false) {
                     (day) => {
                         const status = statusLabel(day);
                         return `
-                        <div class="route-day" data-status="${day.status}">
+                        <div class="route-day" data-status="${day.status}" data-locked="${day.locked ? "true" : "false"}">
                             <strong><span>${status.icon} День ${day.day}</span><em>${status.copy}</em></strong>
                             <span>${day.task.icon} ${day.task.name}</span>
                             <small>${day.task.goal}</small>
@@ -1244,6 +1267,18 @@ async function answerQuestion(answer) {
         state.answerLocked = false;
         selectedButton?.classList.remove("is-pending");
         setQuestionOptionsEnabled(true);
+        if (error.status === 409) {
+            updateAnswerHint("Вопрос уже сменился. Обновляем экран...", "error");
+            showToast(error.message || "Вопрос сменился, обновляем экран");
+            await loadNextQuestion().catch(() => hydrate());
+            return;
+        }
+        if (error.status === 404) {
+            updateAnswerHint("Не нашли текущий вопрос. Подгружаем следующий...", "error");
+            showToast(error.message || "Вопрос не найден, обновляем сессию");
+            await loadNextQuestion().catch(() => hydrate());
+            return;
+        }
         updateAnswerHint("Не удалось проверить ответ. Попробуйте еще раз.", "error");
         showToast(error.message);
     }
@@ -1361,16 +1396,16 @@ async function submitDailyAnswer(answer) {
 }
 
 async function launchRouteTask() {
-    if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
+    if (!hasRouteAccess(state.bootstrap?.route)) {
         renderPremiumSheet();
-        showToast("Маршрут дня открывается только в PREMIUM");
+        showToast(`Первые ${routeFreeDays()} дня маршрута бесплатны, дальше нужен PREMIUM`);
         return;
     }
     try {
         const data = await api("/api/route/start-task", { method: "POST", body: JSON.stringify({}) });
         renderQuestion(data);
     } catch (error) {
-        if (maybeOpenPremiumFromError(error, "Маршрут дня открывается только в PREMIUM")) {
+        if (maybeOpenPremiumFromError(error, `Первые ${routeFreeDays()} дня маршрута бесплатны, дальше нужен PREMIUM`)) {
             return;
         }
         showToast(error.message);

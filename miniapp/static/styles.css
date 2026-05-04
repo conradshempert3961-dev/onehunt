@@ -4048,3 +4048,52 @@ body.mode-miniapp .nav-button small {
         min-height: calc(100dvh - var(--bottom-nav-height) - 70px);
     }
 }
+
+/* Route access and home messaging refresh */
+body.mode-miniapp #quoteText {
+    font-style: normal;
+}
+
+#screen-home .quote-card {
+    min-height: 0;
+}
+
+.route-day[data-locked="true"] {
+    opacity: 0.6;
+    border-style: dashed;
+}
+
+.route-day[data-locked="true"] strong em {
+    color: #b97228;
+}
+
+body.mode-miniapp #screen-home .offer-banner,
+body.mode-site #screen-home .offer-banner {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.mode-miniapp #screen-home .offer-banner-media-wrap,
+body.mode-site #screen-home .offer-banner-media-wrap {
+    display: none;
+}
+
+body.mode-miniapp #screen-home .offer-banner-arrow,
+body.mode-site #screen-home .offer-banner-arrow {
+    display: inline-grid;
+}
+
+body.mode-miniapp #screen-home .offer-banner {
+    min-height: 0;
+    padding: 18px 16px;
+}
+
+body.mode-site #screen-home .offer-banner {
+    min-height: 176px;
+}
+
+@media (max-width: 560px) {
+    body.mode-miniapp #screen-home .offer-banner,
+    body.mode-site #screen-home .offer-banner {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}
