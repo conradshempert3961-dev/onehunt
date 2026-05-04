@@ -26,62 +26,83 @@
         </header>
         <main class="app-main">
             <section class="screen screen-active" id="screen-auth">
-                <div class="auth-layout auth-layout-site">
-                    <div class="hero-card card auth-hero-card auth-hero-card-site">
-                        <p class="eyebrow">Standalone-платформа</p>
-                        <h1>ONEHUNT Web</h1>
-                        <p class="hero-text">
-                            Это отдельная браузерная версия ONEHUNT. Здесь есть регистрация, email-вход, собственный профиль,
-                            покупки и обучение вне Telegram.
-                        </p>
-                        <div class="hero-badges">
-                            <span class="hero-badge"><strong>Регистрация</strong><span>email + пароль для входа</span></span>
-                            <span class="hero-badge"><strong>Личный кабинет</strong><span>прогресс и premium в браузере</span></span>
-                            <span class="hero-badge"><strong>257 вопросов</strong><span>практика, маршрут и экзамен</span></span>
-                            <span class="hero-badge"><strong>ПК и мобильный</strong><span>единый интерфейс сайта</span></span>
-                        </div>
-                        <div class="auth-site-note">
-                            Для Mini App отдельная регистрация не нужна: там вход идет через Telegram. Эта версия нужна именно для браузера.
-                        </div>
+                <div class="site-auth-shell">
+                    <div class="site-auth-brand">
+                        <span class="site-auth-logo">
+                            <img src="/assets/brand-logo.jpg" alt="ONEHUNT">
+                        </span>
+                        <strong>ONEHUNT</strong>
                     </div>
-                    <div class="card auth-card auth-card-login">
-                        <div class="section-head">
-                            <h2>Войти</h2>
-                            <span>Откройте свой прогресс и покупки</span>
-                        </div>
-                        <form class="auth-form" id="loginForm">
-                            <label class="field">
-                                <span>Email</span>
-                                <input id="loginEmail" type="email" placeholder="you@example.com" required>
-                            </label>
-                            <label class="field">
-                                <span>Пароль</span>
-                                <input id="loginPassword" type="password" placeholder="Минимум 8 символов" required>
-                            </label>
-                            <button class="primary-button" type="submit">Войти</button>
-                        </form>
+
+                    <div class="site-auth-tabs" role="tablist" aria-label="Авторизация">
+                        <button class="site-auth-tab is-active" data-auth-tab="login" type="button">Войти</button>
+                        <button class="site-auth-tab" data-auth-tab="register" type="button">Регистрация</button>
                     </div>
-                    <div class="card auth-card auth-card-register">
-                        <div class="section-head">
-                            <h2>Регистрация</h2>
-                            <span>Создайте отдельный аккаунт ONEHUNT</span>
-                        </div>
-                        <form class="auth-form" id="registerForm">
-                            <label class="field">
-                                <span>Имя</span>
-                                <input id="registerName" type="text" placeholder="Как к вам обращаться" required>
-                            </label>
-                            <label class="field">
-                                <span>Email</span>
-                                <input id="registerEmail" type="email" placeholder="you@example.com" required>
-                            </label>
-                            <label class="field">
-                                <span>Пароль</span>
-                                <input id="registerPassword" type="password" placeholder="Минимум 8 символов" required>
-                            </label>
-                            <button class="primary-button" type="submit">Создать аккаунт</button>
-                        </form>
+
+                    <div class="card site-auth-card">
+                        <section class="site-auth-panel is-active" data-auth-panel="login">
+                            <div class="site-auth-head">
+                                <h1>Добро пожаловать</h1>
+                                <p>Откройте свой прогресс, покупки и подготовку к экзамену.</p>
+                            </div>
+
+                            <form class="auth-form site-auth-form" id="loginForm">
+                                <label class="field">
+                                    <span>Email</span>
+                                    <input id="loginEmail" type="email" placeholder="your@email.com" required>
+                                </label>
+                                <label class="field">
+                                    <span>Пароль</span>
+                                    <input id="loginPassword" type="password" placeholder="••••••••" required>
+                                </label>
+                                <div class="site-auth-inline-action">
+                                    <button class="site-auth-link-button" type="button">Забыли пароль?</button>
+                                </div>
+                                <button class="primary-button" type="submit">Войти</button>
+                                <div class="site-auth-divider">
+                                    <span></span>
+                                    <small>или</small>
+                                    <span></span>
+                                </div>
+                                <button class="site-auth-secondary" type="button">Войти через Google</button>
+                            </form>
+                        </section>
+
+                        <section class="site-auth-panel hidden" data-auth-panel="register">
+                            <div class="site-auth-head">
+                                <h1>Создать аккаунт</h1>
+                                <p>Отдельный web-аккаунт ONEHUNT для обучения вне Telegram.</p>
+                            </div>
+
+                            <form class="auth-form site-auth-form" id="registerForm">
+                                <label class="field">
+                                    <span>Имя</span>
+                                    <input id="registerName" type="text" placeholder="Алексей" required>
+                                </label>
+                                <label class="field">
+                                    <span>Email</span>
+                                    <input id="registerEmail" type="email" placeholder="your@email.com" required>
+                                </label>
+                                <label class="field">
+                                    <span>Пароль</span>
+                                    <input id="registerPassword" type="password" placeholder="Минимум 8 символов" required>
+                                    <small>Минимум 8 символов</small>
+                                </label>
+                                <p class="site-auth-legal">
+                                    Регистрируясь, вы принимаете
+                                    <button class="site-auth-link-button" type="button">условия использования</button>
+                                    и
+                                    <button class="site-auth-link-button" type="button">политику конфиденциальности</button>.
+                                </p>
+                                <button class="primary-button" type="submit">Создать аккаунт</button>
+                            </form>
+                        </section>
                     </div>
+
+                    <p class="site-auth-switch">
+                        <span id="authSwitchLabel">Нет аккаунта?</span>
+                        <button class="site-auth-link-button" id="authSwitchAction" data-auth-switch="register" type="button">Зарегистрироваться</button>
+                    </p>
                 </div>
             </section>
 

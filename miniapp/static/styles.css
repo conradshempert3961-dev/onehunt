@@ -3263,6 +3263,162 @@ body.mode-site #screen-auth {
     min-height: calc(100dvh - 32px);
 }
 
+body.mode-site #screen-auth .site-auth-shell {
+    width: min(100%, 400px);
+    margin: 0 auto;
+}
+
+body.mode-site #screen-auth .site-auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 20px;
+}
+
+body.mode-site #screen-auth .site-auth-brand strong {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ref-text);
+}
+
+body.mode-site #screen-auth .site-auth-logo {
+    width: 36px;
+    height: 36px;
+    padding: 3px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--ref-accent), #0f5c38);
+}
+
+body.mode-site #screen-auth .site-auth-logo img {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+body.mode-site #screen-auth .site-auth-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    padding: 4px;
+    border-radius: 13px;
+    background: #e8e7e0;
+}
+
+body.mode-site #screen-auth .site-auth-tab {
+    flex: 1;
+    min-height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ref-muted);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+body.mode-site #screen-auth .site-auth-tab.is-active {
+    background: #ffffff;
+    color: var(--ref-text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+body.mode-site #screen-auth .site-auth-card {
+    padding: 22px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+body.mode-site #screen-auth .site-auth-panel {
+    display: block;
+}
+
+body.mode-site #screen-auth .site-auth-head {
+    margin-bottom: 18px;
+}
+
+body.mode-site #screen-auth .site-auth-head h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.55rem, 4vw, 1.95rem);
+    letter-spacing: -0.03em;
+    color: var(--ref-text);
+}
+
+body.mode-site #screen-auth .site-auth-head p {
+    margin: 0;
+    color: var(--ref-muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+body.mode-site #screen-auth .site-auth-form {
+    display: grid;
+    gap: 13px;
+}
+
+body.mode-site #screen-auth .site-auth-inline-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -2px;
+}
+
+body.mode-site #screen-auth .site-auth-link-button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--ref-accent);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.mode-site #screen-auth .site-auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+body.mode-site #screen-auth .site-auth-divider span {
+    flex: 1;
+    height: 1px;
+    background: var(--ref-border);
+}
+
+body.mode-site #screen-auth .site-auth-divider small {
+    color: var(--ref-muted);
+    font-size: 11px;
+}
+
+body.mode-site #screen-auth .site-auth-secondary {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 13px;
+    border: 1.5px solid var(--ref-border);
+    background: #ffffff;
+    color: var(--ref-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body.mode-site #screen-auth .site-auth-legal {
+    margin: 0;
+    color: var(--ref-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+body.mode-site #screen-auth .site-auth-switch {
+    margin: 16px 0 0;
+    text-align: center;
+    color: var(--ref-muted);
+    font-size: 12px;
+}
+
 body.mode-site #screen-auth .auth-layout {
     width: min(100%, 920px);
     margin: 0 auto;
@@ -3329,6 +3485,30 @@ body.mode-miniapp .app-shell {
     margin: 0 auto;
     padding-left: 10px;
     padding-right: 10px;
+}
+
+body.mode-miniapp .mini-screen-head {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 2px;
+}
+
+body.mode-miniapp .mini-screen-head p {
+    margin: 0;
+    color: var(--ref-muted);
+    font-size: 13px;
+}
+
+body.mode-miniapp .mini-screen-head h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--ref-text);
+}
+
+body.mode-miniapp .mini-screen-head-home {
+    margin-bottom: -2px;
 }
 
 body.mode-miniapp #screen-auth .miniapp-entry {

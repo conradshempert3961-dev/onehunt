@@ -26,6 +26,7 @@ const state = {
     aiHistory: [],
     aiSuggestions: [],
     premiumCheckout: null,
+    authMode: "login",
 };
 
 const screens = document.querySelectorAll(".screen");
@@ -41,6 +42,10 @@ const aiSendButton = document.getElementById("aiSendButton");
 const aiStatus = document.getElementById("aiStatus");
 const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
+const authTabButtons = document.querySelectorAll("[data-auth-tab]");
+const authPanels = document.querySelectorAll("[data-auth-panel]");
+const authSwitchLabel = document.getElementById("authSwitchLabel");
+const authSwitchAction = document.getElementById("authSwitchAction");
 const logoutButton = document.getElementById("logoutButton");
 const headerProfileButton = document.getElementById("headerProfileButton");
 const bottomNav = document.querySelector(".bottom-nav");
@@ -475,6 +480,33 @@ function switchScreen(screenId) {
     pulse("light");
 }
 
+function setAuthMode(mode = "login") {
+    if (APP_MODE !== "site") {
+        return;
+    }
+
+    state.authMode = mode === "register" ? "register" : "login";
+
+    authTabButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.authTab === state.authMode);
+    });
+
+    authPanels.forEach((panel) => {
+        const isActive = panel.dataset.authPanel === state.authMode;
+        panel.classList.toggle("is-active", isActive);
+        panel.classList.toggle("hidden", !isActive);
+    });
+
+    if (authSwitchLabel) {
+        authSwitchLabel.textContent = state.authMode === "login" ? "Нет аккаунта?" : "Уже есть аккаунт?";
+    }
+
+    if (authSwitchAction) {
+        authSwitchAction.dataset.authSwitch = state.authMode === "login" ? "register" : "login";
+        authSwitchAction.textContent = state.authMode === "login" ? "Зарегистрироваться" : "Войти";
+    }
+}
+
 function createStatCard(label, value) {
     return `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`;
 }
@@ -650,6 +682,10 @@ function renderBootstrap() {
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
     const heroName = displayName.length > 16 ? (data.user.first_name || displayName.split(" ")[0]) : displayName;
     const routeTask = data.route?.current_task?.task;
+    document.getElementById("homeGreeting")?.replaceChildren(
+        document.createTextNode(data.user.questions_completed ? `Привет, ${heroName} 👋` : "Добро пожаловать 👋"),
+    );
+    document.getElementById("homeHeading")?.replaceChildren(document.createTextNode("Лагерь охотника"));
     if (headerProfileButton) {
         headerProfileButton.textContent = displayName || "Профиль";
     }
@@ -786,6 +822,7 @@ function setAuthenticatedUi(authenticated) {
 
     if (!authenticated) {
         navButtons.forEach((button) => button.classList.remove("active"));
+        setAuthMode(state.authMode || "login");
         return;
     }
 
@@ -1398,12 +1435,20 @@ async function hydrate() {
 
 document.addEventListener("click", (event) => {
     const target = event.target.closest(
-        "[data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id], [data-ai-prompt], [data-premium-entry], #homeRouteStart",
+        "[data-auth-tab], [data-auth-switch], [data-screen], [data-start-mode], [data-answer], [data-daily-answer], .route-task-launch, [data-category], [data-card-id], [data-ai-prompt], [data-premium-entry], #homeRouteStart",
     );
     if (!target) {
         return;
     }
 
+    if (target.dataset.authTab) {
+        setAuthMode(target.dataset.authTab);
+        return;
+    }
+    if (target.dataset.authSwitch) {
+        setAuthMode(target.dataset.authSwitch);
+        return;
+    }
     if (target.dataset.screen) {
         switchScreen(target.dataset.screen);
         return;
@@ -1535,6 +1580,7 @@ document.addEventListener("click", (event) => {
 });
 
 autosizeAiInput();
+setAuthMode(state.authMode);
 if (APP_MODE === "miniapp") {
     hydrate()
         .catch(() => {
