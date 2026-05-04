@@ -2402,11 +2402,15 @@ body::after {
     padding-top: 14px;
 }
 
-body.mode-site .app-header {
+.app-header {
     display: none;
 }
 
 body.mode-site .app-shell {
+    padding-top: 8px;
+}
+
+body.mode-miniapp .app-shell {
     padding-top: 8px;
 }
 
