@@ -3102,6 +3102,10 @@ body.mode-site #screen-auth .field input {
     margin-top: -2px;
 }
 
+body.mode-miniapp #screen-home .hero-card {
+    display: none;
+}
+
 @media (max-width: 560px) {
     #screen-home .hero-card {
         padding: 20px 18px 18px;
@@ -3117,6 +3121,20 @@ body.mode-site #screen-auth .field input {
 
     #screen-home .section-head h2 {
         font-size: 1.56rem;
+    }
+}
+
+@media (min-width: 860px) {
+    body.mode-miniapp #screen-home {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    body.mode-miniapp #screen-home #homeStats,
+    body.mode-miniapp #screen-home .quote-card,
+    body.mode-miniapp #screen-home > .card:not(.hero-card):not(.quote-card):not(#homeRouteCard),
+    body.mode-miniapp #screen-home #homeRouteCard {
+        grid-column: auto;
+        grid-row: auto;
     }
 }
 
