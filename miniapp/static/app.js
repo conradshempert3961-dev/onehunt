@@ -716,10 +716,16 @@ function renderBootstrap() {
         ${createStatCard("XP", `${data.user.xp_total}`)}
         ${createStatCard("Монеты", `${data.user.coins}`)}
     `;
-    document.getElementById("quoteEyebrow").textContent = routeTask ? "Сегодняшний фокус" : "Что такое ONEHUNT";
-    document.getElementById("quoteText").textContent = routeTask
-        ? `Сегодня в фокусе: ${routeTask.icon} ${routeTask.name}. ${routeTask.goal}.`
-        : "ONEHUNT помогает спокойно подготовиться к охотминимуму: внутри 257 официальных вопросов, 14-дневный путь, тренировки, экзамен, разбор ошибок и AI-помощник.";
+    const quoteEyebrow = document.getElementById("quoteEyebrow");
+    const quoteText = document.getElementById("quoteText");
+    if (quoteEyebrow) {
+        quoteEyebrow.textContent = routeTask ? "Сегодняшний фокус" : "Что такое ONEHUNT";
+    }
+    if (quoteText) {
+        quoteText.textContent = routeTask
+            ? `Сегодня в фокусе: ${routeTask.icon} ${routeTask.name}. ${routeTask.goal}.`
+            : "ONEHUNT помогает спокойно подготовиться к охотминимуму: внутри 257 официальных вопросов, 14-дневный путь, тренировки, экзамен, разбор ошибок и AI-помощник.";
+    }
     document.getElementById("homeRouteCard").innerHTML = `
         <p class="eyebrow">Маршрут</p>
         <div class="section-head">
