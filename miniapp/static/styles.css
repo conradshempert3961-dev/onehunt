@@ -4993,3 +4993,11 @@ body.legal-doc-page {
         font-size: 1rem;
     }
 }
+
+/* Stat cards use real values only; decorative imported progress lines looked like broken meters. */
+#homeStats .stat-card::before,
+#homeStats .stat-card::after,
+#profileStats .stat-card::before,
+#profileStats .stat-card::after {
+    display: none;
+}
