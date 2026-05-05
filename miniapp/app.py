@@ -783,6 +783,16 @@ async def site_index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "site.html").read_text(encoding="utf-8"))
 
 
+@app.get("/offer", response_class=HTMLResponse)
+async def site_offer() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "offer.html").read_text(encoding="utf-8"))
+
+
+@app.get("/consent", response_class=HTMLResponse)
+async def site_consent() -> HTMLResponse:
+    return HTMLResponse((STATIC_DIR / "consent.html").read_text(encoding="utf-8"))
+
+
 @app.get("/app", response_class=HTMLResponse)
 async def miniapp_index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "miniapp.html").read_text(encoding="utf-8"))
