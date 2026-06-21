@@ -71,5 +71,13 @@ PREMIUM_PRICE_RUB = PREMIUM_PRICES["rub"]
 PREMIUM_PRICE_STARS = PREMIUM_PRICES["stars"]
 HUNT_TROPHY_PRICE_RUB = SUBSCRIPTION_PRICES["hunt_trophy_rub"]
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1").rstrip("/")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "800"))
+AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.4"))
+AI_REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "45"))
+AI_MAX_HISTORY = int(os.getenv("AI_MAX_HISTORY", "8"))
+
 XP_TABLE = XP_RULES
 

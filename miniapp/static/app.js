@@ -539,8 +539,13 @@ function buildAiWelcomeMessage() {
     ];
     const weakest = [...blocks].sort((left, right) => left.percent - right.percent)[0];
     const routeTask = state.bootstrap.route?.current_task?.task;
+    const aiMeta = state.bootstrap.ai;
+    const aiLead = aiMeta?.configured
+        ? "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
+        : "Сейчас работаю в базовом режиме без API-ключа, но прогресс и маршрут уже учитываю.";
 
     return [
+        aiLead,
         `Сейчас у вас ${user.questions_completed}/257 по прогрессу и ${user.accuracy}% точности.`,
         `Больше всего внимания просит блок «${weakest.icon} ${weakest.name}» (${weakest.percent}%).`,
         routeTask
@@ -548,6 +553,34 @@ function buildAiWelcomeMessage() {
             : "Маршрут можно использовать как основу плана на день.",
         "Спросите, что подтянуть первым, как выйти на стабильный экзамен или как лучше разобрать ошибки.",
     ].join("\n");
+}
+
+function buildAiHistoryPayload() {
+    return state.aiHistory
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .slice(-8)
+        .map((item) => ({ role: item.role, text: item.text }));
+}
+
+function getAiStatusText(isBusy = false) {
+    if (isBusy) {
+        return "Думаю над ответом...";
+    }
+
+    const ai = state.bootstrap?.ai;
+    if (ai?.configured) {
+        const modelLabel = ai.model ? ` · ${ai.model}` : "";
+        return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
+    }
+
+    return "Базовый режим без API-ключа · прогресс, ошибки и маршрут";
+}
+
+function applyAiMeta() {
+    if (!aiStatus) {
+        return;
+    }
+    aiStatus.textContent = getAiStatusText(state.aiBusy);
 }
 
 function buildDefaultAiPrompts() {
@@ -610,6 +643,7 @@ function ensureAiBootstrapped(force = false) {
         ];
         renderAiPrompts([]);
         renderAiThread();
+        applyAiMeta();
         return;
     }
 
@@ -622,15 +656,14 @@ function ensureAiBootstrapped(force = false) {
     ];
     renderAiPrompts(buildDefaultAiPrompts());
     renderAiThread();
+    applyAiMeta();
 }
 
 function setAiBusy(isBusy) {
     state.aiBusy = isBusy;
     aiSendButton.disabled = isBusy;
     aiInput.disabled = isBusy;
-    aiStatus.textContent = isBusy
-        ? "Думаю над ответом..."
-        : "Готов разобрать прогресс, ошибки и маршрут подготовки";
+    applyAiMeta();
 }
 
 function autosizeAiInput() {
@@ -660,7 +693,10 @@ async function submitAiMessage(rawMessage) {
     try {
         const payload = await api("/api/ai/chat", {
             method: "POST",
-            body: JSON.stringify({ message }),
+            body: JSON.stringify({
+                message,
+                history: buildAiHistoryPayload(),
+            }),
         });
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
@@ -1465,6 +1501,7 @@ async function hydrate() {
         }
         renderProfile();
         ensureAiBootstrapped(state.aiHistory.length === 0);
+        applyAiMeta();
     } catch (error) {
         setAuthenticatedUi(false);
         if (error.status === 401) {
