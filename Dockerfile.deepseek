@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir fastapi uvicorn curl-cffi python-dotenv pydantic httpx \
+    && curl -fsSL https://raw.githubusercontent.com/GitUser200607/deepseek-free-api/master/proxy.py -o /app/proxy.py
+
+EXPOSE 8000
+
+CMD ["python", "proxy.py"]
