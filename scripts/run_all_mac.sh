@@ -72,10 +72,8 @@ start_deepseek() {
   fi
 
   if [[ ! -d "$DEEPSEEK_DIR" ]]; then
-    echo "DeepSeek proxy folder not found: $DEEPSEEK_DIR"
-    echo "Clone your deepseek-free-api repo into tools/deepseek-free-api"
-    echo "Or set DEEPSEEK_API_DIR=/path/to/deepseek-free-api"
-    return 1
+    echo "DeepSeek proxy not found — bootstrapping..."
+    bash "$ROOT/scripts/bootstrap_deepseek_proxy.sh" || return 1
   fi
 
   if ! command -v node >/dev/null 2>&1; then
@@ -87,13 +85,17 @@ start_deepseek() {
   if [[ -f package.json && ! -d node_modules ]]; then
     npm install
   fi
+  if [[ ! -f server.mjs && -f "$ROOT/scripts/deepseek_server.mjs" ]]; then
+    cp "$ROOT/scripts/deepseek_server.mjs" server.mjs
+  fi
 
   if [[ -f server.mjs ]]; then
-    if [[ ! -f .session && ! -f session.json && ! -d .auth ]]; then
+    if [[ ! -f deepseek-auth.json && ! -f .session && ! -f session.json && ! -f .auth ]]; then
       echo "First login: browser window will open for chat.deepseek.com"
-      node server.mjs --login
+      echo "  cd \"$DEEPSEEK_DIR\" && node server.mjs --login"
+      node server.mjs --login || true
     fi
-    nohup node server.mjs > "$LOGS_DIR/deepseek.stdout.log" 2> "$LOGS_DIR/deepseek.stderr.log" &
+    PORT="${DEEPSEEK_PORT}" nohup node server.mjs > "$LOGS_DIR/deepseek.stdout.log" 2> "$LOGS_DIR/deepseek.stderr.log" &
   elif [[ -f server.js ]]; then
     if [[ ! -f auth.json ]]; then
       echo "First login: run npm run auth in $DEEPSEEK_DIR"

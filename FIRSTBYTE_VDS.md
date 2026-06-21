@@ -112,9 +112,23 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 На 1 GB включён swap 2 GB в bootstrap-скрипте. Бот и отдельный лендинг по умолчанию **не** стартуют — только miniapp (внутри него уже web + promo + estate).
 
-## AI на VDS
+## AI на VDS (DeepSeek Free — по гайду)
 
-Локальный DeepSeek proxy на сервере без браузера сложен. Варианты:
+На сервере **нельзя** логиниться через email из datacenter IP (AWS WAF). Рабочий путь — **токен из браузера**:
 
-- официальный API DeepSeek в `.env`: `OPENAI_API_BASE=https://api.deepseek.com/v1` + ключ;
-- или оставить rule-based fallback (без ключа).
+1. На своём ПК: https://chat.deepseek.com → войти в аккаунт
+2. F12 → **Application** → **Local Storage** → `userToken` → скопировать **value**
+3. На VDS в `/opt/onehunt/.env.deepseek`:
+   ```env
+   DEEPSEEK_USER_TOKEN=ваш_токен
+   ```
+4. Запуск:
+   ```bash
+   cd /opt/onehunt && bash scripts/setup_deepseek_vds.sh
+   ```
+
+Локально (Mac): `bash scripts/bootstrap_deepseek_proxy.sh` → `node server.mjs --login` → `node server.mjs`
+
+Проверка: в приложении AI-статус «Живой AI · DeepSeek», ответы не шаблонные.
+
+Официальный API (если есть ключ): `OPENAI_API_BASE=https://api.deepseek.com/v1` + `OPENAI_API_KEY=sk-...`
