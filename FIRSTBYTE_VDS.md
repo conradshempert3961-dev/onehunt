@@ -133,7 +133,7 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
    cd /opt/onehunt && bash scripts/setup_deepseek_vds.sh
    ```
 
-Локально (Mac): `bash scripts/bootstrap_deepseek_proxy.sh` → `node server.mjs --login` → `node server.mjs`
+Локально (Mac): **не нужно** — всё на VDS. Остановить Mac: `bash scripts/stop_all_mac.sh`
 
 Проверка: в приложении AI-статус «Живой AI · DeepSeek», ответы не шаблонные.
 
