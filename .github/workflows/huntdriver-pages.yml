@@ -1,0 +1,43 @@
+name: HuntDriver Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "landing/huntdriver/**"
+      - "huntdriver/static/**"
+      - ".github/workflows/huntdriver-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: huntdriver-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare site
+        run: |
+          if [ -d landing/huntdriver ]; then
+            cp -r landing/huntdriver site
+          else
+            cp -r huntdriver/static site
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

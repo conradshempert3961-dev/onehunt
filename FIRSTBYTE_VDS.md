@@ -97,6 +97,8 @@ cd /opt/onehunt && bash scripts/firstbyte_vds_bootstrap.sh socialspur.ru
 - Mini App: `https://socialspur.ru/app`
 - Промо: `https://socialspur.ru/promo/`
 - Estate: `https://socialspur.ru/estate/`
+- HuntDriver: `https://socialspur.ru/huntdriver/` (после деплоя miniapp)
+- HuntDriver Pages: `https://conradshempert3961-dev.github.io/onehunt/` (если VDS ещё не обновлён)
 
 В `.env` на сервере проверьте:
 

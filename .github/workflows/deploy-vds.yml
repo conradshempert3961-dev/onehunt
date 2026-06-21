@@ -25,8 +25,8 @@ jobs:
           DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_USER_TOKEN }}
         run: |
           if [ -z "$VDS_PASSWORD" ]; then
-            echo "ONEHUNT_VDS_PASSWORD secret is not set — skip deploy"
-            exit 0
+            echo "::error::ONEHUNT_VDS_PASSWORD GitHub secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
           fi
           sudo apt-get install -y -qq sshpass
           mkdir -p deploy_bundle

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HUNTTROPHY — мониторинг</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-trophy">🦌</span>
+                <div class="brand-text">
+                    <strong>HUNTTROPHY</strong>
+                    <small>Мониторинг и наблюдение</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <div class="map-card" style="min-height:240px;margin-bottom:16px;">
+            <div class="map-label">Камчатский край</div>
+            <div class="map-pin" style="top:45%;left:50%;">📷</div>
+            <div class="map-pin" style="top:35%;left:62%;background:var(--brand-soft);">🐾</div>
+            <div class="map-overlay" style="max-width:none;right:auto;">
+                <h3>Кутхинское охотничье угодье</h3>
+                <p>120 450 га · сектор B-12</p>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card"><strong>18</strong><span>Фотоловушки<br>● Онлайн: 14</span></div>
+            <div class="stat-card"><strong>6</strong><span>Активных точек<br>● Онлайн</span></div>
+            <div class="stat-card"><strong style="color:var(--warn);">2</strong><span>Предупреждения</span></div>
+        </div>
+
+        <div class="section-head">
+            <h2>Последние события</h2>
+            <a href="#">Все события ›</a>
+        </div>
+
+        <div class="card">
+            <div class="event-item">
+                <div class="event-icon tracks">🐾</div>
+                <div>
+                    <strong>Следы медведя · 2 часа назад</strong>
+                    <p style="margin:4px 0 0;font-size:0.82rem;color:var(--muted);">Сектор B-12 · 56.3212, 160.4321</p>
+                </div>
+            </div>
+            <div class="event-item">
+                <div class="event-icon warning">⚠️</div>
+                <div>
+                    <strong>Проверить сектор B-12</strong>
+                    <p style="margin:4px 0 0;font-size:0.82rem;color:var(--muted);">Нет данных с фотоловушки №7 &gt; 24 ч</p>
+                </div>
+            </div>
+            <div class="event-item">
+                <div class="event-icon camera">📷</div>
+                <div>
+                    <strong>Фотоловушка №4 активна</strong>
+                    <p style="margin:4px 0 0;font-size:0.82rem;color:var(--muted);">32 фото · 15 минут назад</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-row" style="margin-top:12px;">
+            <span style="font-size:1.5rem;">🛸</span>
+            <div class="card-body">
+                <h3>Мониторинг БПЛА · 32 ₽/га</h3>
+                <p>Аэрофотосъёмка, контроль угодий, обнаружение активности</p>
+            </div>
+            <button class="btn btn-green btn-sm" type="button">Заказать облет</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a class="is-active" href="./monitor"><span>📍</span>Мониторинг</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

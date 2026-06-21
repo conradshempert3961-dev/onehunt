@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HuntDriver — торги по заявке</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div class="back-row">
+            <a class="back-btn" href="./request">←</a>
+            <h1 class="screen-title screen-title-sm" style="margin:0;">Торги по заявке</h1>
+            <button class="icon-btn icon-btn-dot" type="button" style="margin-left:auto;">🔔</button>
+        </div>
+
+        <div class="card">
+            <div class="card-row">
+                <div class="card-avatar">🐻</div>
+                <div class="card-body">
+                    <h3>Мильковский район</h3>
+                    <p>Бурый медведь</p>
+                    <div class="meta-row">
+                        <span>📅 12–18 сентября</span>
+                        <span>💰 Бюджет 1 500 000 ₽</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p style="margin:16px 0 12px;font-size:0.88rem;color:var(--muted);">Получено 6 предложений</p>
+
+        <article class="bid-card">
+            <div class="bid-head">
+                <div class="card-row">
+                    <div class="bid-logo">U</div>
+                    <div>
+                        <span class="badge badge-gold">Лучшая цена</span>
+                        <h3 style="margin:6px 0 0;">УРСУС</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="bid-grid">
+                <div class="price"><strong>1 420 000 ₽</strong><span>Ставка</span></div>
+                <div><strong>Ми-8 + внедорожник</strong><span>Транспорт</span></div>
+                <div><strong>4.9 ★</strong><span>Рейтинг</span></div>
+            </div>
+            <div class="btn-row btn-row-inline">
+                <a class="btn btn-secondary btn-sm" href="./estate/ursus">Профиль</a>
+                <button class="btn btn-primary btn-sm" type="button">Выбрать</button>
+            </div>
+        </article>
+
+        <article class="bid-card">
+            <div class="bid-head">
+                <div class="card-row">
+                    <div class="bid-logo">Х</div>
+                    <div><h3 style="margin:0;">Хребтовая</h3></div>
+                </div>
+            </div>
+            <div class="bid-grid">
+                <div class="price"><strong>1 250 000 ₽</strong><span>Ставка</span></div>
+                <div><strong>Внедорожник + лодка</strong><span>Транспорт</span></div>
+                <div><strong>4.7 ★</strong><span>Рейтинг</span></div>
+            </div>
+            <div class="btn-row btn-row-inline">
+                <button class="btn btn-secondary btn-sm" type="button">Профиль</button>
+                <button class="btn btn-primary btn-sm" type="button">Выбрать</button>
+            </div>
+        </article>
+
+        <article class="bid-card">
+            <div class="bid-head">
+                <div class="card-row">
+                    <div class="bid-logo">Д</div>
+                    <div><h3 style="margin:0;">Долина</h3></div>
+                </div>
+            </div>
+            <div class="bid-grid">
+                <div class="price"><strong>1 560 000 ₽</strong><span>Ставка</span></div>
+                <div><strong>Robinson + квадроцикл</strong><span>Транспорт</span></div>
+                <div><strong>4.8 ★</strong><span>Рейтинг</span></div>
+            </div>
+            <div class="btn-row btn-row-inline">
+                <button class="btn btn-secondary btn-sm" type="button">Профиль</button>
+                <button class="btn btn-primary btn-sm" type="button">Выбрать</button>
+            </div>
+        </article>
+
+        <p class="trust-banner">🔒 Торги конфиденциальны до выбора победителя</p>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a href="./request"><span>📋</span>Заявки</a>
+        <a class="is-active" href="./bids"><span>🔨</span>Торги</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

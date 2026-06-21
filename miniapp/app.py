@@ -174,7 +174,9 @@ class AIChatRequest(BaseModel):
 LANDING_DIR = BASE_DIR.parent / "landing"
 ESTATE_DIR = LANDING_DIR / "estate"
 HUNT_DRIVER_DIR = BASE_DIR.parent / "huntdriver"
-HUNT_DRIVER_STATIC = HUNT_DRIVER_DIR / "static"
+HUNT_DRIVER_STATIC = LANDING_DIR / "huntdriver"
+if not HUNT_DRIVER_STATIC.is_dir():
+    HUNT_DRIVER_STATIC = HUNT_DRIVER_DIR / "static"
 
 
 @asynccontextmanager
