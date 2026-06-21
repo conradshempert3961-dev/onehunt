@@ -457,29 +457,34 @@ async function checkPremiumInvoice() {
 }
 
 async function api(path, options = {}) {
-    const headers = new Headers(options.headers || {});
-    if (tg?.initData) {
-        headers.set("X-Telegram-Init-Data", tg.initData);
-    }
-    headers.set("Content-Type", "application/json");
-    const response = await fetch(path, { credentials: "same-origin", ...options, headers });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        let detail = payload.detail;
-        if (Array.isArray(detail)) {
-            detail = detail.map((item) => item.msg || item.message || JSON.stringify(item)).join("; ");
+    window.wolfLoader?.start();
+    try {
+        const headers = new Headers(options.headers || {});
+        if (tg?.initData) {
+            headers.set("X-Telegram-Init-Data", tg.initData);
         }
-        const message =
-            (typeof detail === "string" && detail) ||
-            payload.message ||
-            response.statusText ||
-            `HTTP ${response.status}`;
-        const error = new Error(message);
-        error.status = response.status;
-        error.payload = payload;
-        throw error;
+        headers.set("Content-Type", "application/json");
+        const response = await fetch(path, { credentials: "same-origin", ...options, headers });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            let detail = payload.detail;
+            if (Array.isArray(detail)) {
+                detail = detail.map((item) => item.msg || item.message || JSON.stringify(item)).join("; ");
+            }
+            const message =
+                (typeof detail === "string" && detail) ||
+                payload.message ||
+                response.statusText ||
+                `HTTP ${response.status}`;
+            const error = new Error(message);
+            error.status = response.status;
+            error.payload = payload;
+            throw error;
+        }
+        return payload;
+    } finally {
+        window.wolfLoader?.stop();
     }
-    return payload;
 }
 
 function scrollAppToTop() {
@@ -1741,6 +1746,7 @@ document.addEventListener("click", (event) => {
 
 autosizeAiInput();
 setAuthMode(state.authMode);
+window.wolfLoader?.start();
 if (APP_MODE === "miniapp") {
     hydrate()
         .catch(() => {
@@ -1750,7 +1756,10 @@ if (APP_MODE === "miniapp") {
                 heroText.textContent = "Откройте ONEHUNT из Telegram, чтобы Mini App получил ваш профиль автоматически.";
             }
         })
-        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+        .finally(() => {
+            window.wolfLoader?.reset();
+            window.requestAnimationFrame(scrollAppToTop);
+        });
 } else {
     restoreSession()
         .then((user) => {
@@ -1763,5 +1772,8 @@ if (APP_MODE === "miniapp") {
         .catch(() => {
             setAuthenticatedUi(false);
         })
-        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+        .finally(() => {
+            window.wolfLoader?.reset();
+            window.requestAnimationFrame(scrollAppToTop);
+        });
 }

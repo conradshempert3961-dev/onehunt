@@ -1,3 +1,13 @@
+window.wolfLoader?.start();
+
+window.addEventListener(
+    "load",
+    () => {
+        window.setTimeout(() => window.wolfLoader?.reset(), 900);
+    },
+    { once: true },
+);
+
 const reveals = document.querySelectorAll(".reveal");
 
 const observer = new IntersectionObserver(
