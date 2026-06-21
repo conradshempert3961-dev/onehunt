@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HUNTTROPHY — торги и заявки</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-trophy">🦌</span>
+                <div class="brand-text">
+                    <strong>HUNTTROPHY</strong>
+                    <small>Торги и заявки</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <div class="filter-tabs">
+            <button class="filter-tab is-active" type="button">Все</button>
+            <button class="filter-tab" type="button">Новые</button>
+            <button class="filter-tab" type="button">В работе</button>
+            <button class="filter-tab" type="button">Завершено</button>
+        </div>
+
+        <article class="app-item">
+            <div class="app-thumb">🐻</div>
+            <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <h3 style="margin:0;font-size:0.95rem;">Бурый медведь</h3>
+                    <span class="badge badge-green">Новый</span>
+                </div>
+                <div class="meta-row"><span>📍 Мильковский район</span><span>📅 12–18 сентября</span></div>
+                <p style="margin:8px 0 0;font-size:0.95rem;font-weight:800;color:var(--brand);">750 000 ₽</p>
+                <p style="margin:4px 0 0;font-size:0.78rem;color:var(--muted);">Предпочтительный транспорт</p>
+                <div class="tag-row"><span class="tag">🚁 Ми-8</span><span class="tag">🛶 лодка</span></div>
+                <div class="btn-row btn-row-inline" style="margin-top:12px;">
+                    <button class="btn btn-primary btn-sm" type="button">Сделать ставку</button>
+                    <button class="btn btn-secondary btn-sm" type="button">Подробнее ›</button>
+                </div>
+            </div>
+        </article>
+
+        <article class="app-item">
+            <div class="app-thumb">🐏</div>
+            <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <h3 style="margin:0;font-size:0.95rem;">Снежный баран</h3>
+                    <span class="badge badge-warn">🔥 Горячий запрос</span>
+                </div>
+                <div class="meta-row"><span>📍 Улаганский район</span><span>📅 5–12 октября</span></div>
+                <p style="margin:8px 0 0;font-size:0.95rem;font-weight:800;color:var(--brand);">1 200 000 ₽</p>
+                <div class="tag-row"><span class="tag">🚁 Robinson</span><span class="tag">🐴 кони</span></div>
+                <div class="btn-row btn-row-inline" style="margin-top:12px;">
+                    <button class="btn btn-primary btn-sm" type="button">Сделать ставку</button>
+                    <button class="btn btn-secondary btn-sm" type="button">Подробнее ›</button>
+                </div>
+            </div>
+        </article>
+
+        <article class="app-item">
+            <div class="app-thumb">🫎</div>
+            <div style="flex:1;">
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <h3 style="margin:0;font-size:0.95rem;">Камчатский лось</h3>
+                    <span class="badge badge-green">Новый</span>
+                </div>
+                <div class="meta-row"><span>📍 Елизовский район</span><span>📅 20–27 сентября</span></div>
+                <p style="margin:8px 0 0;font-size:0.95rem;font-weight:800;color:var(--brand);">580 000 ₽</p>
+                <div class="tag-row"><span class="tag">🚙 внедорожник</span></div>
+                <div class="btn-row btn-row-inline" style="margin-top:12px;">
+                    <button class="btn btn-primary btn-sm" type="button">Сделать ставку</button>
+                    <button class="btn btn-secondary btn-sm" type="button">Подробнее ›</button>
+                </div>
+            </div>
+        </article>
+
+        <div class="trust-banner">
+            🛡 <strong>Честные торги и безопасные сделки</strong><br>
+            Мы проверяем охотников и защищаем интересы владельцев угодий
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a class="is-active" href="./bids"><span>🔨</span>Торги</a>
+        <a href="./monitor"><span>📍</span>Мониторинг</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

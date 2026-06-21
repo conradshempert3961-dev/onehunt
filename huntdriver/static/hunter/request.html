@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HuntDriver — новая заявка</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="icon-btn" href="./" aria-label="Назад">←</a>
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-hunter">🦌</span>
+                <div class="brand-text brand-text-hunter">
+                    <strong>HuntDriver</strong>
+                    <small>by ONEHUNT</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <h1 class="screen-title">Новая заявка</h1>
+
+        <section class="form-section">
+            <label><span class="section-num">1</span>Район охоты</label>
+            <div class="select-field">📍 Мильковский район</div>
+        </section>
+
+        <section class="form-section">
+            <label><span class="section-num">2</span>Трофей</label>
+            <div class="chip-row" data-chip-group data-multi="false">
+                <button class="chip is-active" type="button">🐻 Медведь</button>
+                <button class="chip" type="button">🐏 Баран</button>
+                <button class="chip" type="button">🫎 Лось</button>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <label><span class="section-num">3</span>Даты охоты</label>
+            <div class="date-row">
+                <div class="input-field">📅 с 12.09</div>
+                <div class="input-field">📅 по 18.09</div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <label><span class="section-num">4</span>Транспорт и сервис</label>
+            <div class="chip-grid" data-chip-group data-multi="true">
+                <button class="chip chip-checkable is-selected" type="button">🚁 Ми-8</button>
+                <button class="chip chip-checkable" type="button">🚁 Robinson</button>
+                <button class="chip chip-checkable is-selected" type="button">🚙 Внедорожник</button>
+                <button class="chip chip-checkable" type="button">🛶 Лодка</button>
+                <button class="chip chip-checkable" type="button">❄️ Снегоход</button>
+                <button class="chip chip-checkable" type="button">🏍 Квадроцикл</button>
+                <button class="chip chip-checkable" type="button">🐴 Кони</button>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <label><span class="section-num">5</span>Бюджет</label>
+            <div class="budget-display" id="budgetValue">1 500 000 ₽</div>
+            <input class="range-slider" id="budgetRange" type="range" min="500000" max="3000000" step="50000" value="1500000">
+            <div class="range-labels">
+                <span>500 000 ₽</span>
+                <span>3 000 000 ₽</span>
+            </div>
+        </section>
+
+        <p class="form-note">ℹ️ Хозяйства увидят вашу заявку и предложат свои условия</p>
+
+        <a class="btn btn-primary" href="./bids" style="width:100%;">Запустить аукцион</a>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a class="is-active" href="./request"><span>📋</span>Заявки</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

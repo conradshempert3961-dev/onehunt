@@ -45,7 +45,7 @@ set_kv MINIAPP_HOST "0.0.0.0"
 echo "== Start stack =="
 docker compose -f docker-compose.prod.yml up -d --build postgres redis deepseek
 sleep 5
-docker compose -f docker-compose.prod.yml up -d --build miniapp
+docker compose -f docker-compose.prod.yml up -d --build miniapp huntdriver
 docker compose -f docker-compose.prod.yml run --rm miniapp python scripts/load_questions.py 2>/dev/null || true
 
 if [[ -f "${ROOT}/.env.deepseek" ]] && grep -q 'DEEPSEEK_USER_TOKEN=' "${ROOT}/.env.deepseek"; then
@@ -74,6 +74,18 @@ server {
     listen [::]:80 default_server;
     server_name _;
 
+    location /huntdriver/ {
+        proxy_pass http://127.0.0.1:8082/;
+        proxy_http_version 1.1;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 60;
+        proxy_send_timeout 300;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
     location / {
         proxy_pass http://${MINIAPP_IP}:8080;
         proxy_http_version 1.1;
@@ -95,4 +107,5 @@ nginx -t && systemctl reload nginx
 echo ""
 echo "OK: http://${IP}/"
 echo "App: http://${IP}/app"
+echo "HuntDriver: http://${IP}/huntdriver/"
 docker compose -f docker-compose.prod.yml ps

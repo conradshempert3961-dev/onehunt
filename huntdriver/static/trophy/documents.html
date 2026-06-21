@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HUNTTROPHY — документы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-trophy">🦌</span>
+                <div class="brand-text">
+                    <strong>HUNTTROPHY</strong>
+                    <small>Документы и отчётность</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <div class="stats-row">
+            <div class="stat-card"><strong>12</strong><span>документов<br>Всего в системе</span></div>
+            <div class="stat-card"><strong>3</strong><span>отчёта<br>На проверке</span></div>
+            <div class="stat-card"><strong style="color:var(--warn);">1</strong><span>дедлайн<br>30 дней</span></div>
+        </div>
+
+        <div class="section-head">
+            <h2>Документы и проверки</h2>
+            <a href="#">Все документы ›</a>
+        </div>
+
+        <div class="card info-list">
+            <div class="info-row">
+                <span class="label">⚙️ Лицензии и разрешения</span>
+                <span class="badge badge-green">Актуально</span>
+            </div>
+            <div class="info-row">
+                <span class="label">🤝 Договоры и аренда</span>
+                <span class="badge badge-warn">Нужно обновить</span>
+            </div>
+            <div class="info-row">
+                <span class="label">🌿 Отчёты в Минприроды</span>
+                <span class="badge badge-info">На проверке</span>
+            </div>
+            <div class="info-row">
+                <span class="label">❄️ Зимний маршрутный учёт</span>
+                <span class="badge badge-green">Актуально</span>
+            </div>
+        </div>
+
+        <div class="section-head"><h2>Быстрые действия</h2></div>
+
+        <div class="quick-grid">
+            <button class="quick-btn" type="button"><span>☁️</span>Загрузить документ</button>
+            <button class="quick-btn" type="button"><span>📄</span>Сгенерировать PDF</button>
+            <button class="quick-btn" type="button"><span>📍</span>Export GeoJSON</button>
+            <button class="quick-btn" type="button"><span>✈️</span>Отправить отчёт</button>
+        </div>
+
+        <div class="trust-banner" style="margin-top:16px;">
+            🛡 <strong>Работайте в соответствии с законом</strong><br>
+            Лицензии, отчёты и разрешения — в одном кабинете
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a href="./monitor"><span>📍</span>Мониторинг</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>
