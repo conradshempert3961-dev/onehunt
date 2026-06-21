@@ -1,10 +1,13 @@
 FROM python:3.11-slim
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-RUN pip install --no-cache-dir fastapi uvicorn curl-cffi python-dotenv pydantic httpx tiktoken
-
-COPY scripts/deepseek_proxy.py /app/proxy.py
+RUN git clone --depth 1 https://github.com/GitUser200607/deepseek-free-api.git . \
+    && pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 
