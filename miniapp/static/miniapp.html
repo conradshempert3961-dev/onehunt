@@ -8,8 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/styles.css">
-    <link rel="stylesheet" href="/assets/theme-modern.css">
+    <link rel="stylesheet" href="/assets/app.css">
 </head>
 <body class="mode-miniapp">
     <div class="app-shell">
@@ -49,18 +48,13 @@
             </section>
 
             <section class="screen" id="screen-home">
-                <div class="mini-screen-head mini-screen-head-home">
-                    <p id="homeGreeting">Добро пожаловать 👋</p>
-                    <h1 id="homeHeading">Лагерь охотника</h1>
-                </div>
+                <header class="home-head">
+                    <p class="home-greeting" id="homeGreeting">Добро пожаловать 👋</p>
+                    <h1 id="homeHeading">Подготовка к экзамену</h1>
+                    <p class="home-summary" id="homeSummary">Загружаем ваш профиль и прогресс.</p>
+                </header>
 
-                <div class="hero-card card">
-                    <p class="eyebrow">Лагерь охотника</p>
-                    <h1 id="heroTitle">ONEHUNT</h1>
-                    <p class="hero-text" id="heroText">Загружаем ваш профиль и текущий прогресс.</p>
-                    <div class="hero-badges" id="heroBadges"></div>
-                </div>
-
+                <div class="hero-badges" id="heroBadges"></div>
                 <div class="stats-grid" id="homeStats"></div>
 
                 <button class="offer-banner" id="guideBannerButton" type="button">

@@ -5,8 +5,8 @@ if (tg) {
     tg.ready();
     tg.expand();
     tg.enableClosingConfirmation();
-    tg.setHeaderColor("#eef6f0");
-    tg.setBackgroundColor("#eef6f0");
+    tg.setHeaderColor("#090c10");
+    tg.setBackgroundColor("#090c10");
 }
 
 const state = {
@@ -751,13 +751,21 @@ function renderBootstrap() {
     document.getElementById("homeGreeting")?.replaceChildren(
         document.createTextNode(data.user.questions_completed ? `Привет, ${heroName} 👋` : "Добро пожаловать 👋"),
     );
-    document.getElementById("homeHeading")?.replaceChildren(document.createTextNode("Лагерь охотника"));
+    document.getElementById("homeHeading")?.replaceChildren(document.createTextNode("Подготовка к экзамену"));
+    document.getElementById("homeSummary") &&
+        (document.getElementById("homeSummary").textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`);
     if (headerProfileButton) {
         headerProfileButton.textContent = displayName || "Профиль";
     }
     document.getElementById("statusLabel")?.replaceChildren(document.createTextNode(data.free_mode ? "Бета" : "ONEHUNT"));
-    document.getElementById("heroTitle").textContent = "Твоя подготовка";
-    document.getElementById("heroText").textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`;
+    const heroTitle = document.getElementById("heroTitle");
+    const heroText = document.getElementById("heroText");
+    if (heroTitle) {
+        heroTitle.textContent = "Подготовка";
+    }
+    if (heroText) {
+        heroText.textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`;
+    }
     document.getElementById("heroBadges").innerHTML = `
         <div class="hero-badge"><strong>${data.user.rank.icon} ${data.user.rank.name}</strong><span>текущий ранг</span></div>
         <div class="hero-badge"><strong>${data.route.percent}%</strong><span>маршрут на 14 дней</span></div>
