@@ -252,9 +252,10 @@ def build_rule_based_reply(message: str, context: dict[str, Any]) -> dict[str, A
         today_task = ""
         if route_task:
             task = route_task["task"]
+            minutes = task.get("minutes")
+            duration = f" (≈{minutes} мин)" if minutes else ""
             today_task = (
-                f"Сегодня день {route_day}: {task['icon']} {task['name']} — {task['goal']} "
-                f"(≈{task['minutes']} мин)."
+                f"Сегодня день {route_day}: {task['icon']} {task['name']} — {task['goal']}{duration}."
             )
         reply = "\n".join(
             [
