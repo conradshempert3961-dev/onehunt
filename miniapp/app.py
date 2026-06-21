@@ -174,6 +174,7 @@ class AIChatRequest(BaseModel):
 LANDING_DIR = BASE_DIR.parent / "landing"
 ESTATE_DIR = LANDING_DIR / "estate"
 HUNT_DRIVER_DIR = BASE_DIR.parent / "huntdriver"
+HUNT_DRIVER_STATIC = HUNT_DRIVER_DIR / "static"
 
 
 @asynccontextmanager
@@ -189,14 +190,12 @@ if LANDING_DIR.is_dir():
     app.mount("/promo", StaticFiles(directory=LANDING_DIR, html=True), name="promo")
 if ESTATE_DIR.is_dir():
     app.mount("/estate", StaticFiles(directory=ESTATE_DIR, html=True), name="estate")
-if HUNT_DRIVER_DIR.is_dir():
-    from huntdriver.app import app as huntdriver_app
-
+if HUNT_DRIVER_STATIC.is_dir():
     @app.get("/huntdriver", include_in_schema=False)
     async def huntdriver_redirect() -> RedirectResponse:
         return RedirectResponse(url="/huntdriver/", status_code=307)
 
-    app.mount("/huntdriver", huntdriver_app)
+    app.mount("/huntdriver", StaticFiles(directory=HUNT_DRIVER_STATIC, html=True), name="huntdriver")
 
 
 def has_full_access(user: Any) -> bool:
@@ -718,6 +717,7 @@ async def products_catalog() -> dict[str, Any]:
             "telegram_bot": "https://t.me/Onehuntbot",
             "promo_hub": "/promo/",
             "estate": "/estate/",
+            "huntdriver": "/huntdriver/",
         },
     }
 
@@ -836,6 +836,7 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "telegram_bot": "https://t.me/Onehuntbot",
             "promo_hub": "/promo/",
             "estate": "/estate/",
+            "huntdriver": "/huntdriver/",
         },
         "exam": {
             "questions": EXAM_QUESTIONS,
