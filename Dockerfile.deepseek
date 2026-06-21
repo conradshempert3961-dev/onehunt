@@ -2,8 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir fastapi uvicorn curl-cffi python-dotenv pydantic httpx tiktoken \
-    && python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/GitUser200607/deepseek-free-api/master/proxy.py', '/app/proxy.py')"
+RUN pip install --no-cache-dir fastapi uvicorn curl-cffi python-dotenv pydantic httpx tiktoken
+
+COPY scripts/deepseek_proxy.py /app/proxy.py
 
 EXPOSE 8000
 
