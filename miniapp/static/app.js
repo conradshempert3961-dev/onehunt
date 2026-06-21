@@ -51,7 +51,7 @@ const headerProfileButton = document.getElementById("headerProfileButton");
 const bottomNav = document.querySelector(".bottom-nav");
 const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
-const AI_AVATAR_IMAGE = "/assets/brand-logo.jpg";
+const AI_AVATAR_IMAGE = "/assets/brand-logo.svg";
 let sessionTimerInterval = null;
 
 function hasWebSession() {

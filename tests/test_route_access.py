@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from miniapp.app import decorate_route_payload, has_route_access
 
 
@@ -9,7 +11,8 @@ def make_user(access_level: str = "basic") -> SimpleNamespace:
     return SimpleNamespace(access_level=access_level)
 
 
-def test_basic_user_gets_first_three_route_days_for_free() -> None:
+def test_basic_user_gets_first_three_route_days_for_free(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("miniapp.app.FREE_MODE", False)
     route = {
         "current_day": 3,
         "completed": 1,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import re
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -163,14 +164,20 @@ class SettingsUpdateRequest(BaseModel):
 class AIChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=400)
 
-app = FastAPI(title="ONEHUNT Web App", version="2.0.0")
-app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
+LANDING_DIR = BASE_DIR.parent / "landing"
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
     await init_db()
     await seed_reference_data()
+    yield
+
+
+app = FastAPI(title="ONEHUNT Web App", version="2.0.0", lifespan=lifespan)
+app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
+if LANDING_DIR.is_dir():
+    app.mount("/promo", StaticFiles(directory=LANDING_DIR, html=True), name="promo")
 
 
 def has_full_access(user: Any) -> bool:
