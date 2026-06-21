@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 .env
 .env.deepseek
+.env.vds
 *.db
 logs/
 data/

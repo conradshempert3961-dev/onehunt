@@ -31,10 +31,16 @@
 3. Вставьте этот публичный ключ (одна строка):
 
 ```
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHCofkVeLW1ZQ4Wupe7uF8EShex+16bk2QwY6ifrEO5g ubuntu@cursor
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0 cursor-agent
 ```
 
 4. Сохраните и **привяжите ключ к VPS** (если панель просит выбрать сервер `socialspur.ru`).
+
+После добавления ключа агент сможет деплоить сам. Или одна команда в **VNC-консоли** (шаг 2.3):
+
+```bash
+DEEPSEEK_USER_TOKEN='ваш_токен' curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/improve-styling-fix-errors-2866/scripts/vds_one_click.sh | bash
+```
 
 ### 2.3. Консоль (если SSH не открывается)
 
