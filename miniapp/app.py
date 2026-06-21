@@ -107,6 +107,7 @@ from services.web_auth import (
 )
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
+from utils.constants import BLOCKS, DAILY_CHALLENGES, PREMIUM_PRICES, ROUTE_TASKS
 from utils.products import PRODUCT_CATALOG
 from utils.helpers import calculate_accuracy, format_duration, get_rank_by_correct, get_xp_level
 

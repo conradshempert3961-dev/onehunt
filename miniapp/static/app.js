@@ -1466,12 +1466,15 @@ async function hydrate() {
         renderProfile();
         ensureAiBootstrapped(state.aiHistory.length === 0);
     } catch (error) {
+        setAuthenticatedUi(false);
         if (error.status === 401) {
-            setAuthenticatedUi(false);
             return;
         }
         showToast(error.message);
-        document.getElementById("heroText").textContent = error.message;
+        const heroText = document.getElementById("heroText");
+        if (heroText) {
+            heroText.textContent = error.message;
+        }
     }
 }
 
