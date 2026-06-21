@@ -580,6 +580,150 @@ a {
     text-decoration: underline;
 }
 
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.product-card {
+    padding: 26px;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.product-card-hunter {
+    background:
+        radial-gradient(circle at top right, rgba(34, 71, 55, 0.08), transparent 32%),
+        var(--surface);
+}
+
+.product-card-estate {
+    background:
+        radial-gradient(circle at top right, rgba(203, 140, 46, 0.14), transparent 32%),
+        var(--surface);
+}
+
+.product-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.product-badge {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--forest-soft);
+    color: var(--forest);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.product-badge-estate {
+    background: var(--amber-soft);
+    color: #8a5a12;
+}
+
+.product-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.product-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+}
+
+.product-audience {
+    margin: 0 0 12px;
+    color: var(--forest);
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.product-list {
+    margin: 16px 0 20px;
+    padding-left: 18px;
+    color: var(--text-soft);
+    line-height: 1.65;
+}
+
+.product-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.product-note {
+    margin: 14px 0 0;
+    color: var(--text-soft);
+    font-size: 0.86rem;
+}
+
+.hub-hero {
+    grid-template-columns: 1fr;
+}
+
+.hub-hero-copy {
+    max-width: 900px;
+}
+
+.connect-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.pricing-card {
+    padding: 28px;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(255, 255, 255, 0.52);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.estate-theme {
+    --forest: #5c4a32;
+    --forest-soft: #f0e6d6;
+    --amber: #cb8c2e;
+}
+
+.estate-theme .eyebrow-estate {
+    color: #8a5a12;
+}
+
+.brand-mark-estate {
+    background: linear-gradient(135deg, #8a5a12, #cb8c2e);
+}
+
+.signal-card-estate {
+    background:
+        radial-gradient(circle at top right, rgba(203, 140, 46, 0.28), transparent 30%),
+        linear-gradient(145deg, rgba(45, 36, 24, 0.94), rgba(74, 58, 38, 0.9));
+}
+
+.status-dot-amber {
+    background: #f0b429;
+    box-shadow: 0 0 14px rgba(240, 180, 41, 0.75);
+}
+
+.button-estate {
+    background: linear-gradient(135deg, #cb8c2e, #8a5a12);
+    box-shadow: 0 18px 40px rgba(203, 140, 46, 0.28);
+}
+
+.estate-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+    gap: 32px;
+}
+
 .reveal {
     opacity: 0;
     transform: translateY(22px);
@@ -611,7 +755,9 @@ a {
 
     .feature-grid,
     .journey-grid,
-    .faq-list {
+    .faq-list,
+    .product-grid,
+    .connect-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
@@ -660,7 +806,13 @@ a {
     .hero-stats,
     .feature-grid,
     .journey-grid,
-    .faq-list {
+    .faq-list,
+    .product-grid,
+    .connect-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .estate-hero {
         grid-template-columns: 1fr;
     }
 

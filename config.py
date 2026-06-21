@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from utils.constants import BLOCKS, FREE_LIMITS, PREMIUM_PRICES, RANKS, XP_LEVELS, XP_RULES
+from utils.constants import BLOCKS, FREE_LIMITS, PREMIUM_PRICES, RANKS, SUBSCRIPTION_PRICES, XP_LEVELS, XP_RULES
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
@@ -69,6 +69,7 @@ TRAINING_FREE_LIMIT = FREE_LIMITS["trainings"]
 ROUTE_FREE_DAYS = int(os.getenv("ROUTE_FREE_DAYS", "3"))
 PREMIUM_PRICE_RUB = PREMIUM_PRICES["rub"]
 PREMIUM_PRICE_STARS = PREMIUM_PRICES["stars"]
+HUNT_TROPHY_PRICE_RUB = SUBSCRIPTION_PRICES["hunt_trophy_rub"]
 
 XP_TABLE = XP_RULES
 

@@ -34,6 +34,10 @@ PREMIUM_PRICES = {
     "stars": 700,
 }
 
+SUBSCRIPTION_PRICES = {
+    "hunt_trophy_rub": 490,
+}
+
 RANKS = [
     {
         "code": "egg",

@@ -107,7 +107,7 @@ from services.web_auth import (
 )
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
-from utils.constants import BLOCKS, DAILY_CHALLENGES, PREMIUM_PRICES, ROUTE_TASKS
+from utils.products import PRODUCT_CATALOG
 from utils.helpers import calculate_accuracy, format_duration, get_rank_by_correct, get_xp_level
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -165,6 +165,7 @@ class AIChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=400)
 
 LANDING_DIR = BASE_DIR.parent / "landing"
+ESTATE_DIR = LANDING_DIR / "estate"
 
 
 @asynccontextmanager
@@ -178,6 +179,8 @@ app = FastAPI(title="ONEHUNT Web App", version="2.0.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
 if LANDING_DIR.is_dir():
     app.mount("/promo", StaticFiles(directory=LANDING_DIR, html=True), name="promo")
+if ESTATE_DIR.is_dir():
+    app.mount("/estate", StaticFiles(directory=ESTATE_DIR, html=True), name="estate")
 
 
 def has_full_access(user: Any) -> bool:
@@ -805,6 +808,20 @@ async def miniapp_index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "miniapp.html").read_text(encoding="utf-8"))
 
 
+@app.get("/api/products")
+async def products_catalog() -> dict[str, Any]:
+    return {
+        "products": PRODUCT_CATALOG,
+        "channels": {
+            "web": "/",
+            "miniapp": "/app",
+            "telegram_bot": "https://t.me/Onehuntbot",
+            "promo_hub": "/promo/",
+            "estate": "/estate/",
+        },
+    }
+
+
 @app.get("/health")
 async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
@@ -911,6 +928,14 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "yoomoney_enabled": yoomoney_configured(),
             "yoomoney_polling_enabled": yoomoney_history_configured(),
             "yoomoney_notifications_enabled": yoomoney_notifications_configured(),
+        },
+        "products": PRODUCT_CATALOG,
+        "channels": {
+            "web": "/",
+            "miniapp": "/app",
+            "telegram_bot": "https://t.me/Onehuntbot",
+            "promo_hub": "/promo/",
+            "estate": "/estate/",
         },
         "exam": {
             "questions": EXAM_QUESTIONS,

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONEHUNT — бот для подготовки к охотминимуму</title>
+    <meta
+        name="description"
+        content="ONEHUNT — Telegram-бот для подготовки к охотничьему минимуму: 257 вопросов, экзамен, тренировки, маршрут, статистика и иллюстрации."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brand" href="/promo/">
+                <span class="brand-mark">OH</span>
+                <span class="brand-copy">
+                    <strong>ONEHUNT</strong>
+                    <small>Подготовка к охотминимуму</small>
+                </span>
+            </a>
+
+            <nav class="topnav">
+                <a href="#features">Возможности</a>
+                <a href="#journey">Как это работает</a>
+                <a href="#preview">Внутри бота</a>
+                <a href="#faq">Вопросы</a>
+                <a href="/">Web-версия</a>
+                <a href="/promo/">Все продукты</a>
+            </nav>
+
+            <div class="topbar-actions">
+                <a class="button button-ghost" href="/">Web-версия</a>
+                <a class="button button-primary" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
+                    Открыть бота
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero reveal" id="hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Telegram-бот для охотника</p>
+                    <h1>Подготовка к экзамену без хаоса, конспектов и бесконечных пересдач.</h1>
+                    <p class="hero-lead">
+                        ONEHUNT собирает в одном месте официальный экзамен на <strong>257 вопросов</strong>,
+                        быстрые тренировки, ежедневные сценарии, маршрут подготовки, статистику и
+                        иллюстрации к вопросам.
+                    </p>
+
+                    <div class="hero-actions">
+                        <a class="button button-primary" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
+                            Перейти в @Onehuntbot
+                        </a>
+                        <a class="button button-secondary" href="/">
+                            Открыть web-версию
+                        </a>
+                        <a class="button button-secondary" href="#preview">
+                            Посмотреть сценарий
+                        </a>
+                    </div>
+
+                    <div class="hero-badges">
+                        <span>257 вопросов</span>
+                        <span>Экзамен целиком</span>
+                        <span>Сейчас бесплатно</span>
+                        <span>Работает в Telegram</span>
+                    </div>
+                </div>
+
+                <div class="hero-panel">
+                    <div class="signal-card">
+                        <div class="signal-head">
+                            <span class="status-dot"></span>
+                            <span>ONEHUNT Live</span>
+                        </div>
+
+                        <div class="hero-stats">
+                            <article>
+                                <strong>257</strong>
+                                <span>официальных вопросов</span>
+                            </article>
+                            <article>
+                                <strong>14 дней</strong>
+                                <span>маршрут подготовки</span>
+                            </article>
+                            <article>
+                                <strong>9+</strong>
+                                <span>режимов тренировки</span>
+                            </article>
+                            <article>
+                                <strong>A B C D</strong>
+                                <span>компактные ответы</span>
+                            </article>
+                        </div>
+
+                        <div class="hero-note">
+                            <p>Экран бота собран так, чтобы человеку было легко идти по разделам:</p>
+                            <ul>
+                                <li><strong>Старт</strong> — быстрый вопрос, тренировка, экзамен.</li>
+                                <li><strong>Практика</strong> — все режимы и блоки.</li>
+                                <li><strong>Ежедневно</strong> — вопрос дня, вызов, маршрут.</li>
+                                <li><strong>Профиль</strong> — журнал, история, настройки.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section reveal" id="features">
+                <div class="section-heading">
+                    <p class="eyebrow">Что внутри</p>
+                    <h2>Всё нужное для подготовки уже собрано в одном боте.</h2>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card accent-forest">
+                        <span class="feature-icon">📝</span>
+                        <h3>Полный экзамен</h3>
+                        <p>Официальный прогон на 257 вопросов с таймером, итогом и историей попыток.</p>
+                    </article>
+
+                    <article class="feature-card accent-amber">
+                        <span class="feature-icon">🎯</span>
+                        <h3>Умные тренировки</h3>
+                        <p>Стрельбище, блиц, промахи, избранное, повторение, дуэль и тематические блоки.</p>
+                    </article>
+
+                    <article class="feature-card accent-stone">
+                        <span class="feature-icon">📅</span>
+                        <h3>Ежедневный ритм</h3>
+                        <p>Вопрос дня, вызов дня и маршрут на 14 дней, чтобы не выпадать из подготовки.</p>
+                    </article>
+
+                    <article class="feature-card accent-night">
+                        <span class="feature-icon">📈</span>
+                        <h3>Журнал и аналитика</h3>
+                        <p>Прогресс, история экзаменов, достижения, слабые темы и движение к следующему уровню.</p>
+                    </article>
+
+                    <article class="feature-card accent-forest">
+                        <span class="feature-icon">🦌</span>
+                        <h3>Карточки и иллюстрации</h3>
+                        <p>Карточки животных и поддержка изображений к вопросам, чтобы материал запоминался быстрее.</p>
+                    </article>
+
+                    <article class="feature-card accent-amber">
+                        <span class="feature-icon">⚙️</span>
+                        <h3>Гибкая настройка</h3>
+                        <p>Количество вопросов, таймер, объяснения, напоминания и доступ можно менять без сложности.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section journey reveal" id="journey">
+                <div class="section-heading">
+                    <p class="eyebrow">Сценарий</p>
+                    <h2>Как человек обычно проходит путь в ONEHUNT.</h2>
+                </div>
+
+                <div class="journey-grid">
+                    <article class="journey-step">
+                        <span>01</span>
+                        <h3>Заходит в Telegram</h3>
+                        <p>Никаких установок и личных кабинетов. Достаточно открыть бота и нажать старт.</p>
+                    </article>
+
+                    <article class="journey-step">
+                        <span>02</span>
+                        <h3>Начинает с простого</h3>
+                        <p>Быстрый вопрос, обычная тренировка или вопрос дня помогают войти без перегруза.</p>
+                    </article>
+
+                    <article class="journey-step">
+                        <span>03</span>
+                        <h3>Дожимает слабые темы</h3>
+                        <p>Промахи, повторение и статистика показывают, где реально проседает результат.</p>
+                    </article>
+
+                    <article class="journey-step">
+                        <span>04</span>
+                        <h3>Идёт на экзамен</h3>
+                        <p>После тренировок запускает полный экзамен и видит честную картину готовности.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section preview reveal" id="preview">
+                <div class="section-heading">
+                    <p class="eyebrow">Внутри бота</p>
+                    <h2>Пример того, как выглядит сценарий прямо в Telegram.</h2>
+                </div>
+
+                <div class="preview-layout">
+                    <div class="phone-frame">
+                        <div class="phone-top">
+                            <div class="camera-dot"></div>
+                            <span>@Onehuntbot</span>
+                        </div>
+
+                        <div class="chat-stack">
+                            <div class="bubble bubble-system">
+                                <strong>🏕 Лагерь охотника ONEHUNT</strong>
+                                <p>Статус, прогресс, точность, XP и быстрый переход в 4 раздела.</p>
+                            </div>
+
+                            <div class="bubble bubble-user">
+                                <p>Хочу пройти полный экзамен.</p>
+                            </div>
+
+                            <div class="bubble bubble-system">
+                                <strong>📝 Экзамен — все 257 вопросов</strong>
+                                <p>Бот запускает официальный прогон и показывает компактные кнопки ответов: A B C D.</p>
+                            </div>
+
+                            <div class="button-cloud">
+                                <span>A</span>
+                                <span>B</span>
+                                <span>C</span>
+                                <span>D</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preview-copy">
+                        <div class="detail-card">
+                            <h3>Что важно пользователю</h3>
+                            <ul>
+                                <li>Всё находится в одном мессенджере.</li>
+                                <li>Интерфейс компактный, но без потери функций.</li>
+                                <li>Ответы на вопросах короткие и не захламляют экран.</li>
+                                <li>К разделам легко вернуться через понятные кнопки.</li>
+                            </ul>
+                        </div>
+
+                        <div class="detail-card">
+                            <h3>Что важно владельцу продукта</h3>
+                            <ul>
+                                <li>Сайт сразу ведёт в Telegram, без лишних шагов.</li>
+                                <li>Подходит для рекламы, посевов, ссылки в профиле и карточки продукта.</li>
+                                <li>Позже можно добавить оплату, скриншоты, отзывы и форму заявки.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section faq reveal" id="faq">
+                <div class="section-heading">
+                    <p class="eyebrow">Частые вопросы</p>
+                    <h2>Коротко и по делу.</h2>
+                </div>
+
+                <div class="faq-list">
+                    <article class="faq-item">
+                        <h3>Это отдельное приложение?</h3>
+                        <p>Нет. Всё работает внутри Telegram, поэтому человеку не нужно скачивать ничего дополнительного.</p>
+                    </article>
+
+                    <article class="faq-item">
+                        <h3>Экзамен можно пройти полностью?</h3>
+                        <p>Да. В боте уже есть полноценный режим экзамена на все 257 вопросов за один запуск.</p>
+                    </article>
+
+                    <article class="faq-item">
+                        <h3>Можно добавлять картинки к вопросам?</h3>
+                        <p>Да. Поддержка иллюстраций уже заложена, и их можно привязывать по мере наполнения базы.</p>
+                    </article>
+
+                    <article class="faq-item">
+                        <h3>Сейчас доступ бесплатный?</h3>
+                        <p>Да. Сейчас бот открыт в удобном режиме без платных ограничений, а монетизацию можно включить позже.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="cta reveal">
+                <div class="cta-panel">
+                    <div>
+                        <p class="eyebrow">Готово к запуску</p>
+                        <h2>Откройте ONEHUNT и начните подготовку прямо сейчас.</h2>
+                        <p>
+                            Подходит для тех, кто хочет быстро войти в тему, пройти весь экзамен целиком и видеть свой реальный прогресс.
+                        </p>
+                    </div>
+
+                    <div class="cta-actions">
+                        <a class="button button-primary" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
+                            Перейти в Telegram
+                        </a>
+                        <a class="button button-ghost" href="#hero">
+                            Наверх
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="footer-bar reveal">
+                <p>
+                    <a href="/promo/">Все продукты</a> ·
+                    <a href="/">Web-версия</a> ·
+                    <a href="/app">Mini App</a> ·
+                    <a href="/estate/">Hunt Trophy</a> ·
+                    <a href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">Telegram</a>
+                </p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="./app.js"></script>
+</body>
+</html>
