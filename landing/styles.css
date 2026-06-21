@@ -233,32 +233,37 @@ a:hover {
     grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
 }
 
-.hub-hero-copy {
+.hero-copy.hub-hero-copy {
     max-width: none;
     padding: 36px 32px;
     border-radius: var(--radius-xl);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     background:
-        radial-gradient(circle at 100% 0%, rgba(212, 162, 74, 0.2), transparent 40%),
+        radial-gradient(circle at 100% 0%, rgba(212, 162, 74, 0.22), transparent 40%),
         linear-gradient(145deg, var(--forest) 0%, #163a2c 50%, #0f2e22 100%);
     color: #f8f2e6;
     box-shadow: var(--shadow-lg);
 }
 
-.hub-hero-copy .eyebrow {
+.hero-copy.hub-hero-copy .eyebrow {
     color: var(--gold-soft);
 }
 
-.hub-hero-copy h1 {
+.hero-copy.hub-hero-copy h1,
+.hero.hub-hero .hub-hero-copy h1 {
     color: #fffaf2;
 }
 
-.hub-hero-copy .hero-lead {
-    color: rgba(248, 242, 230, 0.85);
+.hero-copy.hub-hero-copy .hero-lead {
+    color: rgba(248, 242, 230, 0.88);
 }
 
-.hub-hero-copy .hero-badges span {
-    border-color: rgba(255, 255, 255, 0.14);
+.hero-copy.hub-hero-copy .hero-lead strong {
+    color: var(--gold-soft);
+}
+
+.hero-copy.hub-hero-copy .hero-badges span {
+    border-color: rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.08);
     color: #f8f2e6;
 }
