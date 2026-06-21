@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -173,6 +173,7 @@ class AIChatRequest(BaseModel):
 
 LANDING_DIR = BASE_DIR.parent / "landing"
 ESTATE_DIR = LANDING_DIR / "estate"
+HUNT_DRIVER_DIR = BASE_DIR.parent / "huntdriver"
 
 
 @asynccontextmanager
@@ -188,6 +189,14 @@ if LANDING_DIR.is_dir():
     app.mount("/promo", StaticFiles(directory=LANDING_DIR, html=True), name="promo")
 if ESTATE_DIR.is_dir():
     app.mount("/estate", StaticFiles(directory=ESTATE_DIR, html=True), name="estate")
+if HUNT_DRIVER_DIR.is_dir():
+    from huntdriver.app import app as huntdriver_app
+
+    @app.get("/huntdriver", include_in_schema=False)
+    async def huntdriver_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/huntdriver/", status_code=307)
+
+    app.mount("/huntdriver", huntdriver_app)
 
 
 def has_full_access(user: Any) -> bool:
