@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout
 
 from config import (
     AI_MAX_HISTORY,
@@ -377,14 +378,18 @@ async def _call_openai_chat(messages: list[dict[str, str]]) -> str:
     }
 
     timeout = ClientTimeout(total=AI_REQUEST_TIMEOUT)
-    async with ClientSession(timeout=timeout) as session:
-        async with session.post(url, headers=headers, json=payload) as response:
-            raw = await response.text()
-            data = json.loads(raw) if raw else {}
+    try:
+        async with ClientSession(timeout=timeout) as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                raw = await response.text()
+                data = json.loads(raw) if raw else {}
+                status = response.status
+    except (ClientError, asyncio.TimeoutError, OSError) as exc:
+        raise AIAssistantError(f"LLM API unavailable: {exc.__class__.__name__}") from exc
 
-    if response.status >= 400:
+    if status >= 400:
         detail = data.get("error", {}).get("message") if isinstance(data, dict) else None
-        raise AIAssistantError(detail or f"LLM API returned HTTP {response.status}.")
+        raise AIAssistantError(detail or f"LLM API returned HTTP {status}.")
 
     try:
         content = data["choices"][0]["message"]["content"]
@@ -429,7 +434,7 @@ async def generate_ai_reply(
             "provider": "openai_compatible",
             "model": OPENAI_MODEL,
         }
-    except (AIAssistantError, json.JSONDecodeError):
+    except (AIAssistantError, json.JSONDecodeError, ClientError, asyncio.TimeoutError, OSError):
         result = build_rule_based_reply(cleaned_message, context)
         result["provider"] = "rules"
         result["fallback"] = True

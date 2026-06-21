@@ -464,7 +464,16 @@ async function api(path, options = {}) {
     const response = await fetch(path, { credentials: "same-origin", ...options, headers });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const error = new Error(payload.detail || "Не удалось выполнить запрос.");
+        let detail = payload.detail;
+        if (Array.isArray(detail)) {
+            detail = detail.map((item) => item.msg || item.message || JSON.stringify(item)).join("; ");
+        }
+        const message =
+            (typeof detail === "string" && detail) ||
+            payload.message ||
+            response.statusText ||
+            `HTTP ${response.status}`;
+        const error = new Error(message);
         error.status = response.status;
         error.payload = payload;
         throw error;
@@ -561,7 +570,7 @@ function buildAiHistoryPayload() {
     return state.aiHistory
         .filter((item) => item.role === "user" || item.role === "assistant")
         .slice(-8)
-        .map((item) => ({ role: item.role, text: item.text }));
+        .map((item) => ({ role: item.role, text: String(item.text || "").slice(0, 400) }));
 }
 
 function getAiStatusText(isBusy = false) {
@@ -705,6 +714,9 @@ async function submitAiMessage(rawMessage) {
         });
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
+        if (payload.fallback) {
+            showToast("DeepSeek недоступен — ответ по шаблону. Запустите: bash scripts/setup_deepseek_mac.sh");
+        }
         pulse("success");
     } catch (error) {
         if (maybeOpenPremiumFromError(error, "AI-ассистент доступен только в PREMIUM")) {

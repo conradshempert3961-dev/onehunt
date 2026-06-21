@@ -144,6 +144,24 @@ def test_generate_ai_reply_uses_llm_when_configured(monkeypatch: pytest.MonkeyPa
     assert "Оружие" in result["reply"]
 
 
+def test_generate_ai_reply_falls_back_when_llm_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ai_assistant, "OPENAI_API_KEY", "test-key")
+
+    async def fake_gather(_user):
+        return make_context()
+
+    async def failing_call(_messages):
+        raise ai_assistant.AIAssistantError("LLM API unavailable: ClientConnectorError")
+
+    monkeypatch.setattr(ai_assistant, "gather_user_context", fake_gather)
+    monkeypatch.setattr(ai_assistant, "_call_openai_chat", failing_call)
+
+    result = asyncio.run(ai_assistant.generate_ai_reply("прив", make_user()))
+    assert result["provider"] == "rules"
+    assert result.get("fallback") is True
+    assert result["reply"]
+
+
 def test_generate_ai_reply_falls_back_when_llm_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ai_assistant, "OPENAI_API_KEY", "test-key")
 
