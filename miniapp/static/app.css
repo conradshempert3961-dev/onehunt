@@ -103,13 +103,23 @@ body.mode-site .app-shell { max-width: 760px; }
 }
 
 .topbar-brand img,
+.brand-mark img,
+.brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
 .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    overflow: hidden;
-    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-    box-shadow: 0 4px 14px var(--accent-glow);
+    display: block;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
 }
 
 .topbar-brand span,
@@ -722,10 +732,12 @@ h1 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
 }
 
 .auth-hero-logo {
-    width: 72px;
-    height: 72px;
+    width: 88px;
+    height: 88px;
     margin: 0 auto 16px;
-    border-radius: 20px;
+    border-radius: 22px;
+    object-fit: cover;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 .auth-hero h1 {
@@ -1333,6 +1345,23 @@ h1 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
 }
 
 body.legal-doc-page { background: var(--bg); color: var(--text); }
+
+.legal-doc-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.legal-doc-brand img {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.legal-doc-brand strong { display: block; font-size: 0.88rem; }
+.legal-doc-brand span { font-size: 0.75rem; color: var(--text-muted); }
+
 body.legal-doc-page .legal-shell { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; }
 body.legal-doc-page p, body.legal-doc-page li { color: var(--text-muted); line-height: 1.6; }
 
