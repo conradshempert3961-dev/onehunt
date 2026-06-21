@@ -2414,9 +2414,7 @@ body::after {
     padding-top: 14px;
 }
 
-.app-header {
-    display: none;
-}
+/* Header visibility restored in theme-lodge-polish.css */
 
 body.mode-site .app-shell {
     padding-top: 8px;
