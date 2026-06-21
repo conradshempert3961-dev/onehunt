@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import random
-import re
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -96,6 +96,7 @@ from services.yoomoney import (
     yoomoney_history_configured,
     yoomoney_notifications_configured,
 )
+from services.ai_assistant import ai_assistant_meta, generate_ai_reply
 from services.web_auth import (
     WebAuthError,
     authenticate_web_account,
@@ -107,6 +108,7 @@ from services.web_auth import (
 from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
 from utils.constants import BLOCKS, DAILY_CHALLENGES, PREMIUM_PRICES, ROUTE_TASKS
+from utils.products import PRODUCT_CATALOG
 from utils.helpers import calculate_accuracy, format_duration, get_rank_by_correct, get_xp_level
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -160,17 +162,40 @@ class SettingsUpdateRequest(BaseModel):
     reminder_hour: int | None = None
 
 
+class AIChatHistoryItem(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    text: str = Field(min_length=1, max_length=400)
+
+
 class AIChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=400)
+    history: list[AIChatHistoryItem] = Field(default_factory=list, max_length=12)
 
-app = FastAPI(title="ONEHUNT Web App", version="2.0.0")
-app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
+LANDING_DIR = BASE_DIR.parent / "landing"
+ESTATE_DIR = LANDING_DIR / "estate"
+HUNT_DRIVER_DIR = BASE_DIR.parent / "huntdriver"
+HUNT_DRIVER_STATIC = HUNT_DRIVER_DIR / "static"
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
     await init_db()
     await seed_reference_data()
+    yield
+
+
+app = FastAPI(title="ONEHUNT Web App", version="2.0.0", lifespan=lifespan)
+app.mount("/assets", StaticFiles(directory=STATIC_DIR), name="assets")
+if LANDING_DIR.is_dir():
+    app.mount("/promo", StaticFiles(directory=LANDING_DIR, html=True), name="promo")
+if ESTATE_DIR.is_dir():
+    app.mount("/estate", StaticFiles(directory=ESTATE_DIR, html=True), name="estate")
+if HUNT_DRIVER_STATIC.is_dir():
+    @app.get("/huntdriver", include_in_schema=False)
+    async def huntdriver_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/huntdriver/", status_code=307)
+
+    app.mount("/huntdriver", StaticFiles(directory=HUNT_DRIVER_STATIC, html=True), name="huntdriver")
 
 
 def has_full_access(user: Any) -> bool:
@@ -662,122 +687,6 @@ async def prepare_session(user: Any, payload: SessionStartRequest) -> WebQuizSes
     )
 
 
-
-def build_ai_block_snapshot(journal: dict[str, Any]) -> list[dict[str, Any]]:
-    return [
-        {"id": 1, "icon": "📜", "name": "Правовые основы", "percent": journal["block1"]},
-        {"id": 2, "icon": "🔫", "name": "Оружие и безопасность", "percent": journal["block2"]},
-        {"id": 3, "icon": "🦌", "name": "Биология и практика", "percent": journal["block3"]},
-    ]
-
-
-def normalize_ai_prompt(message: str) -> str:
-    return re.sub(r"\s+", " ", message.lower()).strip()
-
-
-def prompt_has_any(prompt: str, *tokens: str) -> bool:
-    return any(token in prompt for token in tokens)
-
-
-async def build_ai_assistant_reply(message: str, user: Any) -> dict[str, Any]:
-    journal = await get_journal_stats(user.telegram_id)
-    route = await get_route_overview(user.telegram_id)
-    route_task = await get_route_task(user.telegram_id)
-    today = await get_today_stats(user.telegram_id)
-    achievements = await count_achievements(user.telegram_id)
-    starred = await count_starred(user.telegram_id)
-
-    blocks = build_ai_block_snapshot(journal)
-    weakest = min(blocks, key=lambda item: item["percent"])
-    strongest = max(blocks, key=lambda item: item["percent"])
-    weak_topics = journal.get("weak_topics") or []
-    settings = dict(user.settings or {})
-
-    route_line = (
-        f"Сегодня в маршруте день {route['current_day']}: {route_task['task']['icon']} {route_task['task']['name']} — {route_task['task']['goal']}."
-        if route_task
-        else "Маршрут пока не активирован, поэтому можно начать с тренировки на 10-20 вопросов и вопроса дня."
-    )
-    weak_topics_line = ", ".join(weak_topics[:4]) if weak_topics else "пока статистики мало, поэтому стоит сделать 15-20 обычных вопросов"
-    today_line = (
-        f"Сегодня уже дано {today['answers_today']} ответов, вопрос дня {'уже закрыт' if today['daily_answered'] else 'еще ждет вас'}, исправлено ошибок {today['mistakes_fixed_today']}."
-    )
-
-    prompt = normalize_ai_prompt(message)
-
-    if prompt_has_any(prompt, "экзамен", "сдать", "257", "порог", "пройду", "завал"):
-        reply = "\n".join(
-            [
-                f"Лучший результат по экзамену сейчас: {user.best_exam_score}% при проходном пороге {EXAM_PASS_PERCENT}%.",
-                f"Сильнее всего у вас идет блок «{strongest['icon']} {strongest['name']}» ({strongest['percent']}%), а первым делом стоит дожать «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
-                "Быстрый план: 1) короткая тренировка 15-20 вопросов, 2) отдельный проход по слабому блоку, 3) затем пробный экзамен без пауз.",
-                route_line,
-            ]
-        )
-        quick = ["Что подтянуть первым?", "Составь план на сегодня", "Как закрыть слабые темы?"]
-    elif prompt_has_any(prompt, "ошиб", "слаб", "тема", "просед", "подтянуть", "исправ"):
-        reply = "\n".join(
-            [
-                f"Сейчас самый слабый блок — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
-                f"Слабые темы по журналу: {weak_topics_line}.",
-                "Лучше всего работает короткая серия по слабому блоку, затем один смешанный сет для закрепления и только потом экзаменационный режим.",
-                today_line,
-            ]
-        )
-        quick = ["Составь план на сегодня", "Как готовиться к экзамену?", "Что у меня с прогрессом?"]
-    elif prompt_has_any(prompt, "сегодня", "план", "маршрут", "дальше", "начать", "что делать"):
-        reply = "\n".join(
-            [
-                "Вот спокойный план на текущий день без перегруза:",
-                route_line,
-                f"После этого добейте 10-20 вопросов по теме «{weakest['icon']} {weakest['name']}», потому что она даст самый заметный прирост.",
-                f"Финиш — вопрос дня и короткий разбор ошибок. {today_line}",
-            ]
-        )
-        quick = ["Какая у меня слабая тема?", "Готов ли я к экзамену?", "Что с напоминаниями?"]
-    elif prompt_has_any(prompt, "ранг", "xp", "уров", "прогресс", "монет", "серия", "достижен"):
-        reply = "\n".join(
-            [
-                f"Сейчас у вас {user.questions_completed}/257 по прогрессу, точность {user.accuracy}%, серия {user.streak_days} дн., XP {user.xp_total}, монеты {user.coins}.",
-                f"Открыто достижений: {achievements}, в избранном сложных вопросов: {starred}.",
-                f"Сильный блок — «{strongest['icon']} {strongest['name']}», а главный резерв роста сейчас в «{weakest['icon']} {weakest['name']}».",
-                "Если хотите расти быстрее, держите короткие, но регулярные сессии и не пропускайте разбор ошибок после ответа.",
-            ]
-        )
-        quick = ["Что мне подтянуть первым?", "Составь план на сегодня", "Как выйти на экзамен?"]
-    elif prompt_has_any(prompt, "напомин", "настрой", "таймер", "объяснен"):
-        reminder_state = "включены" if user.daily_reminder else "выключены"
-        timer_seconds = int(settings.get("timer_seconds", 0))
-        explanations = "включены" if settings.get("show_explanations", True) else "выключены"
-        reply = "\n".join(
-            [
-                f"Напоминания сейчас {reminder_state}, час — {user.reminder_hour}:00.",
-                f"В тренировке стоит {int(settings.get('questions_per_session', 20))} вопросов, таймер — {timer_seconds if timer_seconds else 'выкл'}, объяснения — {explanations}.",
-                "Если нужен спокойный режим, держите 10-20 вопросов и объяснения включенными. Если нужна боевая подготовка — включайте таймер и идите короткими сетами.",
-            ]
-        )
-        quick = ["Составь план на сегодня", "Что подтянуть первым?", "Как выйти на экзамен?"]
-    elif prompt_has_any(prompt, "карточк", "животн", "след", "биолог", "сезон"):
-        reply = "\n".join(
-            [
-                "Карточки лучше использовать как короткий добор после вопросов, а не вместо них.",
-                f"Сильнее всего они помогут в блоке «{weakest['icon']} {weakest['name']}», особенно если там есть пробелы по темам: {weak_topics_line}.",
-                "Оптимально: 10-15 вопросов, потом 3-5 карточек по близкой теме и финальный быстрый вопрос для самопроверки.",
-            ]
-        )
-        quick = ["Какая у меня слабая тема?", "Составь план на сегодня", "Как лучше разобрать ошибки?"]
-    else:
-        reply = "\n".join(
-            [
-                "Я могу помочь по маршруту, ошибкам, экзамену, карточкам и слабым темам.",
-                f"Сейчас главный резерв роста — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
-                route_line,
-                today_line,
-            ]
-        )
-        quick = ["Что мне подтянуть первым?", "Как лучше разобрать ошибки?", "Готов ли я к экзамену?"]
-
-    return {"reply": reply, "quick_replies": quick[:3]}
 @app.get("/", response_class=HTMLResponse)
 async def site_index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "site.html").read_text(encoding="utf-8"))
@@ -796,6 +705,21 @@ async def site_consent() -> HTMLResponse:
 @app.get("/app", response_class=HTMLResponse)
 async def miniapp_index() -> HTMLResponse:
     return HTMLResponse((STATIC_DIR / "miniapp.html").read_text(encoding="utf-8"))
+
+
+@app.get("/api/products")
+async def products_catalog() -> dict[str, Any]:
+    return {
+        "products": PRODUCT_CATALOG,
+        "channels": {
+            "web": "/",
+            "miniapp": "/app",
+            "telegram_bot": "https://t.me/Onehuntbot",
+            "promo_hub": "/promo/",
+            "estate": "/estate/",
+            "huntdriver": "/huntdriver/",
+        },
+    }
 
 
 @app.get("/health")
@@ -905,6 +829,15 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
             "yoomoney_polling_enabled": yoomoney_history_configured(),
             "yoomoney_notifications_enabled": yoomoney_notifications_configured(),
         },
+        "products": PRODUCT_CATALOG,
+        "channels": {
+            "web": "/",
+            "miniapp": "/app",
+            "telegram_bot": "https://t.me/Onehuntbot",
+            "promo_hub": "/promo/",
+            "estate": "/estate/",
+            "huntdriver": "/huntdriver/",
+        },
         "exam": {
             "questions": EXAM_QUESTIONS,
             "pass_percent": EXAM_PASS_PERCENT,
@@ -912,6 +845,7 @@ async def bootstrap(user=Depends(current_user)) -> dict[str, Any]:
         "appearance": {
             "timezone": APP_TIMEZONE,
         },
+        "ai": ai_assistant_meta(),
     }
 
 
@@ -1412,7 +1346,8 @@ async def ai_chat(payload: AIChatRequest, user=Depends(current_user)) -> dict[st
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Введите сообщение для ассистента.")
-    return await build_ai_assistant_reply(message, user)
+    history = [{"role": item.role, "text": item.text.strip()} for item in payload.history]
+    return await generate_ai_reply(message, user, history=history)
 @app.post("/api/session/start")
 async def session_start(payload: SessionStartRequest, user=Depends(current_user)) -> dict[str, Any]:
     session = await prepare_session(user, payload)

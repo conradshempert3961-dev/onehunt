@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="ONEHUNT">
+  <defs>
+    <linearGradient id="lg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a4d38"/>
+      <stop offset="100%" stop-color="#081810"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e8c468"/>
+      <stop offset="100%" stop-color="#b8862d"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#lg)"/>
+  <path d="M32 14 L48 42 H16 Z" fill="none" stroke="url(#gold)" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="32" cy="38" r="3" fill="#e8c468"/>
+  <path d="M20 42 H44" stroke="rgba(255,248,235,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

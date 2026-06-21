@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from utils.constants import BLOCKS, FREE_LIMITS, PREMIUM_PRICES, RANKS, XP_LEVELS, XP_RULES
+from utils.constants import BLOCKS, FREE_LIMITS, PREMIUM_PRICES, RANKS, SUBSCRIPTION_PRICES, XP_LEVELS, XP_RULES
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
@@ -35,6 +35,7 @@ ANSWER_BUTTONS_LAYOUT = os.getenv("ANSWER_BUTTONS_LAYOUT", "single_row")
 MINIAPP_URL = os.getenv("MINIAPP_URL", "")
 MINIAPP_DEV_USER_ID = int(os.getenv("MINIAPP_DEV_USER_ID", "0") or 0)
 MINIAPP_PORT = int(os.getenv("MINIAPP_PORT", "8080"))
+MINIAPP_HOST = os.getenv("MINIAPP_HOST", "127.0.0.1")
 MINIAPP_SESSION_TTL_MINUTES = int(os.getenv("MINIAPP_SESSION_TTL_MINUTES", "240"))
 MINIAPP_BROWSER_DEMO = os.getenv("MINIAPP_BROWSER_DEMO", "false").lower() == "true"
 MINIAPP_BROWSER_DEMO_HOSTS = {
@@ -68,6 +69,15 @@ TRAINING_FREE_LIMIT = FREE_LIMITS["trainings"]
 ROUTE_FREE_DAYS = int(os.getenv("ROUTE_FREE_DAYS", "3"))
 PREMIUM_PRICE_RUB = PREMIUM_PRICES["rub"]
 PREMIUM_PRICE_STARS = PREMIUM_PRICES["stars"]
+HUNT_TROPHY_PRICE_RUB = SUBSCRIPTION_PRICES["hunt_trophy_rub"]
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1").rstrip("/")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
+AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "800"))
+AI_TEMPERATURE = float(os.getenv("AI_TEMPERATURE", "0.4"))
+AI_REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "45"))
+AI_MAX_HISTORY = int(os.getenv("AI_MAX_HISTORY", "8"))
 
 XP_TABLE = XP_RULES
 

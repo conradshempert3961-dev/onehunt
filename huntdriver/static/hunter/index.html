@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#faf8f5">
+    <title>HuntDriver — карта охоты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-hunter">🦌</span>
+                <div class="brand-text brand-text-hunter">
+                    <strong>HuntDriver</strong>
+                    <small>by ONEHUNT</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button" aria-label="Уведомления">🔔</button>
+        </header>
+
+        <div class="search-row">
+            <div class="search-field">🔍 Выберите район охоты</div>
+            <button class="icon-btn" type="button" aria-label="Фильтры">⚙️</button>
+        </div>
+
+        <div class="chip-row" data-chip-group data-multi="false">
+            <button class="chip is-active" type="button">🐻 Медведь</button>
+            <button class="chip" type="button">🐏 Баран</button>
+            <button class="chip" type="button">🫎 Лось</button>
+        </div>
+
+        <div class="map-card">
+            <div class="map-label">Камчатка</div>
+            <div class="map-pin">🐻</div>
+            <div class="map-pin">🐏</div>
+            <div class="map-pin">🫎</div>
+            <div class="map-overlay">
+                <h3>Мильковский район</h3>
+                <p>📍 Камчатский край</p>
+                <ul>
+                    <li>Основной вид: <strong>Бурый медведь</strong></li>
+                </ul>
+                <p>Доступно лицензий</p>
+                <div class="stat">7</div>
+                <a class="btn btn-secondary btn-sm" href="./estate/ursus" style="margin-top:10px;width:100%;">📖 Подробнее</a>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a class="btn btn-primary" href="./request">➕ Создать заявку</a>
+            <a class="btn btn-secondary" href="./bids">🔨 Смотреть торги</a>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a class="is-active" href="./"><span>🏠</span>Главная</a>
+        <a href="./request"><span>📋</span>Заявки</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

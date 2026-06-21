@@ -48,6 +48,17 @@ services:
     networks:
       - onehunt
 
+  huntdriver:
+    build:
+      context: .
+      dockerfile: Dockerfile.huntdriver
+    container_name: onehunt_huntdriver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8082"
+    networks:
+      - onehunt
+
   postgres:
     image: postgres:16-alpine
     container_name: onehunt_postgres
@@ -78,8 +89,22 @@ services:
     networks:
       - onehunt
 
+  deepseek:
+    build:
+      context: .
+      dockerfile: Dockerfile.deepseek
+    container_name: onehunt_deepseek
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - deepseek_data:/app/data
+    networks:
+      - onehunt
+
 volumes:
   pgdata:
+  deepseek_data:
 
 networks:
   onehunt:

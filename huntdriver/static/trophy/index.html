@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HUNTTROPHY — кабинет</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-trophy">🦌</span>
+                <div class="brand-text">
+                    <strong>HUNTTROPHY</strong>
+                    <small>Кабинет охотпользователя</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <div class="card">
+            <div class="card-row">
+                <div class="card-avatar" style="background:linear-gradient(145deg,#8ba888,#5a7a52);">🏔</div>
+                <div class="card-body">
+                    <h3>НП Кутх <span class="badge badge-green">✓</span></h3>
+                    <p>Верифицировано</p>
+                    <div class="meta-row">
+                        <span>📐 120 450 га</span>
+                        <span>⭐ 4.8</span>
+                        <span class="badge badge-green">Весна 2025 · Активен</span>
+                    </div>
+                </div>
+            </div>
+            <a href="./profile" style="display:block;margin-top:12px;font-size:0.82rem;font-weight:700;color:var(--brand);">Подробнее ›</a>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card"><strong>12</strong><span>Открытых заявок</span></div>
+            <div class="stat-card"><strong>28</strong><span>Активных охотников</span></div>
+            <div class="stat-card"><strong>7</strong><span>Отчётов на проверке</span></div>
+        </div>
+
+        <div class="nav-grid">
+            <a class="nav-tile" href="./bids">
+                <div class="nav-tile-icon">📋</div>
+                <h3>Активные заявки</h3>
+                <p>Просмотр и управление заявками на охоту</p>
+                <footer>12 заявок ›</footer>
+            </a>
+            <a class="nav-tile" href="./bids">
+                <div class="nav-tile-icon">🔨</div>
+                <h3>Новые торги</h3>
+                <p>Актуальные торги и аукционы</p>
+                <footer>5 новых ›</footer>
+            </a>
+            <a class="nav-tile" href="./monitor">
+                <div class="nav-tile-icon">🗺</div>
+                <h3>Мониторинг угодий</h3>
+                <p>Карта, фотоловушки и наблюдения</p>
+                <footer class="warn">3 предупреждения ›</footer>
+            </a>
+            <a class="nav-tile" href="./documents">
+                <div class="nav-tile-icon">📁</div>
+                <h3>Документы</h3>
+                <p>Лицензии, разрешения и отчётность</p>
+                <footer class="ok">Обновлений нет ›</footer>
+            </a>
+        </div>
+
+        <div class="trust-banner" style="margin-top:16px;">
+            🛡 Всё в порядке. Нет просроченных документов и обязательных отчётов ✓
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a class="is-active" href="./"><span>🏠</span>Главная</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a href="./monitor"><span>📍</span>Мониторинг</a>
+        <a href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

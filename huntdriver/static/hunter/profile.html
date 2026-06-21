@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HuntDriver — профиль охотника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-lockup">
+                <span class="brand-icon brand-icon-hunter">🦌</span>
+                <div class="brand-text brand-text-hunter">
+                    <strong>HuntDriver</strong>
+                    <small>by ONEHUNT</small>
+                </div>
+            </div>
+            <button class="icon-btn icon-btn-dot" type="button">🔔</button>
+        </header>
+
+        <h1 class="screen-title">Профиль охотника</h1>
+
+        <div class="profile-header">
+            <div class="profile-avatar">СВ</div>
+            <div>
+                <h2 style="margin:0 0 4px;font-size:1.1rem;">Сергей Волков</h2>
+                <p style="margin:0;font-size:0.84rem;color:var(--muted);">@volkov_hunter</p>
+                <span class="badge badge-green" style="margin-top:8px;">✓ Верификация пройдена</span>
+            </div>
+        </div>
+
+        <div class="card info-list">
+            <div class="info-row"><span class="label">📄 Паспорт</span><span class="value">✓</span></div>
+            <div class="info-row"><span class="label">🎫 Охотничий билет</span><span class="value">✓</span></div>
+        </div>
+
+        <div class="section-head">
+            <h2>Мои трофеи</h2>
+            <a href="#">Все трофеи ›</a>
+        </div>
+
+        <div class="trophy-grid">
+            <div class="trophy-item" style="background:linear-gradient(180deg,transparent,#0006),#8b7355;">🐻 Бурый медведь</div>
+            <div class="trophy-item" style="background:linear-gradient(180deg,transparent,#0006),#9ca3af;">🐏 Снежный баран</div>
+            <div class="trophy-item" style="background:linear-gradient(180deg,transparent,#0006),#6b7280;">🫎 Лось</div>
+            <div class="trophy-item trophy-add">＋<br>Добавить трофей</div>
+        </div>
+
+        <div class="section-head">
+            <h2>Текущая поездка</h2>
+        </div>
+
+        <a class="card" href="./bids">
+            <h3 style="margin:0 0 8px;font-size:0.95rem;">УРСУС · Елизовский район</h3>
+            <p style="margin:0 0 6px;font-size:0.84rem;color:var(--muted);">📍 12–18 сентября</p>
+            <p style="margin:0;font-size:0.84rem;color:var(--muted);">🚁 Заброска: Ми-8 · 🏠 Проживание: Лодж</p>
+        </a>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="./"><span>🏠</span>Главная</a>
+        <a href="./request"><span>📋</span>Заявки</a>
+        <a href="./bids"><span>🔨</span>Торги</a>
+        <a class="is-active" href="./profile"><span>👤</span>Профиль</a>
+    </nav>
+
+    <script src="../assets/js/app.js"></script>
+</body>
+</html>

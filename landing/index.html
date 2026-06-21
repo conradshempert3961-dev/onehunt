@@ -3,272 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ONEHUNT — бот для подготовки к охотминимуму</title>
+    <title>ONEHUNT — экосистема для охотников и охотхозяйств</title>
     <meta
         name="description"
-        content="ONEHUNT — Telegram-бот для подготовки к охотничьему минимуму: 257 вопросов, экзамен, тренировки, маршрут, статистика и иллюстрации."
+        content="ONEHUNT для охотников (990 ₽) и Hunt Trophy для охотничьих хозяйств (490 ₽/мес). Web, Telegram Mini App и единый прогресс."
     >
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap"
         rel="stylesheet"
     >
+    <link rel="stylesheet" href="/assets/wolf-loader.css">
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a class="brand" href="#hero">
-                <span class="brand-mark">OH</span>
+            <a class="brand" href="#hub">
+                <span class="brand-mark"><img src="/assets/brand-logo.jpg" alt="ONEHUNT"></span>
                 <span class="brand-copy">
                     <strong>ONEHUNT</strong>
-                    <small>Подготовка к охотминимуму</small>
+                    <small>Экосистема охоты</small>
                 </span>
             </a>
 
             <nav class="topnav">
-                <a href="#features">Возможности</a>
-                <a href="#journey">Как это работает</a>
-                <a href="#preview">Внутри бота</a>
-                <a href="#faq">Вопросы</a>
+                <a href="#products">Продукты</a>
+                <a href="#connect">Связка</a>
+                <a href="#value">Ценность</a>
+                <a href="/">Web-кабинет</a>
             </nav>
 
-            <a class="button button-ghost" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
-                Открыть бота
-            </a>
+            <div class="topbar-actions">
+                <a class="button button-ghost" href="/app">Mini App</a>
+                <a class="button button-primary" href="/">ONEHUNT — 990 ₽</a>
+            </div>
         </header>
 
         <main>
-            <section class="hero reveal" id="hero">
+            <section class="hero reveal" id="hub">
                 <div class="hero-copy">
-                    <p class="eyebrow">Telegram-бот для охотника</p>
-                    <h1>Подготовка к экзамену без хаоса, конспектов и бесконечных пересдач.</h1>
+                    <p class="eyebrow">Два сервиса · одна экосистема</p>
+                    <h1>От подготовки охотника до управления хозяйством.</h1>
                     <p class="hero-lead">
-                        ONEHUNT собирает в одном месте официальный экзамен на <strong>257 вопросов</strong>,
-                        быстрые тренировки, ежедневные сценарии, маршрут подготовки, статистику и
-                        иллюстрации к вопросам.
+                        <strong>990 ₽</strong> — полный путь охотника: гайд, 7 этапов, чек-листы, AI и тренажёр.
+                        <strong>490 ₽/мес</strong> — операционная система для охотничьего хозяйства.
+                        Web и Telegram работают вместе.
                     </p>
-
                     <div class="hero-actions">
-                        <a class="button button-primary" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
-                            Перейти в @Onehuntbot
-                        </a>
-                        <a class="button button-secondary" href="#preview">
-                            Посмотреть сценарий
-                        </a>
+                        <a class="button button-primary" href="/promo/hunter.html">ONEHUNT — 990 ₽</a>
+                        <a class="button button-secondary" href="/estate/">Hunt Trophy — 490 ₽</a>
                     </div>
-
                     <div class="hero-badges">
                         <span>257 вопросов</span>
-                        <span>Экзамен целиком</span>
-                        <span>Сейчас бесплатно</span>
-                        <span>Работает в Telegram</span>
+                        <span>Пожизненный доступ</span>
+                        <span>Подписка для хозяйств</span>
+                        <span>Web + Telegram</span>
                     </div>
                 </div>
 
-                <div class="hero-panel">
+                <div class="hero-panel reveal">
                     <div class="signal-card">
                         <div class="signal-head">
                             <span class="status-dot"></span>
-                            <span>ONEHUNT Live</span>
+                            <span>ONEHUNT Ecosystem</span>
                         </div>
-
                         <div class="hero-stats">
                             <article>
+                                <strong>990 ₽</strong>
+                                <span>путь охотника · разово</span>
+                            </article>
+                            <article>
+                                <strong>490 ₽</strong>
+                                <span>хозяйство · каждый месяц</span>
+                            </article>
+                            <article>
                                 <strong>257</strong>
-                                <span>официальных вопросов</span>
+                                <span>вопросов в тренажёре</span>
                             </article>
                             <article>
-                                <strong>14 дней</strong>
-                                <span>маршрут подготовки</span>
-                            </article>
-                            <article>
-                                <strong>9+</strong>
-                                <span>режимов тренировки</span>
-                            </article>
-                            <article>
-                                <strong>A B C D</strong>
-                                <span>компактные ответы</span>
+                                <strong>1</strong>
+                                <span>прогресс web + Telegram</span>
                             </article>
                         </div>
-
                         <div class="hero-note">
-                            <p>Экран бота собран так, чтобы человеку было легко идти по разделам:</p>
+                            <p>Один бренд — два сценария:</p>
                             <ul>
-                                <li><strong>Старт</strong> — быстрый вопрос, тренировка, экзамен.</li>
-                                <li><strong>Практика</strong> — все режимы и блоки.</li>
-                                <li><strong>Ежедневно</strong> — вопрос дня, вызов, маршрут.</li>
-                                <li><strong>Профиль</strong> — журнал, история, настройки.</li>
+                                <li><strong>Охотник</strong> — экзамен, гайд, AI, Mini App.</li>
+                                <li><strong>Хозяйство</strong> — бронь, документы, трофеи.</li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="section reveal" id="features">
+            <section class="section reveal" id="products">
                 <div class="section-heading">
-                    <p class="eyebrow">Что внутри</p>
-                    <h2>Всё нужное для подготовки уже собрано в одном боте.</h2>
+                    <p class="eyebrow">Линейка</p>
+                    <h2>Выберите свой сценарий — охотник или хозяйство.</h2>
                 </div>
 
-                <div class="feature-grid">
-                    <article class="feature-card accent-forest">
-                        <span class="feature-icon">📝</span>
-                        <h3>Полный экзамен</h3>
-                        <p>Официальный прогон на 257 вопросов с таймером, итогом и историей попыток.</p>
+                <div class="product-grid">
+                    <article class="product-card">
+                        <div class="product-card-head">
+                            <span class="product-badge">ONEHUNT</span>
+                            <strong class="product-price">990 ₽</strong>
+                            <small style="color: var(--text-muted);">пожизненный доступ</small>
+                        </div>
+                        <h3>Путь одного охотника</h3>
+                        <p class="product-audience">Для охотников и будущих охотников</p>
+                        <p>
+                            Гайд 65 страниц, 12 чек-листов, карта пути из 7 этапов,
+                            AI-помощник и тренажёр на 257 вопросов в web-кабинете и Telegram.
+                        </p>
+                        <ul class="product-list">
+                            <li>Гайд + 12 чек-листов (печать и телефон)</li>
+                            <li>7 этапов до первой охоты</li>
+                            <li>Полный экзамен и все режимы тренировки</li>
+                            <li>AI-ассистент и карточки охотника</li>
+                        </ul>
+                        <div class="product-actions">
+                            <a class="button button-primary" href="/">Скачать за 990 ₽</a>
+                            <a class="button button-secondary" href="./hunter.html">Подробнее</a>
+                        </div>
                     </article>
 
-                    <article class="feature-card accent-amber">
-                        <span class="feature-icon">🎯</span>
-                        <h3>Умные тренировки</h3>
-                        <p>Стрельбище, блиц, промахи, избранное, повторение, дуэль и тематические блоки.</p>
-                    </article>
-
-                    <article class="feature-card accent-stone">
-                        <span class="feature-icon">📅</span>
-                        <h3>Ежедневный ритм</h3>
-                        <p>Вопрос дня, вызов дня и маршрут на 14 дней, чтобы не выпадать из подготовки.</p>
-                    </article>
-
-                    <article class="feature-card accent-night">
-                        <span class="feature-icon">📈</span>
-                        <h3>Журнал и аналитика</h3>
-                        <p>Прогресс, история экзаменов, достижения, слабые темы и движение к следующему уровню.</p>
-                    </article>
-
-                    <article class="feature-card accent-forest">
-                        <span class="feature-icon">🦌</span>
-                        <h3>Карточки и иллюстрации</h3>
-                        <p>Карточки животных и поддержка изображений к вопросам, чтобы материал запоминался быстрее.</p>
-                    </article>
-
-                    <article class="feature-card accent-amber">
-                        <span class="feature-icon">⚙️</span>
-                        <h3>Гибкая настройка</h3>
-                        <p>Количество вопросов, таймер, объяснения, напоминания и доступ можно менять без сложности.</p>
+                    <article class="product-card">
+                        <div class="product-card-head">
+                            <span class="product-badge product-badge-estate">Hunt Trophy</span>
+                            <strong class="product-price">490 ₽</strong>
+                            <small style="color: var(--text-muted);">в месяц · подписка</small>
+                        </div>
+                        <h3>Операционная система охотхозяйства</h3>
+                        <p class="product-audience">Для охотничьего хозяйства и егерской службы</p>
+                        <p>
+                            Бронирование выездов, разрешения, гости, отчётность, трофейная книга
+                            и единый кабинет руководителя. Связка с ONEHUNT для подготовки гостей.
+                        </p>
+                        <ul class="product-list">
+                            <li>Календарь охот и бронирование</li>
+                            <li>Реестр разрешений и документов</li>
+                            <li>Трофейная книга и отчёты</li>
+                            <li>Кабинет егеря и панель директора</li>
+                        </ul>
+                        <div class="product-actions">
+                            <a class="button button-primary button-estate" href="/estate/">Смотреть Hunt Trophy</a>
+                            <a class="button button-secondary" href="mailto:s.yarcev@onehunt.ru?subject=Hunt%20Trophy%20демо">Запросить демо</a>
+                        </div>
+                        <p class="product-note">Закрытая beta — подключаем хозяйства по заявке.</p>
                     </article>
                 </div>
             </section>
 
-            <section class="section journey reveal" id="journey">
+            <section class="section reveal connect-section" id="connect">
                 <div class="section-heading">
-                    <p class="eyebrow">Сценарий</p>
-                    <h2>Как человек обычно проходит путь в ONEHUNT.</h2>
+                    <p class="eyebrow">Связка</p>
+                    <h2>Web, Mini App и Telegram — один продукт, не три разные сайты.</h2>
                 </div>
 
-                <div class="journey-grid">
-                    <article class="journey-step">
-                        <span>01</span>
-                        <h3>Заходит в Telegram</h3>
-                        <p>Никаких установок и личных кабинетов. Достаточно открыть бота и нажать старт.</p>
+                <div class="connect-grid">
+                    <article class="detail-card">
+                        <h3>1. Web-кабинет</h3>
+                        <p>Регистрация, оплата 990 ₽, гайды, чек-листы и полный кабинет подготовки на ПК и телефоне.</p>
+                        <p><a href="/">onehunt.ru → web-кабинет</a></p>
                     </article>
-
-                    <article class="journey-step">
-                        <span>02</span>
-                        <h3>Начинает с простого</h3>
-                        <p>Быстрый вопрос, обычная тренировка или вопрос дня помогают войти без перегруза.</p>
+                    <article class="detail-card">
+                        <h3>2. Mini App в Telegram</h3>
+                        <p>Тот же прогресс, экзамен и маршрут внутри Telegram — для тех, кто живёт в мессенджере.</p>
+                        <p><a href="/app">Открыть Mini App</a></p>
                     </article>
-
-                    <article class="journey-step">
-                        <span>03</span>
-                        <h3>Дожимает слабые темы</h3>
-                        <p>Промахи, повторение и статистика показывают, где реально проседает результат.</p>
+                    <article class="detail-card">
+                        <h3>3. Бот @Onehuntbot</h3>
+                        <p>Быстрый вход, напоминания, кнопка Mini App и активация промокода после покупки.</p>
+                        <p><a href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">t.me/Onehuntbot</a></p>
                     </article>
-
-                    <article class="journey-step">
-                        <span>04</span>
-                        <h3>Идёт на экзамен</h3>
-                        <p>После тренировок запускает полный экзамен и видит честную картину готовности.</p>
+                    <article class="detail-card">
+                        <h3>4. Hunt Trophy</h3>
+                        <p>Отдельная подписка для хозяйства, но с мостом в ONEHUNT: гости проходят экзамен до выезда.</p>
+                        <p><a href="/estate/">Страница Hunt Trophy</a></p>
                     </article>
                 </div>
             </section>
 
-            <section class="section preview reveal" id="preview">
+            <section class="section reveal" id="value">
                 <div class="section-heading">
-                    <p class="eyebrow">Внутри бота</p>
-                    <h2>Пример того, как выглядит сценарий прямо в Telegram.</h2>
-                </div>
-
-                <div class="preview-layout">
-                    <div class="phone-frame">
-                        <div class="phone-top">
-                            <div class="camera-dot"></div>
-                            <span>@Onehuntbot</span>
-                        </div>
-
-                        <div class="chat-stack">
-                            <div class="bubble bubble-system">
-                                <strong>🏕 Лагерь охотника ONEHUNT</strong>
-                                <p>Статус, прогресс, точность, XP и быстрый переход в 4 раздела.</p>
-                            </div>
-
-                            <div class="bubble bubble-user">
-                                <p>Хочу пройти полный экзамен.</p>
-                            </div>
-
-                            <div class="bubble bubble-system">
-                                <strong>📝 Экзамен — все 257 вопросов</strong>
-                                <p>Бот запускает официальный прогон и показывает компактные кнопки ответов: A B C D.</p>
-                            </div>
-
-                            <div class="button-cloud">
-                                <span>A</span>
-                                <span>B</span>
-                                <span>C</span>
-                                <span>D</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="preview-copy">
-                        <div class="detail-card">
-                            <h3>Что важно пользователю</h3>
-                            <ul>
-                                <li>Всё находится в одном мессенджере.</li>
-                                <li>Интерфейс компактный, но без потери функций.</li>
-                                <li>Ответы на вопросах короткие и не захламляют экран.</li>
-                                <li>К разделам легко вернуться через понятные кнопки.</li>
-                            </ul>
-                        </div>
-
-                        <div class="detail-card">
-                            <h3>Что важно владельцу продукта</h3>
-                            <ul>
-                                <li>Сайт сразу ведёт в Telegram, без лишних шагов.</li>
-                                <li>Подходит для рекламы, посевов, ссылки в профиле и карточки продукта.</li>
-                                <li>Позже можно добавить оплату, скриншоты, отзывы и форму заявки.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="section faq reveal" id="faq">
-                <div class="section-heading">
-                    <p class="eyebrow">Частые вопросы</p>
-                    <h2>Коротко и по делу.</h2>
+                    <p class="eyebrow">Ценность</p>
+                    <h2>Почему 990 ₽ и 490 ₽/мес выглядят честно на рынке.</h2>
                 </div>
 
                 <div class="faq-list">
                     <article class="faq-item">
-                        <h3>Это отдельное приложение?</h3>
-                        <p>Нет. Всё работает внутри Telegram, поэтому человеку не нужно скачивать ничего дополнительного.</p>
+                        <h3>ONEHUNT — 990 ₽ разово</h3>
+                        <p>
+                            Гайд 65 страниц, 12 чек-листов, карта пути, AI 24/7 и тренажёр экзамена.
+                            Один консультант или пересдача экзамена стоят дороже. Содержание продукта
+                            оценивается в ~14 000 ₽.
+                        </p>
                     </article>
-
                     <article class="faq-item">
-                        <h3>Экзамен можно пройти полностью?</h3>
-                        <p>Да. В боте уже есть полноценный режим экзамена на все 257 вопросов за один запуск.</p>
+                        <h3>Hunt Trophy — 490 ₽/мес</h3>
+                        <p>
+                            Заменяет Excel, звонки и чаты для егерей. Бронирование, документы, трофейная книга
+                            и отчёты — инструмент, который хозяйство реально использует каждый сезон.
+                        </p>
                     </article>
-
                     <article class="faq-item">
-                        <h3>Можно добавлять картинки к вопросам?</h3>
-                        <p>Да. Поддержка иллюстраций уже заложена, и их можно привязывать по мере наполнения базы.</p>
+                        <h3>Кому подходит ONEHUNT</h3>
+                        <p>
+                            Будущим охотникам, которые хотят пройти путь от медкомиссии до первой охоты
+                            без хаоса. Тренажёр помогает сдать охотминимум, гайд — не ошибиться с документами.
+                        </p>
                     </article>
-
                     <article class="faq-item">
-                        <h3>Сейчас доступ бесплатный?</h3>
-                        <p>Да. Сейчас бот открыт в удобном режиме без платных ограничений, а монетизацию можно включить позже.</p>
+                        <h3>Кому подходит Hunt Trophy</h3>
+                        <p>
+                            Директорам и егерям охотничьих хозяйств, которым нужен единый кабинет
+                            для заявок, документов, трофеев и отчётности — вместо таблиц и мессенджеров.
+                        </p>
                     </article>
                 </div>
             </section>
@@ -276,26 +228,30 @@
             <section class="cta reveal">
                 <div class="cta-panel">
                     <div>
-                        <p class="eyebrow">Готово к запуску</p>
-                        <h2>Откройте ONEHUNT и начните подготовку прямо сейчас.</h2>
-                        <p>
-                            Подходит для тех, кто хочет быстро войти в тему, пройти весь экзамен целиком и видеть свой реальный прогресс.
-                        </p>
+                        <p class="eyebrow">Следующий шаг</p>
+                        <h2>Начните с охотника — или запросите демо для хозяйства.</h2>
+                        <p>Два продукта в одной экосистеме: подготовка и управление.</p>
                     </div>
-
                     <div class="cta-actions">
-                        <a class="button button-primary" href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">
-                            Перейти в Telegram
-                        </a>
-                        <a class="button button-ghost" href="#hero">
-                            Наверх
-                        </a>
+                        <a class="button button-primary" href="/">ONEHUNT — 990 ₽</a>
+                        <a class="button button-secondary" href="/estate/">Hunt Trophy — 490 ₽/мес</a>
                     </div>
                 </div>
             </section>
+
+            <footer class="footer-bar reveal">
+                <p>
+                    <a href="./hunter.html">ONEHUNT</a> ·
+                    <a href="/estate/">Hunt Trophy</a> ·
+                    <a href="/">Web</a> ·
+                    <a href="/app">Mini App</a> ·
+                    <a href="https://t.me/Onehuntbot" target="_blank" rel="noreferrer">Telegram</a>
+                </p>
+            </footer>
         </main>
     </div>
 
+    <script src="/assets/wolf-loader.js"></script>
     <script src="./app.js"></script>
 </body>
 </html>

@@ -5,8 +5,8 @@ if (tg) {
     tg.ready();
     tg.expand();
     tg.enableClosingConfirmation();
-    tg.setHeaderColor("#eef6f0");
-    tg.setBackgroundColor("#eef6f0");
+    tg.setHeaderColor("#07090d");
+    tg.setBackgroundColor("#07090d");
 }
 
 const state = {
@@ -30,7 +30,7 @@ const state = {
 };
 
 const screens = document.querySelectorAll(".screen");
-const navButtons = document.querySelectorAll(".nav-button");
+const navButtons = document.querySelectorAll(".tab, .nav-button");
 const toast = document.getElementById("toast");
 const sessionOverlay = document.getElementById("sessionOverlay");
 const detailSheet = document.getElementById("detailSheet");
@@ -48,10 +48,11 @@ const authSwitchLabel = document.getElementById("authSwitchLabel");
 const authSwitchAction = document.getElementById("authSwitchAction");
 const logoutButton = document.getElementById("logoutButton");
 const headerProfileButton = document.getElementById("headerProfileButton");
-const bottomNav = document.querySelector(".bottom-nav");
+const bottomNav = document.querySelector(".tabbar, .bottom-nav");
 const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
-const AI_AVATAR_IMAGE = "/assets/brand-logo.jpg";
+const BRAND_LOGO_IMAGE = "/assets/brand-logo.jpg";
+const AI_AVATAR_IMAGE = BRAND_LOGO_IMAGE;
 let sessionTimerInterval = null;
 
 function hasWebSession() {
@@ -456,20 +457,34 @@ async function checkPremiumInvoice() {
 }
 
 async function api(path, options = {}) {
-    const headers = new Headers(options.headers || {});
-    if (tg?.initData) {
-        headers.set("X-Telegram-Init-Data", tg.initData);
+    window.wolfLoader?.start();
+    try {
+        const headers = new Headers(options.headers || {});
+        if (tg?.initData) {
+            headers.set("X-Telegram-Init-Data", tg.initData);
+        }
+        headers.set("Content-Type", "application/json");
+        const response = await fetch(path, { credentials: "same-origin", ...options, headers });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            let detail = payload.detail;
+            if (Array.isArray(detail)) {
+                detail = detail.map((item) => item.msg || item.message || JSON.stringify(item)).join("; ");
+            }
+            const message =
+                (typeof detail === "string" && detail) ||
+                payload.message ||
+                response.statusText ||
+                `HTTP ${response.status}`;
+            const error = new Error(message);
+            error.status = response.status;
+            error.payload = payload;
+            throw error;
+        }
+        return payload;
+    } finally {
+        window.wolfLoader?.stop();
     }
-    headers.set("Content-Type", "application/json");
-    const response = await fetch(path, { credentials: "same-origin", ...options, headers });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(payload.detail || "Не удалось выполнить запрос.");
-        error.status = response.status;
-        error.payload = payload;
-        throw error;
-    }
-    return payload;
 }
 
 function scrollAppToTop() {
@@ -519,7 +534,11 @@ function setAuthMode(mode = "login") {
 }
 
 function createStatCard(label, value) {
-    return `<article class="stat-card"><strong>${value}</strong><span>${label}</span></article>`;
+    return `<article class="metric-chip"><strong>${value}</strong><span>${label}</span></article>`;
+}
+
+function createMetricPill(label, value) {
+    return `<div class="metric-pill"><strong>${value}</strong><span>${label}</span></div>`;
 }
 
 function createAiPromptButton(label) {
@@ -539,8 +558,15 @@ function buildAiWelcomeMessage() {
     ];
     const weakest = [...blocks].sort((left, right) => left.percent - right.percent)[0];
     const routeTask = state.bootstrap.route?.current_task?.task;
+    const aiMeta = state.bootstrap.ai;
+    const aiLead = aiMeta?.configured
+        ? aiMeta.provider === "deepseek"
+            ? "Подключён DeepSeek — отвечу по вашему прогрессу и плану подготовки."
+            : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
+        : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
 
     return [
+        aiLead,
         `Сейчас у вас ${user.questions_completed}/257 по прогрессу и ${user.accuracy}% точности.`,
         `Больше всего внимания просит блок «${weakest.icon} ${weakest.name}» (${weakest.percent}%).`,
         routeTask
@@ -548,6 +574,37 @@ function buildAiWelcomeMessage() {
             : "Маршрут можно использовать как основу плана на день.",
         "Спросите, что подтянуть первым, как выйти на стабильный экзамен или как лучше разобрать ошибки.",
     ].join("\n");
+}
+
+function buildAiHistoryPayload() {
+    return state.aiHistory
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .slice(-8)
+        .map((item) => ({ role: item.role, text: String(item.text || "").slice(0, 400) }));
+}
+
+function getAiStatusText(isBusy = false) {
+    if (isBusy) {
+        return "Думаю над ответом...";
+    }
+
+    const ai = state.bootstrap?.ai;
+    if (ai?.configured) {
+        const modelLabel = ai.model ? ` · ${ai.model}` : "";
+        if (ai.provider === "deepseek") {
+            return `Живой AI · DeepSeek${modelLabel}`;
+        }
+        return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
+    }
+
+    return "Тренер ONEHUNT · прогресс, маршрут и экзамен";
+}
+
+function applyAiMeta() {
+    if (!aiStatus) {
+        return;
+    }
+    aiStatus.textContent = getAiStatusText(state.aiBusy);
 }
 
 function buildDefaultAiPrompts() {
@@ -610,6 +667,7 @@ function ensureAiBootstrapped(force = false) {
         ];
         renderAiPrompts([]);
         renderAiThread();
+        applyAiMeta();
         return;
     }
 
@@ -622,15 +680,14 @@ function ensureAiBootstrapped(force = false) {
     ];
     renderAiPrompts(buildDefaultAiPrompts());
     renderAiThread();
+    applyAiMeta();
 }
 
 function setAiBusy(isBusy) {
     state.aiBusy = isBusy;
     aiSendButton.disabled = isBusy;
     aiInput.disabled = isBusy;
-    aiStatus.textContent = isBusy
-        ? "Думаю над ответом..."
-        : "Готов разобрать прогресс, ошибки и маршрут подготовки";
+    applyAiMeta();
 }
 
 function autosizeAiInput() {
@@ -660,10 +717,16 @@ async function submitAiMessage(rawMessage) {
     try {
         const payload = await api("/api/ai/chat", {
             method: "POST",
-            body: JSON.stringify({ message }),
+            body: JSON.stringify({
+                message,
+                history: buildAiHistoryPayload(),
+            }),
         });
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
+        if (payload.fallback) {
+            showToast("DeepSeek недоступен — ответ по шаблону. Запустите: bash scripts/setup_deepseek_mac.sh");
+        }
         pulse("success");
     } catch (error) {
         if (maybeOpenPremiumFromError(error, "AI-ассистент доступен только в PREMIUM")) {
@@ -695,21 +758,59 @@ function renderBootstrap() {
     const displayName = fullName.replace(/^ONEHUNT\s+/i, "").trim() || fullName;
     const heroName = displayName.length > 16 ? (data.user.first_name || displayName.split(" ")[0]) : displayName;
     const routeTask = data.route?.current_task?.task;
+    const progressPct = Math.min(100, Math.round((data.user.questions_completed / 257) * 100));
     document.getElementById("homeGreeting")?.replaceChildren(
-        document.createTextNode(data.user.questions_completed ? `Привет, ${heroName} 👋` : "Добро пожаловать 👋"),
+        document.createTextNode(data.user.questions_completed ? `Привет, ${heroName}` : "Добро пожаловать"),
     );
-    document.getElementById("homeHeading")?.replaceChildren(document.createTextNode("Лагерь охотника"));
+    document.getElementById("homeHeading")?.replaceChildren(document.createTextNode("Подготовка к экзамену"));
+    document.getElementById("homeSummary") &&
+        (document.getElementById("homeSummary").textContent = `${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 · точность ${data.user.accuracy}%`);
+
+    const progressRing = document.getElementById("homeProgressRing");
+    const progressValue = document.getElementById("homeProgressValue");
+    if (progressRing) {
+        progressRing.style.setProperty("--progress", String(progressPct));
+    }
+    if (progressValue) {
+        progressValue.textContent = `${progressPct}%`;
+    }
+
+    document.getElementById("headerStreak")?.replaceChildren(
+        document.createTextNode(`🔥 ${data.user.streak_days}`),
+    );
+    document.getElementById("headerCoins")?.replaceChildren(
+        document.createTextNode(`🪙 ${data.user.coins}`),
+    );
+
     if (headerProfileButton) {
         headerProfileButton.textContent = displayName || "Профиль";
     }
     document.getElementById("statusLabel")?.replaceChildren(document.createTextNode(data.free_mode ? "Бета" : "ONEHUNT"));
-    document.getElementById("heroTitle").textContent = "Твоя подготовка";
-    document.getElementById("heroText").textContent = `${heroName} · ранг ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 вопросов · точность ${data.user.accuracy}%`;
+    const heroTitle = document.getElementById("heroTitle");
+    const heroText = document.getElementById("heroText");
+    if (heroTitle) {
+        heroTitle.textContent = "Подготовка";
+    }
+    if (heroText) {
+        heroText.textContent = `${heroName} · ${data.user.rank.icon} ${data.user.rank.name} · ${data.user.questions_completed}/257 · ${data.user.accuracy}%`;
+    }
+
+    const continueButton = document.getElementById("homeContinueButton");
+    if (continueButton) {
+        if (routeTask && !routeLocked) {
+            continueButton.textContent = `Продолжить: ${routeTask.icon} ${routeTask.name}`;
+        } else if (routeLocked) {
+            continueButton.textContent = "Открыть PREMIUM";
+        } else {
+            continueButton.textContent = "Начать тренировку";
+        }
+    }
+
     document.getElementById("heroBadges").innerHTML = `
-        <div class="hero-badge"><strong>${data.user.rank.icon} ${data.user.rank.name}</strong><span>текущий ранг</span></div>
-        <div class="hero-badge"><strong>${data.route.percent}%</strong><span>маршрут на 14 дней</span></div>
-        <div class="hero-badge"><strong>${data.user.streak_days}</strong><span>дней подряд</span></div>
-        <div class="hero-badge"><strong>${data.exam.pass_percent}%</strong><span>порог экзамена</span></div>
+        ${createMetricPill("Ранг", `${data.user.rank.icon} ${data.user.rank.name}`)}
+        ${createMetricPill("Маршрут", `${data.route.percent}%`)}
+        ${createMetricPill("Серия", `${data.user.streak_days} дн.`)}
+        ${createMetricPill("Экзамен", `${data.exam.pass_percent}%`)}
     `;
     document.getElementById("homeStats").innerHTML = `
         ${createStatCard("Пройдено", `${data.user.questions_completed}/257`)}
@@ -728,22 +829,21 @@ function renderBootstrap() {
             : "ONEHUNT помогает спокойно подготовиться к охотминимуму: внутри 257 официальных вопросов, 14-дневный путь, тренировки, экзамен, разбор ошибок и AI-помощник.";
     }
     document.getElementById("homeRouteCard").innerHTML = `
-        <p class="eyebrow">Маршрут</p>
-        <div class="section-head">
-            <h2>Текущий ритм подготовки</h2>
-            <span>${data.route.completed}/14 дней выполнено</span>
+        <div class="panel-head">
+            <h2>Маршрут · день ${data.route.current_day}</h2>
+            <span>${data.route.completed}/14</span>
         </div>
-        <div class="info-line">${
+        <p class="panel-lead">${
             routeLocked
-                ? `Первые ${freeRouteDays} дня маршрута доступны бесплатно. Сейчас открыт день ${data.route.current_day}, а дни с ${freeRouteDays + 1}-го идут в PREMIUM.`
+                ? `Первые ${freeRouteDays} дня бесплатно. День ${data.route.current_day} — дальше PREMIUM.`
                 : hasPremiumAccess()
-                  ? `Активный шаг: день ${data.route.current_day} из 14. Общий прогресс ${data.route.percent}%.`
-                  : `Вы проходите бесплатную часть маршрута: день ${data.route.current_day} из первых ${freeRouteDays}.`
-        }</div>
+                  ? `Шаг ${data.route.current_day} из 14 · прогресс ${data.route.percent}%`
+                  : `Бесплатная часть: день ${data.route.current_day} из ${freeRouteDays}`
+        }</p>
         ${
             data.route.current_task
-                ? `<button class="primary-button" id="homeRouteStart" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Открыть задачу дня" : "Открыть бесплатный день"}</button>`
-                : `<div class="info-line">Текущая задача пока не найдена.</div>`
+                ? `<button class="btn btn-primary btn-block" id="homeRouteStart" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Открыть задачу дня" : "Открыть бесплатный день"}</button>`
+                : `<p class="panel-lead">Текущая задача пока не найдена.</p>`
         }
     `;
 
@@ -761,18 +861,24 @@ function renderBootstrap() {
 
     const routeTaskButton = document.getElementById("routeTaskButton");
     if (routeTaskButton) {
-        routeTaskButton.querySelector("strong").textContent = routeLocked ? "🔒 Маршрут дня" : hasPremiumAccess() ? "📌 Маршрут дня" : "🗺 Бесплатный день";
-        routeTaskButton.querySelector("span").textContent = routeLocked
-            ? `После ${freeRouteDays}-го дня нужен PREMIUM`
-            : hasPremiumAccess()
-              ? "Открыть текущий шаг подготовки"
-              : `Открыть день ${data.route.current_day} из ${freeRouteDays} бесплатных`;
+        const titleNode = routeTaskButton.querySelector(".mode-row-body strong") || routeTaskButton.querySelector("strong");
+        const copyNode = routeTaskButton.querySelector(".mode-row-body span") || routeTaskButton.querySelector("span:not(.mode-row-icon):not(.mode-row-chevron)");
+        if (titleNode) {
+            titleNode.textContent = routeLocked ? "Маршрут дня · PREMIUM" : hasPremiumAccess() ? "Маршрут дня" : `День ${data.route.current_day} · бесплатно`;
+        }
+        if (copyNode) {
+            copyNode.textContent = routeLocked
+                ? `После ${freeRouteDays}-го дня нужен PREMIUM`
+                : hasPremiumAccess()
+                  ? "Открыть текущий шаг подготовки"
+                  : `Открыть день ${data.route.current_day} из ${freeRouteDays}`;
+        }
     }
 
     document.getElementById("blockGrid").innerHTML = data.blocks
         .map(
             (block) => `
-                <button class="block-card" type="button" data-start-mode="trail" data-block-id="${block.id}">
+                <button class="block-row" type="button" data-start-mode="trail" data-block-id="${block.id}">
                     <strong>${block.icon} ${block.name}</strong>
                     <span>${block.description}</span>
                 </button>
@@ -798,30 +904,29 @@ function renderRouteCard(route, container, compact = false) {
         return { icon: "○", copy: "Еще не открыт" };
     };
     container.innerHTML = `
-        <p class="eyebrow">Маршрут</p>
-        <div class="section-head">
-            <h2>${compact ? "Путь на 14 дней" : "Маршрут подготовки"}</h2>
-            <span>${route.completed}/14 выполнено</span>
+        <div class="panel-head">
+            <h2>${compact ? "Маршрут 14 дней" : "Маршрут подготовки"}</h2>
+            <span>${route.completed}/14</span>
         </div>
         ${
             route.current_task
-                ? `<div class="info-line">${
+                ? `<p class="panel-lead">${
                       routeLocked
-                          ? `Первые ${freeDays} дня маршрута доступны бесплатно. Дальше нужен PREMIUM.`
+                          ? `Первые ${freeDays} дня бесплатно. Дальше — PREMIUM.`
                           : hasPremiumAccess()
                             ? `Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}`
-                            : `Сейчас открыт бесплатный день ${route.current_day} из ${freeDays}.`
-                  }</div>
-                   <button class="primary-button route-task-launch" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Начать задачу дня" : "Начать бесплатный день"}</button>`
-                : `<div class="info-line">Текущая задача не найдена.</div>`
+                            : `Бесплатный день ${route.current_day} из ${freeDays}`
+                  }</p>
+                   <button class="btn btn-primary btn-block route-task-launch" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Начать задачу дня" : "Начать бесплатный день"}</button>`
+                : `<p class="panel-lead">Текущая задача не найдена.</p>`
         }
-        <div class="route-grid">
+        <div class="route-timeline">
             ${days
                 .map(
                     (day) => {
                         const status = statusLabel(day);
                         return `
-                        <div class="route-day" data-status="${day.status}" data-locked="${day.locked ? "true" : "false"}">
+                        <div class="route-step" data-status="${day.status}" data-locked="${day.locked ? "true" : "false"}">
                             <strong><span>${status.icon} День ${day.day}</span><em>${status.copy}</em></strong>
                             <span>${day.task.icon} ${day.task.name}</span>
                             <small>${day.task.goal}</small>
@@ -904,18 +1009,16 @@ function renderDaily() {
 
     const questionCard = document.getElementById("dailyQuestionCard");
     if (!daily.question) {
-        questionCard.innerHTML = `<p class="eyebrow">Вопрос дня</p><div class="info-line">Сегодня вопрос дня не найден.</div>`;
+        questionCard.innerHTML = `<div class="panel-head"><h2>Вопрос дня</h2></div><p class="panel-lead">Сегодня вопрос дня не найден.</p>`;
     } else if (daily.answered) {
         questionCard.innerHTML = `
-            <p class="eyebrow">Вопрос дня</p>
-            <div class="section-head"><h2>На сегодня уже закрыто</h2><span>Возвращайтесь завтра</span></div>
-            <div class="info-line">${daily.question.text}</div>
+            <div class="panel-head"><h2>✓ Вопрос дня закрыт</h2><span>Завтра новый</span></div>
+            <p class="panel-lead">${daily.question.text}</p>
         `;
     } else {
         questionCard.innerHTML = `
-            <p class="eyebrow">Вопрос дня</p>
-            <div class="section-head"><h2>${daily.question.text}</h2><span>Один ответ на сегодня</span></div>
-            <div class="info-line">Выберите вариант прямо под вопросом. После ответа карточка обновится.</div>
+            <div class="panel-head"><h2>Вопрос дня</h2><span>1 ответ</span></div>
+            <p class="quiz-question">${daily.question.text}</p>
             <div class="daily-answer-list">
                 ${daily.question.options
                     .map(
@@ -931,13 +1034,12 @@ function renderDaily() {
     }
 
     document.getElementById("dailyChallengeCard").innerHTML = `
-        <p class="eyebrow">Вызов дня</p>
-        <div class="section-head">
+        <div class="panel-head">
             <h2>${daily.challenge.config.icon} ${daily.challenge.config.name}</h2>
-            <span>${daily.challenge.completed ? "Закрыт" : daily.challenge.attempts ? "Уже был прогресс" : "Еще не начат"}</span>
+            <span>${daily.challenge.completed ? "Готово" : daily.challenge.attempts ? "В процессе" : "Новый"}</span>
         </div>
-        <div class="info-line">${daily.challenge.config.description}</div>
-        <div class="info-line">Награда: +${daily.challenge.config.xp} XP и +${daily.challenge.config.coins} монет. Попыток сегодня: ${daily.challenge.attempts}.</div>
+        <p class="panel-lead">${daily.challenge.config.description}</p>
+        <p class="panel-lead">+${daily.challenge.config.xp} XP · +${daily.challenge.config.coins} 🪙 · попыток: ${daily.challenge.attempts}</p>
     `;
 
     renderRouteCard(daily.route, document.getElementById("routeCard"), true);
@@ -981,14 +1083,16 @@ function renderProfile() {
     const username = bootstrap.user.username ? `@${bootstrap.user.username}` : "профиль ONEHUNT";
 
     document.getElementById("profileIdentityCard").innerHTML = `
-        <div class="profile-identity-copy">
-            <p class="eyebrow">Профиль</p>
-            <h2>${escapeHtml(fullName)}</h2>
-            <p class="info-line">${escapeHtml(username)} · ${bootstrap.user.rank.icon} ${escapeHtml(bootstrap.user.rank.name)}</p>
-        </div>
-        <div class="profile-identity-side">
-            <span class="access-pill ${access.className}">${access.label}</span>
-            <small>${access.note}</small>
+        <div class="profile-banner-inner">
+            <div class="profile-identity-copy">
+                <p class="eyebrow">Профиль</p>
+                <h2>${escapeHtml(fullName)}</h2>
+                <p class="panel-lead">${escapeHtml(username)} · ${bootstrap.user.rank.icon} ${escapeHtml(bootstrap.user.rank.name)}</p>
+            </div>
+            <div class="profile-identity-side">
+                <span class="access-pill ${access.className}">${access.label}</span>
+                <small>${access.note}</small>
+            </div>
         </div>
     `;
 
@@ -1134,6 +1238,10 @@ function renderQuestion(questionState) {
 
     document.getElementById("sessionTitle").textContent = questionState.title;
     document.getElementById("questionCaption").textContent = sessionModeLabel(questionState.mode);
+    const progressPct = questionState.progress.total
+        ? Math.round((questionState.progress.current / questionState.progress.total) * 100)
+        : 0;
+    document.getElementById("quizProgressFill")?.style.setProperty("width", `${progressPct}%`);
     document.getElementById("sessionMeta").innerHTML = `
         <span class="meta-pill">${questionState.progress.current}/${questionState.progress.total}</span>
         <span class="meta-pill">✅ ${questionState.progress.correct}</span>
@@ -1172,7 +1280,7 @@ function renderQuestion(questionState) {
     updateAnswerHint(baseAnswerHint(questionState.mode));
 
     const resultPanel = document.getElementById("resultPanel");
-    resultPanel.className = "result-panel hidden";
+    resultPanel.className = "quiz-result hidden";
     resultPanel.innerHTML = "";
     setQuestionOptionsEnabled(true);
     startSessionTimer(questionState.progress.timer || null);
@@ -1195,21 +1303,20 @@ function renderResult(result, hasNext, summary) {
     stopSessionTimer();
     const resultPanel = document.getElementById("resultPanel");
     const modeClass = result ? (result.is_correct ? "result-correct" : "result-wrong") : "result-neutral";
-    resultPanel.className = `result-panel ${modeClass}`;
+    resultPanel.className = `quiz-result ${modeClass}`;
     resultPanel.innerHTML = `
-        <div class="result-grabber"></div>
-        <div class="result-actions result-actions-top">
-            ${hasNext ? `<button class="primary-button" id="nextQuestionButton" type="button">Следующий вопрос</button>` : `<button class="primary-button" id="finishSessionButton" type="button">Завершить</button>`}
-            <button class="ghost-button" id="backToAppButton" type="button">В приложение</button>
+        <div class="result-actions">
+            ${hasNext ? `<button class="btn btn-primary" id="nextQuestionButton" type="button">Следующий вопрос</button>` : `<button class="btn btn-primary" id="finishSessionButton" type="button">Завершить</button>`}
+            <button class="btn btn-ghost" id="backToAppButton" type="button">В приложение</button>
         </div>
         <div class="result-scroll">
             ${
                 result
                     ? `
-                        <h3 class="result-title">${result.is_correct ? "Ответ засчитан" : "Есть промах"}</h3>
-                        <p class="result-copy">Ваш ответ: ${result.selected_answer.toUpperCase()} · Верный: ${result.correct_answer.toUpperCase()}</p>
-                        <p class="result-copy">+${result.xp_added} XP · +${result.coins_added} монет</p>
-                        ${result.explanation ? `<p class="result-copy"><strong>Почему так:</strong> ${result.explanation}</p>` : ""}
+                        <h3 class="result-title">${result.is_correct ? "✓ Верно" : "✗ Промах"}</h3>
+                        <p class="result-copy">Ваш: ${result.selected_answer.toUpperCase()} · Верный: ${result.correct_answer.toUpperCase()}</p>
+                        <p class="result-copy">+${result.xp_added} XP · +${result.coins_added} 🪙</p>
+                        ${result.explanation ? `<p class="result-copy"><strong>Почему:</strong> ${result.explanation}</p>` : ""}
                         ${result.mnemonic ? `<p class="result-copy"><strong>Подсказка:</strong> ${result.mnemonic}</p>` : ""}
                     `
                     : ""
@@ -1465,13 +1572,17 @@ async function hydrate() {
         }
         renderProfile();
         ensureAiBootstrapped(state.aiHistory.length === 0);
+        applyAiMeta();
     } catch (error) {
+        setAuthenticatedUi(false);
         if (error.status === 401) {
-            setAuthenticatedUi(false);
             return;
         }
         showToast(error.message);
-        document.getElementById("heroText").textContent = error.message;
+        const heroText = document.getElementById("heroText");
+        if (heroText) {
+            heroText.textContent = error.message;
+        }
     }
 }
 
@@ -1535,10 +1646,22 @@ document.addEventListener("click", (event) => {
 document.getElementById("closeSessionButton").addEventListener("click", closeSessionOverlay);
 document.getElementById("sheetBackdrop").addEventListener("click", closeDetailSheet);
 document.getElementById("closeSheetButton").addEventListener("click", closeDetailSheet);
-document.getElementById("routeTaskButton").addEventListener("click", launchRouteTask);
-document.getElementById("guideBannerButton").addEventListener("click", () => {
+document.getElementById("routeTaskButton")?.addEventListener("click", launchRouteTask);
+document.getElementById("guideBannerButton")?.addEventListener("click", () => {
     pulse("medium");
     renderPremiumSheet();
+});
+document.getElementById("homeContinueButton")?.addEventListener("click", () => {
+    const route = state.bootstrap?.route;
+    if (route?.current_task && hasRouteAccess(route)) {
+        launchRouteTask();
+        return;
+    }
+    if (route && !hasRouteAccess(route)) {
+        renderPremiumSheet();
+        return;
+    }
+    startSession("training");
 });
 document.getElementById("saveSettingsButton").addEventListener("click", saveSettings);
 document.getElementById("resetProgressButton").addEventListener("click", resetProgress);
@@ -1623,6 +1746,7 @@ document.addEventListener("click", (event) => {
 
 autosizeAiInput();
 setAuthMode(state.authMode);
+window.wolfLoader?.start();
 if (APP_MODE === "miniapp") {
     hydrate()
         .catch(() => {
@@ -1632,7 +1756,10 @@ if (APP_MODE === "miniapp") {
                 heroText.textContent = "Откройте ONEHUNT из Telegram, чтобы Mini App получил ваш профиль автоматически.";
             }
         })
-        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+        .finally(() => {
+            window.wolfLoader?.reset();
+            window.requestAnimationFrame(scrollAppToTop);
+        });
 } else {
     restoreSession()
         .then((user) => {
@@ -1645,5 +1772,8 @@ if (APP_MODE === "miniapp") {
         .catch(() => {
             setAuthenticatedUi(false);
         })
-        .finally(() => window.requestAnimationFrame(scrollAppToTop));
+        .finally(() => {
+            window.wolfLoader?.reset();
+            window.requestAnimationFrame(scrollAppToTop);
+        });
 }
