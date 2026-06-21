@@ -60,7 +60,12 @@ def build_import_curl(token: str, session_id: str) -> str:
     return (
         "curl 'https://chat.deepseek.com/api/v0/chat/completion' "
         f"-H 'authorization: Bearer {token}' "
+        "-H 'content-type: application/json' "
+        "-H 'origin: https://chat.deepseek.com' "
         f"-H 'referer: https://chat.deepseek.com/a/chat/s/{session_id}' "
+        "-H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36' "
+        "-H 'x-client-version: 2.0.2' "
+        "-H 'x-client-platform: web' "
         f"-d '{{\"session_id\":\"{session_id}\"}}'"
     )
 
@@ -83,12 +88,11 @@ def import_to_proxy(proxy_base: str, token: str, session_id: str) -> dict:
 
 
 def verify_proxy(proxy_base: str) -> None:
-    request = urllib.request.Request(f"{proxy_base.rstrip('/')}/v1/models", method="GET")
+    request = urllib.request.Request(f"{proxy_base.rstrip('/')}/health", method="GET")
     with urllib.request.urlopen(request, timeout=20) as response:
         data = json.loads(response.read().decode("utf-8"))
-    models = data.get("data") or []
-    if not models:
-        raise RuntimeError("Proxy started but /v1/models returned no models.")
+    if not data.get("configured"):
+        raise RuntimeError("Proxy health OK but no account configured.")
 
 
 def main() -> int:

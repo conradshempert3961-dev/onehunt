@@ -45,8 +45,7 @@ if [[ ! -d "$ROOT/.git" ]]; then
 fi
 cd "$ROOT"
 git fetch --depth 1 origin cursor/improve-styling-fix-errors-2866
-git checkout cursor/improve-styling-fix-errors-2866
-git pull origin cursor/improve-styling-fix-errors-2866
+git reset --hard origin/cursor/improve-styling-fix-errors-2866
 bash scripts/deploy_vds_full.sh 104.128.137.117
 REMOTE
 

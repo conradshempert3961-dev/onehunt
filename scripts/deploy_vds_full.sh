@@ -63,6 +63,11 @@ if [[ -z "${MINIAPP_IP}" ]]; then
   exit 1
 fi
 
+# Refresh nginx upstream after container recreate (IP may change)
+if [[ -f /etc/nginx/sites-available/onehunt ]]; then
+  sed -i "s|proxy_pass http://[0-9.]*:8080|proxy_pass http://${MINIAPP_IP}:8080|" /etc/nginx/sites-available/onehunt
+fi
+
 cat > /etc/nginx/sites-available/onehunt <<EOF
 server {
     listen 80 default_server;
