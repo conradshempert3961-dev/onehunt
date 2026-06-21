@@ -541,7 +541,9 @@ function buildAiWelcomeMessage() {
     const routeTask = state.bootstrap.route?.current_task?.task;
     const aiMeta = state.bootstrap.ai;
     const aiLead = aiMeta?.configured
-        ? "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
+        ? aiMeta.provider === "deepseek"
+            ? "Подключён DeepSeek через локальный прокси — отвечу по вашему прогрессу и плану."
+            : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
         : "Сейчас работаю в базовом режиме без API-ключа, но прогресс и маршрут уже учитываю.";
 
     return [
@@ -570,6 +572,9 @@ function getAiStatusText(isBusy = false) {
     const ai = state.bootstrap?.ai;
     if (ai?.configured) {
         const modelLabel = ai.model ? ` · ${ai.model}` : "";
+        if (ai.provider === "deepseek") {
+            return `Живой AI · DeepSeek${modelLabel}`;
+        }
         return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
     }
 

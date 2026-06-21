@@ -45,10 +45,20 @@ def ai_assistant_configured() -> bool:
 
 
 def ai_assistant_meta() -> dict[str, Any]:
+    configured = ai_assistant_configured()
+    provider = "rules"
+    if configured:
+        base_lower = OPENAI_API_BASE.lower()
+        model_lower = OPENAI_MODEL.lower()
+        if "deepseek" in base_lower or "deepseek" in model_lower or ":18632" in base_lower:
+            provider = "deepseek"
+        else:
+            provider = "openai_compatible"
     return {
-        "configured": ai_assistant_configured(),
-        "provider": "openai_compatible" if ai_assistant_configured() else "rules",
-        "model": OPENAI_MODEL if ai_assistant_configured() else None,
+        "configured": configured,
+        "provider": provider,
+        "model": OPENAI_MODEL if configured else None,
+        "endpoint": OPENAI_API_BASE if configured else None,
     }
 
 
