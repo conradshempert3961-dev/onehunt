@@ -5,7 +5,7 @@ set -Eeuo pipefail
 
 IP="${1:-104.128.137.117}"
 ROOT="${ONEHUNT_ROOT:-/opt/onehunt}"
-BRANCH="${ONEHUNT_BRANCH:-cursor/improve-styling-fix-errors-2866}"
+BRANCH="${ONEHUNT_BRANCH:-main}"
 REPO="${ONEHUNT_REPO:-https://github.com/conradshempert3961-dev/onehunt.git}"
 
 if [[ "$(id -u)" -ne 0 ]]; then

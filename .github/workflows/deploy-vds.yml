@@ -2,6 +2,16 @@ name: Deploy VDS
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "miniapp/**"
+      - "huntdriver/**"
+      - "scripts/deploy_vds_full.sh"
+      - "scripts/remote_deploy_vds.sh"
+      - "docker-compose.prod.yml"
+      - "Dockerfile.miniapp"
+      - ".github/workflows/deploy-vds.yml"
 
 jobs:
   deploy:
@@ -14,6 +24,10 @@ jobs:
           VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
           DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_USER_TOKEN }}
         run: |
+          if [ -z "$VDS_PASSWORD" ]; then
+            echo "ONEHUNT_VDS_PASSWORD secret is not set — skip deploy"
+            exit 0
+          fi
           sudo apt-get install -y -qq sshpass
           mkdir -p deploy_bundle
           if [ -n "$DEEPSEEK_TOKEN" ]; then
@@ -23,13 +37,15 @@ jobs:
           sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no root@104.128.137.117 <<'EOF'
           set -e
           ROOT=/opt/onehunt
+          BRANCH=main
+          REPO=https://github.com/conradshempert3961-dev/onehunt.git
           mkdir -p "$ROOT"
           if [ ! -d "$ROOT/.git" ]; then
-            git clone --depth 1 -b cursor/improve-styling-fix-errors-2866 https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
+            git clone --depth 1 -b "$BRANCH" "$REPO" "$ROOT"
           fi
           cd "$ROOT"
-          git fetch --depth 1 origin cursor/improve-styling-fix-errors-2866
-          git checkout cursor/improve-styling-fix-errors-2866
-          git pull origin cursor/improve-styling-fix-errors-2866
+          git fetch --depth 1 origin "$BRANCH"
+          git checkout "$BRANCH"
+          git reset --hard "origin/$BRANCH"
           bash scripts/deploy_vds_full.sh 104.128.137.117
           EOF

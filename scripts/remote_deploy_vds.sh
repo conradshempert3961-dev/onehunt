@@ -41,11 +41,11 @@ set -Eeuo pipefail
 ROOT=/opt/onehunt
 mkdir -p "$ROOT"
 if [[ ! -d "$ROOT/.git" ]]; then
-  git clone --depth 1 -b cursor/improve-styling-fix-errors-2866 https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
+  git clone --depth 1 -b main https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
 fi
 cd "$ROOT"
-git fetch --depth 1 origin cursor/improve-styling-fix-errors-2866
-git reset --hard origin/cursor/improve-styling-fix-errors-2866
+git fetch --depth 1 origin main
+git reset --hard origin/main
 bash scripts/deploy_vds_full.sh 104.128.137.117
 REMOTE
 
