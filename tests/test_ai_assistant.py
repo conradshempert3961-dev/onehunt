@@ -83,6 +83,20 @@ def test_build_rule_based_reply_mentions_exam() -> None:
     assert len(result["quick_replies"]) == 3
 
 
+def test_build_rule_based_reply_greeting() -> None:
+    result = ai_assistant.build_rule_based_reply("привет", make_context())
+    assert "привет" in result["reply"].lower()
+    assert "onehunt" in result["reply"].lower()
+    assert "Как пройти курс?" in result["quick_replies"]
+
+
+def test_build_rule_based_reply_course() -> None:
+    result = ai_assistant.build_rule_based_reply("как пройти этот курс", make_context())
+    assert "маршрут" in result["reply"].lower()
+    assert "троп" in result["reply"].lower()
+    assert result["source"] == "rules"
+
+
 def test_normalize_history_filters_invalid_items() -> None:
     history = ai_assistant._normalize_history(
         [

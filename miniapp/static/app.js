@@ -542,9 +542,9 @@ function buildAiWelcomeMessage() {
     const aiMeta = state.bootstrap.ai;
     const aiLead = aiMeta?.configured
         ? aiMeta.provider === "deepseek"
-            ? "Подключён DeepSeek через локальный прокси — отвечу по вашему прогрессу и плану."
+            ? "Подключён DeepSeek — отвечу по вашему прогрессу и плану подготовки."
             : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
-        : "Сейчас работаю в базовом режиме без API-ключа, но прогресс и маршрут уже учитываю.";
+        : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
 
     return [
         aiLead,
@@ -578,7 +578,7 @@ function getAiStatusText(isBusy = false) {
         return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
     }
 
-    return "Базовый режим без API-ключа · прогресс, ошибки и маршрут";
+    return "Тренер ONEHUNT · прогресс, маршрут и экзамен";
 }
 
 function applyAiMeta() {

@@ -158,6 +158,21 @@ def prompt_has_any(prompt: str, *tokens: str) -> bool:
 
 def suggest_quick_replies(message: str) -> list[str]:
     prompt = normalize_ai_prompt(message)
+    if prompt_has_any(prompt, "привет", "здравств", "добрый", "hello", "hi", "хай", "здорово"):
+        return ["Как пройти курс?", "Составь план на сегодня", "Что подтянуть первым?"]
+    if prompt_has_any(
+        prompt,
+        "курс",
+        "пройти",
+        "onehunt",
+        "охотминим",
+        "с чего нач",
+        "как пользов",
+        "как работ",
+        "тропа",
+        "нович",
+    ):
+        return ["Составь план на сегодня", "Что подтянуть первым?", "Готов ли я к экзамену?"]
     if prompt_has_any(prompt, "экзамен", "сдать", "257", "порог", "пройду", "завал"):
         return ["Что подтянуть первым?", "Составь план на сегодня", "Как закрыть слабые темы?"]
     if prompt_has_any(prompt, "ошиб", "слаб", "тема", "просед", "подтянуть", "исправ"):
@@ -189,8 +204,70 @@ def build_rule_based_reply(message: str, context: dict[str, Any]) -> dict[str, A
     settings = context["settings"]
 
     prompt = normalize_ai_prompt(message)
+    route = context.get("route") or {}
+    route_task = context.get("route_task")
+    route_day = route.get("current_day") or (route_task or {}).get("day")
+    route_percent = route.get("percent", 0)
 
-    if prompt_has_any(prompt, "экзамен", "сдать", "257", "порог", "пройду", "завал"):
+    if prompt_has_any(prompt, "привет", "здравств", "добрый", "hello", "hi", "хай", "здорово"):
+        reply = "\n".join(
+            [
+                "Привет! Я ONEHUNT AI — ваш тренер по подготовке к охотминимуму.",
+                f"Сейчас прогресс {user.questions_completed}/257 вопросов, точность {user.accuracy}%.",
+                route_line,
+                "Могу подсказать, как пройти курс, что сделать сегодня, где вы проседаете и когда идти на экзамен.",
+            ]
+        )
+    elif prompt_has_any(prompt, "спасиб", "благодар", "thanks", "thx"):
+        reply = "\n".join(
+            [
+                "Пожалуйста! Если нужен следующий шаг — спросите план на сегодня или что подтянуть первым.",
+                route_line,
+                today_line,
+            ]
+        )
+    elif prompt_has_any(prompt, "что ты умеешь", "что умеешь", "помощ", "help", "чем помож"):
+        reply = "\n".join(
+            [
+                "Я помогаю с подготовкой к охотминимуму в ONEHUNT:",
+                "• объясняю, как пройти маршрут и курс;",
+                "• составляю план на день по вашему прогрессу;",
+                "• подсказываю слабые блоки и темы;",
+                "• готовлю к экзамену и разбору ошибок.",
+                f"Сейчас главный резерв — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
+            ]
+        )
+    elif prompt_has_any(
+        prompt,
+        "курс",
+        "пройти",
+        "onehunt",
+        "охотминим",
+        "с чего нач",
+        "как пользов",
+        "как работ",
+        "тропа",
+        "нович",
+    ):
+        today_task = ""
+        if route_task:
+            task = route_task["task"]
+            today_task = (
+                f"Сегодня день {route_day}: {task['icon']} {task['name']} — {task['goal']} "
+                f"(≈{task['minutes']} мин)."
+            )
+        reply = "\n".join(
+            [
+                "Курс ONEHUNT — это 14-дневный маршрут + тренировки по трём блокам (257 вопросов):",
+                "1) «Тропы» — проходите вопросы по блокам (право, безопасность, биология);",
+                "2) «Стрельбище» — смешанные тренировки и работа над слабыми темами;",
+                "3) «Испытания» — пробные экзамены и разбор ошибок.",
+                today_task or "Начните с тренировки на 15–20 вопросов и вопроса дня.",
+                f"Маршрут пройден на {route_percent}%. После каждого дня — короткий разбор промахов.",
+                f"Слабое место сейчас: «{weakest['icon']} {weakest['name']}» — уделите ему время после задания дня.",
+            ]
+        )
+    elif prompt_has_any(prompt, "экзамен", "сдать", "257", "порог", "пройду", "завал"):
         reply = "\n".join(
             [
                 f"Лучший результат по экзамену сейчас: {user.best_exam_score}% при проходном пороге {EXAM_PASS_PERCENT}%.",
@@ -257,10 +334,10 @@ def build_rule_based_reply(message: str, context: dict[str, Any]) -> dict[str, A
     else:
         reply = "\n".join(
             [
-                "Я могу помочь по маршруту, ошибкам, экзамену, карточкам и слабым темам.",
-                f"Сейчас главный резерв роста — «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%).",
+                f"Понял вопрос. Смотрю на ваш прогресс: {user.questions_completed}/257, точность {user.accuracy}%.",
+                f"Слабее всего сейчас «{weakest['icon']} {weakest['name']}» ({weakest['percent']}%) — с него обычно и даётся быстрый рост.",
                 route_line,
-                today_line,
+                "Уточните, если нужен план на сегодня, разбор ошибок или подготовка к экзамену.",
             ]
         )
 
