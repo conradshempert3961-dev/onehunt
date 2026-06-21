@@ -1,0 +1,680 @@
+/* ONEHUNT Lodge — full redesign layer (loads after styles.css) */
+
+:root {
+    --lodge-ink: #081810;
+    --lodge-pine: #123524;
+    --lodge-forest: #1a4d38;
+    --lodge-moss: #2d6b52;
+    --lodge-sage: #4a8f6e;
+    --lodge-gold: #c9a227;
+    --lodge-gold-bright: #e8c468;
+    --lodge-gold-glow: rgba(201, 162, 39, 0.42);
+    --lodge-parchment: #f4efe4;
+    --lodge-paper: #fffcf6;
+    --lodge-muted: #5a6b60;
+    --lodge-line: rgba(8, 24, 16, 0.09);
+    --lodge-shadow: 0 18px 48px rgba(8, 24, 16, 0.1);
+    --lodge-shadow-lg: 0 28px 72px rgba(8, 24, 16, 0.14);
+    --lodge-r-xl: 26px;
+    --lodge-r-lg: 20px;
+    --lodge-r-md: 16px;
+    --font-display: "Cormorant Garamond", Georgia, serif;
+    --font-body: "Manrope", system-ui, sans-serif;
+}
+
+/* ─── Base ─── */
+body.mode-miniapp,
+body.mode-site {
+    --ref-bg: var(--lodge-parchment);
+    --ref-card: var(--lodge-paper);
+    --ref-accent: var(--lodge-forest);
+    --ref-accent-dark: var(--lodge-ink);
+    --ref-accent-light: #e6efe8;
+    --ref-text: var(--lodge-ink);
+    --ref-muted: var(--lodge-muted);
+    --ref-border: var(--lodge-line);
+    --ref-shadow: var(--lodge-shadow);
+    --ref-shadow-strong: 0 14px 36px rgba(201, 162, 39, 0.32);
+
+    --bg: var(--lodge-parchment);
+    --bg-deep: #e8e0d4;
+    --text: var(--lodge-ink);
+    --text-soft: var(--lodge-muted);
+    --primary: var(--lodge-forest);
+    --primary-strong: var(--lodge-ink);
+    --line-strong: var(--lodge-line);
+
+    font-family: var(--font-body);
+    color: var(--lodge-ink);
+    background-color: var(--lodge-parchment);
+    background-image:
+        radial-gradient(ellipse 100% 80% at 0% -20%, rgba(201, 162, 39, 0.11), transparent 55%),
+        radial-gradient(ellipse 80% 60% at 100% 0%, rgba(26, 77, 56, 0.09), transparent 50%),
+        linear-gradient(180deg, #faf6ee 0%, var(--lodge-parchment) 48%, #e6ddd0 100%);
+    background-attachment: fixed;
+}
+
+body.mode-miniapp::before,
+body.mode-site::before {
+    background:
+        url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40h80M40 0v80' stroke='%23081810' stroke-opacity='0.025'/%3E%3C/svg%3E");
+    opacity: 0.55;
+}
+
+body.mode-miniapp::after,
+body.mode-site::after {
+    opacity: 0;
+}
+
+::selection {
+    background: var(--lodge-forest);
+    color: #fff9ee;
+}
+
+body.mode-miniapp .app-shell,
+body.mode-site .app-shell {
+    max-width: 480px;
+    padding: 12px 14px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
+}
+
+body.mode-miniapp .app-shell::after {
+    display: none;
+}
+
+/* ─── Header ─── */
+body.mode-miniapp .app-header,
+body.mode-site .app-header {
+    min-height: 58px;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 999px;
+    background: rgba(255, 252, 246, 0.88);
+    backdrop-filter: blur(20px) saturate(1.3);
+    box-shadow: var(--lodge-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.mode-miniapp .brand-block strong,
+body.mode-site .brand-block strong {
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+    color: var(--lodge-ink);
+}
+
+body.mode-miniapp .brand-block small,
+body.mode-site .brand-block small {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    background: rgba(26, 77, 56, 0.08);
+    color: var(--lodge-forest);
+    border: 1px solid rgba(26, 77, 56, 0.1);
+}
+
+body.mode-miniapp .brand-mark,
+body.mode-site .brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, var(--lodge-forest), var(--lodge-ink));
+    box-shadow: 0 8px 22px rgba(8, 24, 16, 0.22);
+}
+
+/* ─── Screen titles (Mini App) ─── */
+body.mode-miniapp .mini-screen-head {
+    margin-bottom: 10px;
+    padding: 4px 2px 0;
+}
+
+body.mode-miniapp .mini-screen-head p {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--lodge-muted);
+    letter-spacing: 0.02em;
+}
+
+body.mode-miniapp .mini-screen-head h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 6vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--lodge-ink);
+}
+
+/* ─── Cards ─── */
+body.mode-miniapp .card,
+body.mode-site .card {
+    border: 1px solid var(--lodge-line);
+    border-radius: var(--lodge-r-lg);
+    background: var(--lodge-paper);
+    box-shadow: var(--lodge-shadow);
+    padding: 18px;
+}
+
+body.mode-miniapp .screen {
+    gap: 14px;
+}
+
+body.mode-miniapp .eyebrow,
+body.mode-site .eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    color: var(--lodge-gold);
+    font-weight: 800;
+}
+
+body.mode-miniapp .section-head h2,
+body.mode-site .section-head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 4vw, 1.45rem);
+    font-weight: 700;
+    color: var(--lodge-ink);
+}
+
+body.mode-miniapp .section-head span,
+body.mode-site .section-head span {
+    color: var(--lodge-muted);
+    font-size: 0.8rem;
+}
+
+/* ─── Stats bento ─── */
+body.mode-miniapp #homeStats.stats-grid,
+body.mode-site #homeStats.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+body.mode-miniapp .stat-card,
+body.mode-site .stat-card {
+    padding: 16px 14px;
+    border-radius: var(--lodge-r-md);
+    border: 1px solid var(--lodge-line);
+    background: linear-gradient(160deg, #fffdf8, #f3ebe0);
+    box-shadow: 0 6px 18px rgba(8, 24, 16, 0.05);
+}
+
+body.mode-miniapp .stat-card strong,
+body.mode-site .stat-card strong {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--lodge-ink);
+}
+
+body.mode-miniapp .stat-card span,
+body.mode-site .stat-card span {
+    font-size: 0.78rem;
+    color: var(--lodge-muted);
+    font-weight: 600;
+}
+
+/* ─── Offer banner ─── */
+body.mode-miniapp .offer-banner,
+body.mode-site .offer-banner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 18px 18px 20px;
+    border: none;
+    border-radius: var(--lodge-r-lg);
+    background:
+        linear-gradient(125deg, var(--lodge-ink) 0%, var(--lodge-pine) 45%, #0f2a1e 100%);
+    color: #f8f2e6;
+    box-shadow: var(--lodge-shadow-lg);
+    text-align: left;
+}
+
+body.mode-miniapp .offer-banner-media-wrap,
+body.mode-site .offer-banner-media-wrap {
+    display: none;
+}
+
+body.mode-miniapp .offer-banner-title,
+body.mode-site .offer-banner-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    line-height: 1.2;
+}
+
+body.mode-miniapp .offer-banner-subtitle,
+body.mode-site .offer-banner-subtitle {
+    color: rgba(248, 242, 230, 0.78);
+    font-size: 0.82rem;
+}
+
+body.mode-miniapp .offer-banner-meta,
+body.mode-site .offer-banner-meta {
+    color: var(--lodge-gold-bright);
+    font-size: 0.78rem;
+    font-style: normal;
+}
+
+body.mode-miniapp .offer-banner-arrow,
+body.mode-site .offer-banner-arrow {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--lodge-gold-bright);
+    font-size: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ─── Action tiles ─── */
+body.mode-miniapp .actions-grid,
+body.mode-site .actions-grid {
+    display: grid;
+    gap: 10px;
+}
+
+body.mode-miniapp .action-tile,
+body.mode-site .action-tile {
+    display: grid;
+    gap: 4px;
+    padding: 16px 16px 14px;
+    border: 1px solid var(--lodge-line);
+    border-radius: var(--lodge-r-md);
+    background: linear-gradient(180deg, #fffdf9, #f7f0e6);
+    box-shadow: 0 4px 14px rgba(8, 24, 16, 0.04);
+    text-align: left;
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+body.mode-miniapp .action-tile::before,
+body.mode-site .action-tile::before {
+    height: 0;
+    display: none;
+}
+
+body.mode-miniapp .action-tile:hover,
+body.mode-site .action-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(201, 162, 39, 0.35);
+    box-shadow: 0 10px 28px rgba(8, 24, 16, 0.08);
+}
+
+body.mode-miniapp .action-tile strong,
+body.mode-site .action-tile strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--lodge-ink);
+}
+
+body.mode-miniapp .action-tile span,
+body.mode-site .action-tile span {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--lodge-muted);
+}
+
+/* ─── Buttons ─── */
+body.mode-miniapp .primary-button,
+body.mode-site .primary-button {
+    min-height: 50px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--lodge-gold-bright) 0%, var(--lodge-gold) 100%);
+    color: var(--lodge-ink);
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: 0.01em;
+    box-shadow: 0 10px 28px var(--lodge-gold-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.mode-miniapp .primary-button:hover,
+body.mode-site .primary-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px rgba(201, 162, 39, 0.48);
+}
+
+body.mode-miniapp .ghost-button,
+body.mode-site .ghost-button {
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--lodge-line);
+    background: var(--lodge-paper);
+    color: var(--lodge-forest);
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(8, 24, 16, 0.04);
+}
+
+/* ─── Bottom nav (5 items) ─── */
+body.mode-miniapp .bottom-nav,
+body.mode-site .bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    width: calc(100% - 24px);
+    max-width: 480px;
+    padding: 8px 6px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: rgba(255, 252, 246, 0.94);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 14px 40px rgba(8, 24, 16, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+body.mode-miniapp .nav-button,
+body.mode-site .nav-button {
+    min-height: 52px;
+    gap: 3px;
+    border-radius: 16px;
+    color: var(--lodge-muted);
+}
+
+body.mode-miniapp .nav-button span,
+body.mode-site .nav-button span {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+    background: transparent;
+    font-size: 1.05rem;
+    box-shadow: none;
+}
+
+body.mode-miniapp .nav-button small,
+body.mode-site .nav-button small {
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+body.mode-miniapp .nav-button.active,
+body.mode-site .nav-button.active {
+    background: rgba(26, 77, 56, 0.08);
+    color: var(--lodge-ink);
+    box-shadow: none;
+}
+
+body.mode-miniapp .nav-button.active span,
+body.mode-site .nav-button.active span {
+    background: linear-gradient(145deg, var(--lodge-forest), var(--lodge-ink));
+    color: var(--lodge-gold-bright);
+    box-shadow: 0 6px 16px rgba(8, 24, 16, 0.18);
+}
+
+/* ─── Hero card (site mode) ─── */
+body.mode-site .hero-card {
+    border: none;
+    border-radius: var(--lodge-r-xl);
+    padding: 24px 22px;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(201, 162, 39, 0.18), transparent 40%),
+        linear-gradient(145deg, var(--lodge-pine) 0%, var(--lodge-ink) 100%);
+    color: #f8f2e6;
+    box-shadow: var(--lodge-shadow-lg);
+}
+
+body.mode-site .hero-card h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 5vw, 2.4rem);
+    color: #fff9ee;
+}
+
+body.mode-site .hero-card .eyebrow {
+    color: var(--lodge-gold-bright);
+}
+
+body.mode-site .hero-text {
+    color: rgba(248, 242, 230, 0.82);
+}
+
+body.mode-site .hero-badge,
+body.mode-site .hero-badges .hero-badge {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8f2e6;
+}
+
+/* ─── Mini App entry gate ─── */
+body.mode-miniapp .miniapp-entry.card {
+    border: none;
+    border-radius: var(--lodge-r-xl);
+    padding: 24px 20px;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(201, 162, 39, 0.16), transparent 38%),
+        linear-gradient(150deg, var(--lodge-pine), var(--lodge-ink));
+    color: #f8f2e6;
+    box-shadow: var(--lodge-shadow-lg);
+}
+
+body.mode-miniapp .miniapp-entry h1 {
+    font-family: var(--font-display);
+    color: #fff9ee;
+}
+
+body.mode-miniapp .miniapp-entry .eyebrow {
+    color: var(--lodge-gold-bright);
+}
+
+body.mode-miniapp .miniapp-entry .hero-text {
+    color: rgba(248, 242, 230, 0.82);
+    line-height: 1.65;
+}
+
+body.mode-miniapp .miniapp-entry-badges {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+body.mode-miniapp .miniapp-entry .hero-badge {
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+body.mode-miniapp .miniapp-entry .hero-badge strong {
+    color: #fff9ee;
+    font-size: 0.88rem;
+}
+
+body.mode-miniapp .miniapp-entry .hero-badge span {
+    color: rgba(248, 242, 230, 0.65);
+    font-size: 0.74rem;
+}
+
+body.mode-miniapp .miniapp-entry-note {
+    margin-top: 4px;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.18);
+    color: rgba(248, 242, 230, 0.75);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+/* ─── Auth (site) ─── */
+body.mode-site #screen-auth {
+    align-content: center;
+    min-height: calc(100dvh - 100px);
+}
+
+body.mode-site #screen-auth .site-auth-shell {
+    width: min(100%, 400px);
+    margin: 0 auto;
+}
+
+body.mode-site #screen-auth .site-auth-card {
+    border-radius: var(--lodge-r-xl);
+    box-shadow: var(--lodge-shadow-lg);
+    padding: 24px;
+}
+
+body.mode-site #screen-auth .site-auth-tabs {
+    background: #e8e2d8;
+    border-radius: 14px;
+    padding: 4px;
+}
+
+body.mode-site #screen-auth .site-auth-tab.is-active {
+    color: var(--lodge-ink);
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(8, 24, 16, 0.08);
+}
+
+body.mode-site #screen-auth .site-auth-head h1 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--lodge-ink);
+}
+
+body.mode-site .field input,
+body.mode-miniapp .field input,
+body.mode-site .auth-form input {
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--lodge-line);
+    background: #fffdf8;
+}
+
+body.mode-site .field input:focus,
+body.mode-miniapp .field input:focus {
+    outline: none;
+    border-color: rgba(26, 77, 56, 0.45);
+    box-shadow: 0 0 0 4px rgba(26, 77, 56, 0.1);
+}
+
+body.mode-site #screen-auth .site-auth-logo {
+    background: linear-gradient(145deg, var(--lodge-forest), var(--lodge-ink));
+}
+
+/* ─── Route / info ─── */
+body.mode-miniapp .info-line,
+body.mode-site .info-line {
+    color: var(--lodge-muted);
+    font-size: 0.86rem;
+    line-height: 1.6;
+}
+
+body.mode-miniapp #homeRouteCard .primary-button {
+    margin-top: 12px;
+    width: 100%;
+}
+
+/* ─── Questions overlay ─── */
+body.mode-miniapp .session-overlay {
+    background: rgba(8, 24, 16, 0.55);
+    backdrop-filter: blur(8px);
+}
+
+body.mode-miniapp .session-sheet {
+    border-radius: var(--lodge-r-xl) var(--lodge-r-xl) 0 0;
+    background: var(--lodge-paper);
+}
+
+body.mode-miniapp .answer-option {
+    border-radius: 14px;
+    border: 1px solid var(--lodge-line);
+    background: #fffdf8;
+    padding: 14px 16px;
+}
+
+body.mode-miniapp .answer-option.is-selected {
+    border-color: var(--lodge-forest);
+    background: rgba(26, 77, 56, 0.08);
+}
+
+body.mode-miniapp .answer-option.is-correct {
+    border-color: var(--lodge-moss);
+    background: rgba(45, 107, 82, 0.12);
+}
+
+body.mode-miniapp .answer-option.is-wrong {
+    border-color: #c44;
+    background: rgba(196, 68, 68, 0.08);
+}
+
+/* ─── Premium sheet ─── */
+body.mode-miniapp .premium-sheet,
+body.mode-site .premium-sheet {
+    border-radius: var(--lodge-r-xl);
+}
+
+body.mode-miniapp .premium-benefit-card,
+body.mode-site .premium-benefit-card {
+    border: 1px solid var(--lodge-line);
+    border-radius: var(--lodge-r-md);
+    background: linear-gradient(160deg, #fffdf8, #f3ebe0);
+}
+
+body.mode-miniapp .access-pill.is-premium,
+body.mode-site .access-pill.is-premium {
+    background: linear-gradient(135deg, var(--lodge-gold-bright), var(--lodge-gold));
+    color: var(--lodge-ink);
+    font-weight: 800;
+}
+
+/* ─── AI chat ─── */
+body.mode-miniapp .ai-hero-card,
+body.mode-site .ai-hero-card {
+    background: linear-gradient(135deg, var(--lodge-pine), var(--lodge-ink));
+    color: #f8f2e6;
+    border: none;
+}
+
+body.mode-miniapp .ai-message-user {
+    background: rgba(26, 77, 56, 0.1);
+    border-color: rgba(26, 77, 56, 0.15);
+}
+
+body.mode-miniapp .ai-message-bot {
+    background: var(--lodge-paper);
+    border: 1px solid var(--lodge-line);
+}
+
+/* ─── Toast ─── */
+body.mode-miniapp .toast,
+body.mode-site .toast {
+    border-radius: 14px;
+    background: var(--lodge-ink);
+    color: #f8f2e6;
+    box-shadow: var(--lodge-shadow-lg);
+}
+
+/* ─── Legal ─── */
+body.legal-doc-page {
+    font-family: var(--font-body);
+    background: var(--lodge-parchment);
+}
+
+body.legal-doc-page .legal-doc-hero h1 {
+    font-family: var(--font-display);
+    color: var(--lodge-ink);
+}
+
+body.legal-doc-page .legal-doc-accent {
+    color: var(--lodge-gold);
+}
+
+body.legal-doc-page .legal-doc-fact,
+body.legal-doc-page .legal-doc-section {
+    border-color: var(--lodge-line);
+    background: var(--lodge-paper);
+    border-radius: var(--lodge-r-md);
+    box-shadow: var(--lodge-shadow);
+}
+
+/* ─── Desktop app shell ─── */
+@media (min-width: 720px) {
+    body.mode-site .app-shell {
+        max-width: 920px;
+        padding: 20px 24px 48px;
+    }
+
+    body.mode-site .app-header {
+        border-radius: 999px;
+    }
+
+    body.mode-site #screen-auth .site-auth-shell {
+        width: min(100%, 420px);
+    }
+
+    body.mode-site .bottom-nav {
+        max-width: 640px;
+    }
+}
