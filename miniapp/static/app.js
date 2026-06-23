@@ -5,8 +5,8 @@ if (tg) {
     tg.ready();
     tg.expand();
     tg.enableClosingConfirmation();
-    tg.setHeaderColor("#07090d");
-    tg.setBackgroundColor("#07090d");
+    tg.setHeaderColor("#f5f8f6");
+    tg.setBackgroundColor("#f5f8f6");
 }
 
 const state = {
