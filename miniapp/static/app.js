@@ -51,8 +51,9 @@ const headerProfileButton = document.getElementById("headerProfileButton");
 const bottomNav = document.querySelector(".tabbar, .bottom-nav");
 const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
+const AI_COACH_NAME = "Егерь";
 const BRAND_LOGO_IMAGE = "/assets/brand-logo.jpg";
-const AI_AVATAR_IMAGE = BRAND_LOGO_IMAGE;
+const AI_AVATAR_IMAGE = "/assets/ai-coach-avatar.png?v=20260624";
 let sessionTimerInterval = null;
 
 function hasWebSession() {
@@ -563,7 +564,7 @@ function buildAiWelcomeMessage() {
         ? aiMeta.provider === "groq"
             ? "Подключён Groq AI — отвечу по вашему прогрессу и плану подготовки."
             : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
-        : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
+        : "Я Егерь — ваш тренер по охотминимуму. Подскажу по маршруту, ошибкам и экзамену.";
 
     return [
         aiLead,
@@ -597,7 +598,7 @@ function getAiStatusText(isBusy = false) {
         return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
     }
 
-    return "Тренер ONEHUNT · прогресс, маршрут и экзамен";
+    return "Егерь · прогресс, маршрут и экзамен";
 }
 
 function applyAiMeta() {
@@ -632,10 +633,10 @@ function renderAiThread() {
             const isUser = item.role === "user";
             return `
                 <article class="ai-message ${isUser ? "is-user" : "is-assistant"}">
-                    ${isUser ? "" : `<span class="ai-avatar"><img src="${AI_AVATAR_IMAGE}" alt="ONEHUNT AI"></span>`}
+                    ${isUser ? "" : `<span class="ai-avatar"><img src="${AI_AVATAR_IMAGE}" alt="${AI_COACH_NAME}"></span>`}
                     <div class="ai-bubble-wrap">
                         <div class="ai-bubble ${isUser ? "is-user" : "is-assistant"}">${formatRichText(item.text)}</div>
-                        <div class="ai-meta">${isUser ? "Вы" : "ONEHUNT AI"} · ${escapeHtml(item.time)}</div>
+                        <div class="ai-meta">${isUser ? "Вы" : AI_COACH_NAME} · ${escapeHtml(item.time)}</div>
                     </div>
                 </article>
             `;
@@ -1121,7 +1122,9 @@ function renderProfile() {
         .join("");
 
     if (state.progress?.points?.length) {
-        document.getElementById("progressChart").innerHTML = state.progress.points
+        const chartEl = document.getElementById("progressChart");
+        chartEl.classList.remove("is-empty");
+        chartEl.innerHTML = state.progress.points
             .map(
                 (point, index) => `
                     <div class="chart-bar">
@@ -1131,12 +1134,15 @@ function renderProfile() {
                 `,
             )
             .join("");
-    } else if (!hasPremiumAccess() && !bootstrap.free_mode) {
-        document.getElementById("progressChart").innerHTML =
-            '<div class="empty-state">График прогресса открывается после активации PREMIUM.</div>';
     } else {
-        document.getElementById("progressChart").innerHTML =
-            '<div class="empty-state">График появится после первых ответов за последние 14 дней. Как только накопится активность, здесь начнет рисоваться живой срез.</div>';
+        const chartEl = document.getElementById("progressChart");
+        chartEl.classList.add("is-empty");
+        if (!hasPremiumAccess() && !bootstrap.free_mode) {
+            chartEl.innerHTML = '<div class="empty-state">График прогресса открывается после активации PREMIUM.</div>';
+        } else {
+            chartEl.innerHTML =
+                '<div class="empty-state">Пока нет ответов за последние 14 дней. Пройдите тренировку — здесь появится график активности.</div>';
+        }
     }
 
     const nearest = state.achievements?.nearest || [];

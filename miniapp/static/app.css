@@ -794,6 +794,22 @@ h1 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
     padding: 0 2px;
 }
 
+.ai-head-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-coach-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 2px solid var(--accent-soft);
+    box-shadow: 0 8px 20px rgba(26, 58, 42, 0.1);
+    flex-shrink: 0;
+}
+
 .ai-head h1 { font-size: 1.4rem; }
 
 .ai-status-dot,
@@ -965,6 +981,15 @@ h1 { margin: 0; font-weight: 800; letter-spacing: -0.03em; }
     gap: 4px;
     align-items: end;
     min-height: 120px;
+}
+
+.chart-bars.is-empty {
+    display: block;
+    min-height: auto;
+}
+
+.chart-bars.is-empty .empty-state {
+    margin: 0;
 }
 
 .chart-bar {
