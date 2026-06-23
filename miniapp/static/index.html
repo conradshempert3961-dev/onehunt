@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="/assets/brand-logo.jpg" type="image/jpeg">
     <link rel="stylesheet" href="/assets/wolf-loader.css">
-    <link rel="stylesheet" href="/assets/app.css?v=20260624">
+    <link rel="stylesheet" href="/assets/app.css?v=20260624c">
 </head>
 <body class="mode-site">
     <div class="app-shell">
@@ -33,22 +33,12 @@
             <section class="screen screen-active" id="screen-auth">
                 <div class="auth-layout">
                     <div class="hero-card card auth-hero-card">
-                        <p class="eyebrow">Самостоятельная платформа</p>
                         <h1>ONEHUNT</h1>
-                        <p class="hero-text">
-                            Отдельный сайт для подготовки к охотминимуму: практика, маршрут, экзамен, AI и премиум-доступ
-                            без Telegram-бота.
-                        </p>
-                        <div class="hero-badges">
-                            <span class="hero-badge">257 вопросов</span>
-                            <span class="hero-badge">ПК + мобильная версия</span>
-                            <span class="hero-badge">Премиум 990 ₽</span>
-                        </div>
+                        <p class="hero-text">Подготовка к охотминимуму</p>
                     </div>
                     <div class="card auth-card">
                         <div class="section-head">
                             <h2>Войти</h2>
-                            <span>Откройте свой прогресс и покупки</span>
                         </div>
                         <form class="auth-form" id="loginForm">
                             <label class="field">
@@ -65,7 +55,6 @@
                     <div class="card auth-card">
                         <div class="section-head">
                             <h2>Регистрация</h2>
-                            <span>Создайте отдельный аккаунт ONEHUNT</span>
                         </div>
                         <form class="auth-form" id="registerForm">
                             <label class="field">
@@ -87,23 +76,15 @@
             </section>
             <section class="screen" id="screen-home">
                 <div class="hero-card card">
-                    <p class="eyebrow">Главная</p>
                     <h1 id="heroTitle">ONEHUNT</h1>
-                    <p class="hero-text" id="heroText">Загружаем ваш профиль и текущий прогресс.</p>
-                    <div class="hero-badges" id="heroBadges"></div>
+                    <p class="hero-text" id="heroText">Загружаем профиль…</p>
                 </div>
 
                 <div class="stats-grid" id="homeStats"></div>
 
-                <div class="card quote-card">
-                    <p class="eyebrow">Цитата дня</p>
-                    <p id="quoteText">...</p>
-                </div>
-
                 <div class="card">
                     <div class="section-head">
                         <h2>Быстрый старт</h2>
-                        <span>Сразу в действие</span>
                     </div>
                     <div class="actions-grid">
                         <button class="action-tile" data-start-mode="quick" type="button">
@@ -129,47 +110,21 @@
 
                 <button class="offer-banner" id="guideBannerButton" type="button">
                     <span class="offer-banner-copy">
-                        <strong class="offer-banner-title">📖 Полный путь до первой охоты</strong>
-                        <small class="offer-banner-subtitle">Маршрут, экзамен, AI и материалы → 990 ₽</small>
-                        <em class="offer-banner-meta">Гайд + 12 чек-листов + полный PREMIUM-доступ</em>
+                        <strong class="offer-banner-title">PREMIUM</strong>
+                        <small class="offer-banner-subtitle">990 ₽ · пожизненный доступ</small>
+                        <em class="offer-banner-meta hidden"></em>
                     </span>
                     <span class="offer-banner-media-wrap">
                         <img class="offer-banner-image" src="/assets/premium-guide.jpg" alt="Полный путь до первой охоты">
                     </span>
                     <span class="offer-banner-arrow">→</span>
                 </button>
-
-                <div class="card legal-card">
-                    <div class="section-head">
-                        <h2>Информация для оплаты</h2>
-                        <span>Что должно быть видно на сайте для подключения платежей</span>
-                    </div>
-                    <div class="legal-grid">
-                        <article class="legal-item">
-                            <h3>Товар / услуга</h3>
-                            <p>ONEHUNT — цифровой продукт для подготовки к охотминимуму. Внутри: вопросы, экзамен, маршрут, AI и premium-материалы.</p>
-                        </article>
-                        <article class="legal-item">
-                            <h3>Как получают доступ</h3>
-                            <p>После успешной оплаты доступ открывается автоматически в аккаунте пользователя. Физическая доставка отсутствует.</p>
-                        </article>
-                        <article class="legal-item">
-                            <h3>Оферта и правила</h3>
-                            <p>На сайте должны быть условия использования, описание доступа, сроков, возврата и правил использования цифрового продукта.</p>
-                        </article>
-                        <article class="legal-item">
-                            <h3>Контакты и реквизиты</h3>
-                            <p>Добавьте email поддержки, Telegram для связи, ФИО владельца проекта и реквизиты в отдельный раздел перед боевым подключением платежей.</p>
-                        </article>
-                    </div>
-                </div>
             </section>
 
             <section class="screen" id="screen-practice">
                 <div class="card">
                     <div class="section-head">
-                        <h2>Режимы практики</h2>
-                        <span>Всё для спокойной и быстрой подготовки</span>
+                        <h2>Режимы</h2>
                     </div>
                     <div class="actions-grid" id="practiceModes">
                         <button class="action-tile" data-start-mode="training" type="button">
@@ -209,16 +164,14 @@
 
                 <div class="card">
                     <div class="section-head">
-                        <h2>Тропа знаний</h2>
-                        <span>Последовательное прохождение по блокам</span>
+                        <h2>Блоки</h2>
                     </div>
                     <div class="block-grid" id="blockGrid"></div>
                 </div>
 
                 <div class="card">
                     <div class="section-head">
-                        <h2>Карточки охотника</h2>
-                        <span>Животные, следы и сезонность</span>
+                        <h2>Карточки</h2>
                     </div>
                     <div class="info-line" id="cardsSummary">Загружаем карточки...</div>
                     <div class="category-list" id="cardCategories"></div>
@@ -234,22 +187,16 @@
 
             <section class="screen" id="screen-ai">
                 <div class="card ai-hero-card">
-                    <p class="eyebrow">AI-ассистент</p>
                     <div class="section-head">
                         <h2>Егерь</h2>
-                        <span>AI-тренер ONEHUNT · подскажет, что учить дальше</span>
                     </div>
-                    <p class="hero-text">
-                        Задавайте вопросы про прогресс, ошибки, слабые темы, режим экзамена и план на день.
-                        Ассистент смотрит на ваш текущий профиль внутри ONEHUNT и отвечает по делу.
-                    </p>
                     <div class="ai-prompt-grid" id="aiPromptGrid"></div>
                 </div>
 
                 <div class="card ai-chat-card">
                     <div class="section-head">
                         <h2>Чат</h2>
-                        <span id="aiStatus">Готов разобрать прогресс, ошибки и маршрут подготовки</span>
+                        <span id="aiStatus">Онлайн</span>
                     </div>
                     <div class="ai-thread" id="aiThread"></div>
                     <form class="ai-composer" id="aiForm">
@@ -273,15 +220,13 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Прогресс по блокам</h2>
-                        <span>Где уже хорошо, а где еще нужно дожать</span>
                     </div>
                     <div id="blockProgress"></div>
                 </div>
 
                 <div class="card">
                     <div class="section-head">
-                        <h2>График за 14 дней</h2>
-                        <span>Живой срез по результатам</span>
+                        <h2>График · 14 дней</h2>
                     </div>
                     <div class="chart-bars" id="progressChart"></div>
                 </div>
@@ -289,23 +234,20 @@
                 <div class="card">
                     <div class="section-head">
                         <h2>Достижения</h2>
-                        <span>Ближайшие и уже открытые</span>
                     </div>
                     <div class="achievements-list" id="achievementsList"></div>
                 </div>
 
                 <div class="card">
                     <div class="section-head">
-                        <h2>История экзаменов</h2>
-                        <span>Последние попытки</span>
+                        <h2>Экзамены</h2>
                     </div>
                     <div class="history-list" id="historyList"></div>
                 </div>
 
                 <div class="card settings-card">
                     <div class="section-head">
-                        <h2>Снаряжение</h2>
-                        <span>Настройки и управление</span>
+                        <h2>Настройки</h2>
                     </div>
                     <label class="field">
                         <span>Вопросов в тренировке</span>
@@ -356,8 +298,7 @@
         <footer class="site-footer">
             <div class="site-footer-card">
                 <strong>ONEHUNT</strong>
-                <p>Standalone-сайт для подготовки к охотминимуму с веб-аккаунтом, покупкой premium и обучением на ПК и мобиле.</p>
-                <p>Поддержка: support@onehunt.local. Перед боевым запуском сюда нужно вынести оферту, политику и реквизиты.</p>
+                <p><a href="mailto:s.yarcev@onehunt.ru">s.yarcev@onehunt.ru</a></p>
             </div>
         </footer>
     </div>
@@ -398,7 +339,7 @@
 
     <div class="toast hidden" id="toast"></div>
 
-    <script src="/assets/wolf-loader.js?v=20260624"></script>
-    <script src="/assets/app.js?v=20260624"></script>
+    <script src="/assets/wolf-loader.js?v=20260624c"></script>
+    <script src="/assets/app.js?v=20260624c"></script>
 </body>
 </html>
