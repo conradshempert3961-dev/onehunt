@@ -188,16 +188,6 @@ if (-not (Test-Path (Join-Path $Root ".env"))) {
 Import-OnehuntDotEnv -Path (Join-Path $Root '.env')
 Set-OnehuntEnv
 
-if ($env:OPENAI_API_BASE -match '18632|deepseek') {
-    try {
-        $modelsUrl = ($env:OPENAI_API_BASE.TrimEnd('/')) + "/models"
-        Invoke-WebRequest -Uri $modelsUrl -TimeoutSec 3 -UseBasicParsing | Out-Null
-        Write-Host "DeepSeek AI proxy: reachable at $env:OPENAI_API_BASE"
-    } catch {
-        Write-Warning "DeepSeek AI proxy is not running. Start: node server.mjs (see .env.local.example or scripts\setup_deepseek_ai.ps1)"
-    }
-}
-
 & $Python -m pip install --disable-pip-version-check -r (Join-Path $Root "requirements.txt")
 & $Python scripts\load_questions.py
 
