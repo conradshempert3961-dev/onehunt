@@ -2,6 +2,8 @@
 
 Сервер из скрина: **socialspur.ru**, IP **104.128.137.117**, Ubuntu, 1 GB RAM.
 
+**На Mac ничего ставить и запускать не нужно** — весь ONEHUNT работает на VDS. С Mac только открываете сайт в браузере или Telegram.
+
 ## Шаг 1. DNS (у регистратора домена)
 
 Если домен `socialspur.ru` ваш — добавьте записи:
@@ -78,7 +80,7 @@ ssh root@104.128.137.117
 На сервере:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/improve-styling-fix-errors-2866/scripts/firstbyte_vds_bootstrap.sh | bash -s socialspur.ru
+curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/main/scripts/firstbyte_vds_bootstrap.sh | bash -s socialspur.ru
 ```
 
 Или после `git clone`:
@@ -122,7 +124,7 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 ## AI на VDS
 
-Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based). Для живого AI укажите в `/opt/onehunt/.env`:
+Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based). Для живого AI укажите **только на сервере** в `/opt/onehunt/.env`:
 
 ```env
 OPENAI_API_KEY=ваш_ключ
@@ -130,4 +132,8 @@ OPENAI_API_BASE=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-Локально (Ollama): `OPENAI_API_BASE=http://127.0.0.1:11434/v1`, `OPENAI_MODEL=llama3`, `OPENAI_API_KEY=ollama`.
+После правки `.env` перезапустите miniapp:
+
+```bash
+cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build miniapp
+```
