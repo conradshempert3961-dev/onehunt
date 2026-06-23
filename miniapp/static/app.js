@@ -51,9 +51,9 @@ const headerProfileButton = document.getElementById("headerProfileButton");
 const bottomNav = document.querySelector(".tabbar, .bottom-nav");
 const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
-const AI_COACH_NAME = "Егерь";
 const BRAND_LOGO_IMAGE = "/assets/brand-logo.jpg";
-const AI_AVATAR_IMAGE = "/assets/ai-coach-avatar.png?v=20260624";
+const AI_COACH_NAME = "ONEHUNT AI";
+const AI_AVATAR_IMAGE = BRAND_LOGO_IMAGE;
 let sessionTimerInterval = null;
 
 function hasWebSession() {

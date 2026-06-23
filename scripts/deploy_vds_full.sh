@@ -49,6 +49,14 @@ sleep 5
 docker compose -f docker-compose.prod.yml up -d --build miniapp huntdriver
 docker compose -f docker-compose.prod.yml run --rm miniapp python scripts/load_questions.py 2>/dev/null || true
 
+BOT_TOKEN_VALUE="$(grep '^BOT_TOKEN=' .env | cut -d= -f2- || true)"
+if [[ -n "${BOT_TOKEN_VALUE}" && "${BOT_TOKEN_VALUE}" != "your_telegram_bot_token" ]]; then
+  echo "== Start Telegram bot =="
+  docker compose -f docker-compose.prod.yml up -d --build bot
+else
+  echo "== Skip bot: set real BOT_TOKEN from @BotFather in ${ROOT}/.env =="
+fi
+
 if ! grep -q '^OPENAI_API_KEY=.\+' .env 2>/dev/null; then
   set_kv OPENAI_API_KEY ""
 fi
