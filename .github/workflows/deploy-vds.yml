@@ -22,18 +22,12 @@ jobs:
       - name: Deploy to VDS
         env:
           VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
-          DEEPSEEK_TOKEN: ${{ secrets.DEEPSEEK_USER_TOKEN }}
         run: |
           if [ -z "$VDS_PASSWORD" ]; then
             echo "::error::ONEHUNT_VDS_PASSWORD GitHub secret is not set. Add it in repo Settings → Secrets → Actions."
             exit 1
           fi
           sudo apt-get install -y -qq sshpass
-          mkdir -p deploy_bundle
-          if [ -n "$DEEPSEEK_TOKEN" ]; then
-            printf 'DEEPSEEK_USER_TOKEN=%s\n' "$DEEPSEEK_TOKEN" > deploy_bundle/.env.deepseek
-          fi
-          sshpass -p "$VDS_PASSWORD" scp -o StrictHostKeyChecking=no deploy_bundle/.env.deepseek root@104.128.137.117:/opt/onehunt/.env.deepseek || true
           sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no root@104.128.137.117 <<'EOF'
           set -e
           ROOT=/opt/onehunt

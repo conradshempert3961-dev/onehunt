@@ -5,8 +5,8 @@ if (tg) {
     tg.ready();
     tg.expand();
     tg.enableClosingConfirmation();
-    tg.setHeaderColor("#07090d");
-    tg.setBackgroundColor("#07090d");
+    tg.setHeaderColor("#f5f8f6");
+    tg.setBackgroundColor("#f5f8f6");
 }
 
 const state = {
@@ -560,8 +560,8 @@ function buildAiWelcomeMessage() {
     const routeTask = state.bootstrap.route?.current_task?.task;
     const aiMeta = state.bootstrap.ai;
     const aiLead = aiMeta?.configured
-        ? aiMeta.provider === "deepseek"
-            ? "Подключён DeepSeek — отвечу по вашему прогрессу и плану подготовки."
+        ? aiMeta.provider === "groq"
+            ? "Подключён Groq AI — отвечу по вашему прогрессу и плану подготовки."
             : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
         : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
 
@@ -591,8 +591,8 @@ function getAiStatusText(isBusy = false) {
     const ai = state.bootstrap?.ai;
     if (ai?.configured) {
         const modelLabel = ai.model ? ` · ${ai.model}` : "";
-        if (ai.provider === "deepseek") {
-            return `Живой AI · DeepSeek${modelLabel}`;
+        if (ai.provider === "groq") {
+            return `Живой AI · Groq${modelLabel}`;
         }
         return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
     }
@@ -725,7 +725,8 @@ async function submitAiMessage(rawMessage) {
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
         if (payload.fallback) {
-            showToast("DeepSeek недоступен — ответ по шаблону. Запустите: bash scripts/setup_deepseek_mac.sh");
+            const reason = payload.error || "Groq AI недоступен с сервера";
+            showToast(`${reason} — ответ по шаблону.`);
         }
         pulse("success");
     } catch (error) {

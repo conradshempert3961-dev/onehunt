@@ -51,8 +51,8 @@ def ai_assistant_meta() -> dict[str, Any]:
     if configured:
         base_lower = OPENAI_API_BASE.lower()
         model_lower = OPENAI_MODEL.lower()
-        if "deepseek" in base_lower or "deepseek" in model_lower or ":18632" in base_lower:
-            provider = "deepseek"
+        if "groq.com" in base_lower or model_lower.startswith("groq/"):
+            provider = "groq"
         else:
             provider = "openai_compatible"
     return {
@@ -361,6 +361,12 @@ def _normalize_history(history: list[dict[str, str]]) -> list[dict[str, str]]:
     return normalized
 
 
+def _is_groq_api() -> bool:
+    base_lower = OPENAI_API_BASE.lower()
+    model_lower = OPENAI_MODEL.lower()
+    return "groq.com" in base_lower or model_lower.startswith("groq/")
+
+
 async def _call_openai_chat(messages: list[dict[str, str]]) -> str:
     if not ai_assistant_configured():
         raise AIAssistantError("OpenAI-compatible API is not configured.")
@@ -370,12 +376,15 @@ async def _call_openai_chat(messages: list[dict[str, str]]) -> str:
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
     }
-    payload = {
+    payload: dict[str, Any] = {
         "model": OPENAI_MODEL,
         "messages": messages,
         "temperature": AI_TEMPERATURE,
-        "max_tokens": AI_MAX_TOKENS,
     }
+    if _is_groq_api():
+        payload["max_completion_tokens"] = AI_MAX_TOKENS
+    else:
+        payload["max_tokens"] = AI_MAX_TOKENS
 
     timeout = ClientTimeout(total=AI_REQUEST_TIMEOUT)
     try:
@@ -389,6 +398,11 @@ async def _call_openai_chat(messages: list[dict[str, str]]) -> str:
 
     if status >= 400:
         detail = data.get("error", {}).get("message") if isinstance(data, dict) else None
+        if status == 403 and _is_groq_api() and "groq.com" in OPENAI_API_BASE.lower():
+            raise AIAssistantError(
+                "Groq blocked datacenter IP. Set OPENAI_API_BASE to a Groq proxy URL "
+                "(Cloudflare Worker). See scripts/deploy_groq_cf_proxy.sh"
+            )
         raise AIAssistantError(detail or f"LLM API returned HTTP {status}.")
 
     try:
@@ -427,15 +441,18 @@ async def generate_ai_reply(
 
     try:
         reply = await _call_openai_chat(messages)
+        provider = "groq" if _is_groq_api() else "openai_compatible"
         return {
             "reply": reply,
             "quick_replies": suggest_quick_replies(cleaned_message)[:3],
             "source": "llm",
-            "provider": "openai_compatible",
+            "provider": provider,
             "model": OPENAI_MODEL,
         }
-    except (AIAssistantError, json.JSONDecodeError, ClientError, asyncio.TimeoutError, OSError):
+    except (AIAssistantError, json.JSONDecodeError, ClientError, asyncio.TimeoutError, OSError) as exc:
         result = build_rule_based_reply(cleaned_message, context)
         result["provider"] = "rules"
         result["fallback"] = True
+        if isinstance(exc, AIAssistantError):
+            result["error"] = str(exc)
         return result
