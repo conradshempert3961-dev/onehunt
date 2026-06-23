@@ -61,7 +61,7 @@
     height: 100%;
     object-fit: contain;
     display: block;
-    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.45));
+    filter: drop-shadow(0 3px 8px rgba(26, 58, 42, 0.12));
 }
 
 .wolf-runner-video.hidden,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import re
 import string
 from datetime import date, datetime
 
@@ -93,6 +94,55 @@ def normalize_option_key(value: str) -> str:
         "г": "d",
     }
     return translit.get(cleaned, cleaned)
+
+
+MANUAL_OPTION_FIXES: dict[tuple[str, str], str] = {
+    ("40", "a"): "с 1 сентября по 31 октября",
+    ("131", "a"): "на территории Республики Саха (Якутия) в период с 29 мая по 4 июня, но не более 4 дней",
+    ("141", "c"): "не более четырех охотников.",
+    ("154", "c"): (
+        "использование стандартных ногозахватывающих удерживающих капканов со стальными дугами "
+        "для отлова волка, енотовидной собаки, енота-полоскуна, выдры, бобров, ондатры."
+    ),
+    ("155", "a"): (
+        "добыча кабанов загоном, нагоном, а также с применением собак охотничьих пород "
+        "с 1 января по 28 (29) февраля, за исключением добора раненых кабанов"
+    ),
+    ("174", "b"): "вид, количество и дата добычи",
+    ("217", "a"): "да.",
+}
+
+
+def clean_option_text(text: str, *, question_id: str | None = None, option_key: str | None = None) -> str:
+    if question_id and option_key:
+        manual = MANUAL_OPTION_FIXES.get((str(question_id), normalize_option_key(option_key)))
+        if manual is not None:
+            return manual
+
+    value = str(text or "").strip()
+    for old, new in {
+        "\u2018": "'",
+        "\u2019": "'",
+        "‚": ",",
+        "‘": "'",
+        "’": "'",
+        "—": "-",
+    }.items():
+        value = value.replace(old, new)
+    value = re.sub(r"\s+", " ", value)
+
+    value = re.sub(r"\s*;\s*-\s*\.?\s*$", ".", value)
+    value = re.sub(r"\s*;\.?\s*-\s*$", ".", value)
+    value = re.sub(r"\s*;\.+\s*$", ".", value)
+    value = re.sub(r"\s*;\s*:\s*$", "", value)
+    value = re.sub(r"\s*;\s*[:;,'\".\-\s]+$", "", value)
+    value = re.sub(r"\s*;\s*[a-zа-яё]\s*$", "", value, flags=re.IGNORECASE)
+    value = re.sub(r"\.\s*-\s*$", ".", value)
+    value = re.sub(r"\s+-\s*$", "", value)
+    value = re.sub(r"\s*,\s*\.\s*$", ".", value)
+    value = re.sub(r":+$", "", value)
+    value = value.strip(" ,;:-")
+    return value.strip()
 
 
 def random_code(length: int = 8) -> str:

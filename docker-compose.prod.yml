@@ -89,22 +89,8 @@ services:
     networks:
       - onehunt
 
-  deepseek:
-    build:
-      context: .
-      dockerfile: Dockerfile.deepseek
-    container_name: onehunt_deepseek
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - deepseek_data:/app/data
-    networks:
-      - onehunt
-
 volumes:
   pgdata:
-  deepseek_data:
 
 networks:
   onehunt:
