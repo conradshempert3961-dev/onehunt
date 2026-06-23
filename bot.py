@@ -300,15 +300,6 @@ def get_app_timezone():
         return ZoneInfo("UTC")
 
 
-def web_site_url() -> str | None:
-    app_url = MINIAPP_URL.strip().rstrip("/")
-    if not app_url:
-        return None
-    if app_url.endswith("/app"):
-        return app_url[:-4] or app_url
-    return app_url
-
-
 def home_back_markup() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="← Главная", callback_data="camp")]])
 
@@ -321,9 +312,6 @@ def miniapp_shell_markup() -> InlineKeyboardMarkup:
         rows.append([InlineKeyboardButton(text="🎯 Открыть ONEHUNT", web_app=WebAppInfo(url=miniapp_url))])
     elif app_url:
         rows.append([InlineKeyboardButton(text="🎯 Открыть приложение", url=app_url)])
-    site_url = web_site_url()
-    if site_url:
-        rows.append([InlineKeyboardButton(text="🌐 Сайт с регистрацией", url=site_url)])
     rows.append(
         [
             InlineKeyboardButton(text="🔔 Напоминания", callback_data="settings"),
@@ -610,7 +598,7 @@ def camp_text(user, questions_count: int) -> str:
                 f"🎖 Ранг: {rank['icon']} <b>{escape(rank['name'])}</b> · 🔥 <b>{user.streak_days}</b> дн.",
                 f"🔔 Напоминания: <b>{'вкл' if user.daily_reminder else 'выкл'}</b> · 🪪 <b>{access_label}</b>",
                 "",
-                "Практика, экзамен и AI — в приложении или на сайте.",
+                "Практика, экзамен и AI — в Mini App.",
             ]
         )
 
@@ -1604,15 +1592,12 @@ async def show_help(target: Message | CallbackQuery) -> None:
         else "Полный доступ и дополнительные сценарии можно включить через Премиум."
     )
     if BOT_SHELL_MODE:
-        site = web_site_url()
-        site_line = f"Сайт: {escape(site)}" if site else ""
         text = "\n".join(
             [
                 "<b>ONEHUNT</b>",
                 "",
-                "Бот — вход в приложение и напоминания о подготовке.",
-                "Вопросы, экзамен, маршрут и AI — в Mini App или на сайте.",
-                site_line,
+                "Бот — вход в Mini App и напоминания о подготовке.",
+                "Вопросы, экзамен, маршрут и AI — в приложении.",
                 "",
                 "/start — главная",
                 "Поддержка: s.yarcev@onehunt.ru",
