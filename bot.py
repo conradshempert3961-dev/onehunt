@@ -278,7 +278,9 @@ def access_status_label(user) -> str:
 
 
 def premium_title_text(user) -> str:
-    return "🏕 <b>ONEHUNT PREMIUM</b>" if is_premium(user) else "🏕 <b>ONEHUNT</b>"
+    if is_premium(user):
+        return "✨ <b>ONEHUNT PREMIUM</b>"
+    return "<b>ONEHUNT</b>"
 
 
 def get_miniapp_webapp_url() -> str | None:
@@ -298,25 +300,36 @@ def get_app_timezone():
         return ZoneInfo("UTC")
 
 
+def web_site_url() -> str | None:
+    app_url = MINIAPP_URL.strip().rstrip("/")
+    if not app_url:
+        return None
+    if app_url.endswith("/app"):
+        return app_url[:-4] or app_url
+    return app_url
+
+
+def home_back_markup() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="← Главная", callback_data="camp")]])
+
+
 def miniapp_shell_markup() -> InlineKeyboardMarkup:
     rows: list[list[InlineKeyboardButton]] = []
     miniapp_url = get_miniapp_webapp_url()
+    app_url = MINIAPP_URL.strip().rstrip("/")
     if miniapp_url:
-        rows.append([InlineKeyboardButton(text="Открыть Mini App", web_app=WebAppInfo(url=miniapp_url))])
-    else:
-        app_url = MINIAPP_URL.strip().rstrip("/")
-        if app_url:
-            rows.append([InlineKeyboardButton(text="Открыть приложение", url=app_url)])
-        web_url = app_url.rsplit("/app", 1)[0] if app_url.endswith("/app") else app_url
-        if web_url:
-            rows.append([InlineKeyboardButton(text="Сайт с регистрацией", url=web_url or app_url)])
+        rows.append([InlineKeyboardButton(text="🎯 Открыть ONEHUNT", web_app=WebAppInfo(url=miniapp_url))])
+    elif app_url:
+        rows.append([InlineKeyboardButton(text="🎯 Открыть приложение", url=app_url)])
+    site_url = web_site_url()
+    if site_url:
+        rows.append([InlineKeyboardButton(text="🌐 Сайт с регистрацией", url=site_url)])
     rows.append(
         [
-            InlineKeyboardButton(text="Профиль", callback_data="menu_profile"),
-            InlineKeyboardButton(text="Напоминания", callback_data="settings"),
+            InlineKeyboardButton(text="🔔 Напоминания", callback_data="settings"),
+            InlineKeyboardButton(text="❓ Помощь", callback_data="help"),
         ]
     )
-    rows.append([InlineKeyboardButton(text="Помощь", callback_data="help")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -327,22 +340,8 @@ async def redirect_to_miniapp_if_shell_mode(
     if not BOT_SHELL_MODE:
         return False
 
-    lines = ["<b>ONEHUNT Mini App</b>", ""]
-    if section_name:
-        lines.append(f"Раздел <b>{escape(section_name)}</b> доступен в Mini App.")
-    else:
-        lines.append("Основное обучение теперь находится в Mini App.")
-    lines.append("В боте оставлены быстрый вход, профиль и напоминания.")
-
-    miniapp_url = get_miniapp_webapp_url()
-    if miniapp_url:
-        lines.append("Нажмите кнопку ниже, чтобы открыть приложение.")
-    elif MINIAPP_URL.strip():
-        lines.append(f"Откройте приложение: {escape(MINIAPP_URL.strip())}")
-    else:
-        lines.append("Укажите MINIAPP_URL, чтобы показать кнопку приложения.")
-
-    await respond(target, "\n".join(lines), reply_markup=main_menu_markup())
+    label = escape(section_name) if section_name else "Этот раздел"
+    await respond(target, f"{label} доступен в приложении ONEHUNT.", reply_markup=main_menu_markup())
     return True
 
 
@@ -350,7 +349,7 @@ def section_footer_rows(section_text: str, section_callback: str) -> list[list[I
     return [
         [
             InlineKeyboardButton(text=section_text, callback_data=section_callback),
-            InlineKeyboardButton(text="🏕 Главная", callback_data="camp"),
+            InlineKeyboardButton(text="← Главная", callback_data="camp"),
         ]
     ]
 
@@ -454,19 +453,7 @@ def daily_menu_markup() -> InlineKeyboardMarkup:
 def profile_menu_markup() -> InlineKeyboardMarkup:
     premium_text = "Сейчас бесплатно" if FREE_MODE else "Премиум"
     if BOT_SHELL_MODE:
-        rows: list[list[InlineKeyboardButton]] = []
-        miniapp_url = get_miniapp_webapp_url()
-        if miniapp_url:
-            rows.append([InlineKeyboardButton(text="Открыть Mini App", web_app=WebAppInfo(url=miniapp_url))])
-        rows.append(
-            [
-                InlineKeyboardButton(text="Напоминания", callback_data="settings"),
-                InlineKeyboardButton(text="Помощь", callback_data="help"),
-            ]
-        )
-        rows.append([InlineKeyboardButton(text=premium_text, callback_data="premium")])
-        rows.append([InlineKeyboardButton(text="Главная", callback_data="camp")])
-        return InlineKeyboardMarkup(inline_keyboard=rows)
+        return home_back_markup()
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -545,23 +532,25 @@ def settings_markup(user) -> InlineKeyboardMarkup:
     premium_text = "Сейчас бесплатно" if FREE_MODE else "Премиум"
 
     if BOT_SHELL_MODE:
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text=f"Напоминания: {reminder}", callback_data="settings_reminder"),
-                    InlineKeyboardButton(text=f"Час: {user.reminder_hour}:00", callback_data="settings_hour"),
-                ],
-                [
-                    InlineKeyboardButton(text="Пауза на 3 дня", callback_data="snooze_3d"),
-                    InlineKeyboardButton(text="Выключить", callback_data="disable_reminders"),
-                ],
+        rows = [
+            [
+                InlineKeyboardButton(text=f"Напоминания: {reminder}", callback_data="settings_reminder"),
+                InlineKeyboardButton(text=f"Час: {user.reminder_hour}:00", callback_data="settings_hour"),
+            ],
+            [
+                InlineKeyboardButton(text="Пауза 3 дня", callback_data="snooze_3d"),
+                InlineKeyboardButton(text="Выключить", callback_data="disable_reminders"),
+            ],
+        ]
+        if not FREE_MODE:
+            rows.append(
                 [
                     InlineKeyboardButton(text="Промокод", callback_data="promo_code"),
                     InlineKeyboardButton(text=premium_text, callback_data="premium"),
-                ],
-                [InlineKeyboardButton(text="Назад в профиль", callback_data="menu_profile")],
-            ]
-        )
+                ]
+            )
+        rows.append([InlineKeyboardButton(text="← Главная", callback_data="camp")])
+        return InlineKeyboardMarkup(inline_keyboard=rows)
 
     rows = [
         [
@@ -588,7 +577,7 @@ def settings_markup(user) -> InlineKeyboardMarkup:
 def reminder_markup() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="🏕 Вернуться в лагерь", callback_data="camp")],
+            [InlineKeyboardButton(text="← Главная", callback_data="camp")],
             [
                 InlineKeyboardButton(text="😴 Отложить на 3 дня", callback_data="snooze_3d"),
                 InlineKeyboardButton(text="🔕 Выключить сигнал", callback_data="disable_reminders"),
@@ -615,13 +604,13 @@ def camp_text(user, questions_count: int) -> str:
         return "\n".join(
             [
                 premium_title_text(user),
+                "Подготовка к охотминимуму",
                 "",
-                f"🎖 Ранг: {rank['icon']} <b>{escape(rank['name'])}</b>",
-                f"📈 Прогресс: <b>{user.questions_completed}/257</b>",
-                f"🎯 Точность: <b>{user.accuracy}%</b>",
-                f"✅ Верных ответов: <b>{unlocked}</b>",
-                f"🔔 Напоминания: <b>{'вкл' if user.daily_reminder else 'выкл'}</b>",
-                f"🪪 Доступ: <b>{access_label}</b>",
+                f"📈 Прогресс: <b>{user.questions_completed}/257</b> · 🎯 <b>{user.accuracy}%</b>",
+                f"🎖 Ранг: {rank['icon']} <b>{escape(rank['name'])}</b> · 🔥 <b>{user.streak_days}</b> дн.",
+                f"🔔 Напоминания: <b>{'вкл' if user.daily_reminder else 'выкл'}</b> · 🪪 <b>{access_label}</b>",
+                "",
+                "Практика, экзамен и AI — в приложении или на сайте.",
             ]
         )
 
@@ -774,7 +763,7 @@ async def build_answer_markup(user_id: int, question, mode: Mode) -> InlineKeybo
     rows.append(
         [
             InlineKeyboardButton(text=star_label, callback_data=f"star_toggle_{question.id}"),
-            InlineKeyboardButton(text="🏕 В лагерь", callback_data="camp"),
+            InlineKeyboardButton(text="← Главная", callback_data="camp"),
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -787,7 +776,7 @@ async def build_result_markup(user_id: int, question_id: int, next_callback: str
             [InlineKeyboardButton(text=next_label, callback_data=next_callback)],
             [
                 InlineKeyboardButton(text=star_label, callback_data=f"star_toggle_{question_id}"),
-                InlineKeyboardButton(text="🏕 В лагерь", callback_data="camp"),
+                InlineKeyboardButton(text="← Главная", callback_data="camp"),
             ],
         ]
     )
@@ -917,29 +906,11 @@ async def show_daily_menu(target: Message | CallbackQuery) -> None:
 
 
 async def show_profile_menu(target: Message | CallbackQuery) -> None:
-    user = await ensure_profile(target)
     if BOT_SHELL_MODE:
-        rank = get_rank_by_correct(user.correct_answers)
-        access_label = "Сейчас бесплатно" if FREE_MODE else ("Премиум" if user.access_level == "premium" else "Базовый")
-        await respond(
-            target,
-            "\n".join(
-                [
-                    "<b>Профиль</b>",
-                    "",
-                    f"Ранг: {rank['icon']} <b>{escape(rank['name'])}</b>",
-                    f"Прогресс: <b>{user.questions_completed}/257</b>",
-                    f"Точность: <b>{user.accuracy}%</b>",
-                    f"Серия: <b>{user.streak_days}</b> дн.",
-                    f"XP: <b>{user.xp_total}</b> | Монеты: <b>{user.coins}</b>",
-                    f"Напоминания: <b>{'вкл' if user.daily_reminder else 'выкл'}</b> в <b>{user.reminder_hour}:00</b>",
-                    f"Доступ: <b>{access_label}</b>",
-                ]
-            ),
-            reply_markup=profile_menu_markup(),
-        )
+        await show_camp(target)
         return
 
+    user = await ensure_profile(target)
     await respond(
         target,
         "\n".join(
@@ -1603,10 +1574,7 @@ async def show_settings(target: Message | CallbackQuery) -> None:
                 "<b>Напоминания</b>",
                 "",
                 f"Статус: <b>{'вкл' if user.daily_reminder else 'выкл'}</b>",
-                f"Час: <b>{user.reminder_hour}:00</b>",
-                f"Доступ: <b>{access_status_label(user)}</b>",
-                "",
-                "Здесь можно управлять напоминаниями и быстро переходить в Mini App.",
+                f"Час: <b>{user.reminder_hour}:00</b> (МСК)",
             ]
         )
         await respond(target, text, reply_markup=settings_markup(user))
@@ -1636,18 +1604,21 @@ async def show_help(target: Message | CallbackQuery) -> None:
         else "Полный доступ и дополнительные сценарии можно включить через Премиум."
     )
     if BOT_SHELL_MODE:
+        site = web_site_url()
+        site_line = f"Сайт: {escape(site)}" if site else ""
         text = "\n".join(
             [
-                "<b>Помощь</b>",
+                "<b>ONEHUNT</b>",
                 "",
-                "Основной интерфейс ONEHUNT теперь находится в Mini App.",
-                "В боте оставлены быстрый вход, профиль, доступ и напоминания.",
-                premium_line,
-                "Команды: /start, /help, /admin",
-                "Поддержка: @onehunt_support",
+                "Бот — вход в приложение и напоминания о подготовке.",
+                "Вопросы, экзамен, маршрут и AI — в Mini App или на сайте.",
+                site_line,
+                "",
+                "/start — главная",
+                "Поддержка: s.yarcev@onehunt.ru",
             ]
         )
-        await respond(target, text, reply_markup=section_back_markup("Назад в профиль", "menu_profile"))
+        await respond(target, text, reply_markup=home_back_markup())
         return
 
     text = "\n".join(
@@ -1706,14 +1677,14 @@ async def show_admin_panel(message: Message) -> None:
             f"🎯 Средний результат: <b>{dashboard['avg_exam']}%</b>",
         ]
     )
-    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏕 В лагерь", callback_data="camp")]]))
+    await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="← Главная", callback_data="camp")]]))
 
 
 @dp.message(CommandStart())
 async def command_start(message: Message) -> None:
     if message.from_user.id in active_sessions:
         await message.answer(
-            "У вас есть активная сессия. Нажмите нужную кнопку в боте или вернитесь в лагерь через меню.",
+            "Сначала завершите тренировку в приложении или нажмите /start.",
             reply_markup=main_menu_markup(),
         )
         return
@@ -2133,7 +2104,7 @@ async def callback_premium(callback: CallbackQuery) -> None:
 @dp.callback_query(F.data == "promo_code")
 async def callback_promo(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(AppStates.waiting_promo_code)
-    await respond(callback, "🔑 Введите промокод:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏕 В лагерь", callback_data="camp")]]))
+    await respond(callback, "🔑 Введите промокод:", reply_markup=home_back_markup())
 
 
 @dp.callback_query(F.data == "buy_premium_crypto")
@@ -2313,7 +2284,7 @@ async def callback_snooze_reminders(callback: CallbackQuery) -> None:
         callback.from_user.id,
         reminder_snoozed_until=datetime.utcnow() + timedelta(days=3),
     )
-    await respond(callback, "Напоминания отложены на 3 дня.", reply_markup=profile_menu_markup())
+    await respond(callback, "Напоминания отложены на 3 дня.", reply_markup=main_menu_markup())
 
 
 @dp.callback_query(F.data == "disable_reminders")
@@ -2323,7 +2294,7 @@ async def callback_disable_reminders(callback: CallbackQuery) -> None:
         daily_reminder=False,
         reminder_snoozed_until=None,
     )
-    await respond(callback, "Утренние сигналы выключены.", reply_markup=profile_menu_markup())
+    await respond(callback, "Утренние сигналы выключены.", reply_markup=main_menu_markup())
 
 
 @dp.callback_query(F.data == "disable_forever")
@@ -2334,7 +2305,7 @@ async def callback_disable_forever(callback: CallbackQuery) -> None:
         all_notifications_off=True,
         reminder_snoozed_until=None,
     )
-    await respond(callback, "Все уведомления отключены.", reply_markup=profile_menu_markup())
+    await respond(callback, "Все уведомления отключены.", reply_markup=main_menu_markup())
 
 
 @dp.message(F.text)
@@ -2345,20 +2316,25 @@ async def fallback_message(message: Message, state: FSMContext) -> None:
         await message.answer("Команда не распознана. Используйте /start или меню ниже.", reply_markup=main_menu_markup())
         return
     if message.from_user.id in active_sessions:
-        await message.answer("Во время сессии отвечайте кнопками под вопросом или вернитесь в лагерь.", reply_markup=main_menu_markup())
+        await message.answer("Ответьте кнопками под вопросом или нажмите /start.", reply_markup=main_menu_markup())
         return
     await show_camp(message)
 
 
 def build_reminder_text(user, reminder_type: str) -> str:
     quote = random_quote()
+    practice_hint = (
+        "Откройте приложение ONEHUNT и сделайте хотя бы 5 вопросов, чтобы сохранить темп."
+        if BOT_SHELL_MODE
+        else "Откройте бота и сделайте хотя бы 5 вопросов, чтобы сохранить темп."
+    )
     if reminder_type == "gentle_reminder":
         return "\n".join(
             [
                 "<b>🔔 Утренний сигнал ONEHUNT</b>",
                 "",
                 quote,
-                "Откройте лагерь и сделайте хотя бы 5 вопросов, чтобы сохранить темп.",
+                practice_hint,
             ]
         )
     if reminder_type == "streak_warning":
@@ -2373,9 +2349,9 @@ def build_reminder_text(user, reminder_type: str) -> str:
     if reminder_type == "week_away":
         return "\n".join(
             [
-                "<b>🧭 Лагерь ждёт вас</b>",
+                "<b>🧭 Пора вернуться к практике</b>",
                 "",
-                "Неделя без практики заметно замедляет рост точности. Вернитесь на 10 минут и снова поймайте ритм.",
+                "Неделя без занятий заметно замедляет рост точности. Вернитесь на 10 минут и снова поймайте ритм.",
                 quote,
             ]
         )
@@ -2384,13 +2360,13 @@ def build_reminder_text(user, reminder_type: str) -> str:
             [
                 "<b>📅 Пора вернуться на маршрут</b>",
                 "",
-                "Две недели паузы уже ощущаются. Начните с Быстрого вопроса или Вопроса дня и мягко войдите обратно.",
+                "Две недели паузы уже ощущаются. Начните с быстрого вопроса или вопроса дня и мягко войдите обратно.",
                 quote,
             ]
         )
     return "\n".join(
         [
-            "<b>🏕 ONEHUNT напоминает о себе</b>",
+            "<b>ONEHUNT напоминает о себе</b>",
             "",
             "Вы давно не заходили. Пара коротких сессий поможет снова выйти к цели 75%+.",
             quote,
@@ -2462,9 +2438,9 @@ async def register_bot_commands() -> None:
     try:
         await bot.set_my_commands(
             [
-                BotCommand(command="start", description="Открыть лагерь"),
-                BotCommand(command="help", description="Показать справку"),
-                BotCommand(command="admin", description="Открыть админ-панель"),
+                BotCommand(command="start", description="Главная"),
+                BotCommand(command="help", description="Справка"),
+                BotCommand(command="admin", description="Админ-панель"),
             ],
             request_timeout=30,
         )
@@ -2475,7 +2451,7 @@ async def register_bot_commands() -> None:
         try:
             await bot.set_chat_menu_button(
                 menu_button=MenuButtonWebApp(
-                    text="Открыть ONEHUNT",
+                    text="ONEHUNT",
                     web_app=WebAppInfo(url=miniapp_url),
                 ),
                 request_timeout=30,
