@@ -27,7 +27,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --url ${UPSTREAM}
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --url ${UPSTREAM}
 Restart=always
 RestartSec=5
 StandardOutput=append:${LOG}
