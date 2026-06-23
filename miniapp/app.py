@@ -109,7 +109,7 @@ from miniapp.auth import MiniAppIdentity, build_dev_identity, validate_init_data
 from miniapp.session_store import MiniAppMode, WebQuizSession, create_session, drop_session, get_session
 from utils.constants import BLOCKS, DAILY_CHALLENGES, PREMIUM_PRICES, ROUTE_TASKS
 from utils.products import PRODUCT_CATALOG
-from utils.helpers import calculate_accuracy, format_duration, get_rank_by_correct, get_xp_level
+from utils.helpers import calculate_accuracy, clean_option_text, format_duration, get_rank_by_correct, get_xp_level
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -236,6 +236,7 @@ def resolve_local_image(question) -> str | None:
 
 
 def serialize_question(question, *, reveal_answer: bool = False) -> dict[str, Any]:
+    question_key = str(question.external_id or question.id)
     payload = {
         "id": question.id,
         "source_number": question.source_number,
@@ -243,7 +244,11 @@ def serialize_question(question, *, reveal_answer: bool = False) -> dict[str, An
         "block_name": question.block_name,
         "text": question.question_text,
         "options": [
-            {"key": key.lower(), "label": key.upper(), "text": value}
+            {
+                "key": key.lower(),
+                "label": key.upper(),
+                "text": clean_option_text(value, question_id=question_key, option_key=key),
+            }
             for key, value in sorted(question.options.items())
         ],
         "image_url": resolve_local_image(question),

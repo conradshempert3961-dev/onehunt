@@ -2,6 +2,8 @@
 
 Сервер из скрина: **socialspur.ru**, IP **104.128.137.117**, Ubuntu, 1 GB RAM.
 
+**На Mac ничего ставить и запускать не нужно** — весь ONEHUNT работает на VDS. С Mac только открываете сайт в браузере или Telegram.
+
 ## Шаг 1. DNS (у регистратора домена)
 
 Если домен `socialspur.ru` ваш — добавьте записи:
@@ -39,7 +41,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0
 После добавления ключа агент сможет деплоить сам. Или одна команда в **VNC-консоли** (шаг 2.3):
 
 ```bash
-DEEPSEEK_USER_TOKEN='ваш_токен' curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/improve-styling-fix-errors-2866/scripts/vds_one_click.sh | bash
+curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/main/scripts/vds_one_click.sh | bash
 ```
 
 ### 2.3. Консоль (если SSH не открывается)
@@ -78,7 +80,7 @@ ssh root@104.128.137.117
 На сервере:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/improve-styling-fix-errors-2866/scripts/firstbyte_vds_bootstrap.sh | bash -s socialspur.ru
+curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/main/scripts/firstbyte_vds_bootstrap.sh | bash -s socialspur.ru
 ```
 
 Или после `git clone`:
@@ -120,23 +122,43 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 На 1 GB включён swap 2 GB в bootstrap-скрипте. Бот и отдельный лендинг по умолчанию **не** стартуют — только miniapp (внутри него уже web + promo + estate).
 
-## AI на VDS (DeepSeek Free — по гайду)
+## AI на VDS (Groq)
 
-На сервере **нельзя** логиниться через email из datacenter IP (AWS WAF). Рабочий путь — **токен из браузера**:
+Groq **блокирует IP датацентров** (VDS получает `403 Forbidden` при прямом вызове `api.groq.com`).
 
-1. На своём ПК: https://chat.deepseek.com → войти в аккаунт
-2. F12 → **Application** → **Local Storage** → `userToken` → скопировать **value**
-3. На VDS в `/opt/onehunt/.env.deepseek`:
-   ```env
-   DEEPSEEK_USER_TOKEN=ваш_токен
-   ```
-4. Запуск:
-   ```bash
-   cd /opt/onehunt && bash scripts/setup_deepseek_vds.sh
-   ```
+Рабочая схема: VDS → **прокси** → Groq API.
 
-Локально (Mac): **не нужно** — всё на VDS. Остановить Mac: `bash scripts/stop_all_mac.sh`
+### Вариант 1. Cloudflare Worker (рекомендуется, бесплатно)
 
-Проверка: в приложении AI-статус «Живой AI · DeepSeek», ответы не шаблонные.
+1. Создайте API-токен Cloudflare (Workers → Edit).
+2. На сервере или локально:
 
-Официальный API (если есть ключ): `OPENAI_API_BASE=https://api.deepseek.com/v1` + `OPENAI_API_KEY=sk-...`
+```bash
+export CLOUDFLARE_API_TOKEN=...
+export CLOUDFLARE_ACCOUNT_ID=...
+bash scripts/deploy_groq_cf_proxy.sh
+```
+
+3. В `/opt/onehunt/.env`:
+
+```env
+OPENAI_API_KEY=gsk_ваш_ключ
+OPENAI_API_BASE=https://onehunt-groq-proxy.<subdomain>.workers.dev/openai/v1
+OPENAI_MODEL=groq/compound-mini
+```
+
+### Вариант 2. Внешний прокси URL
+
+Если уже есть рабочий прокси:
+
+```env
+OPENAI_API_BASE=https://your-proxy.example.com/openai/v1
+```
+
+Перезапуск:
+
+```bash
+cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build miniapp
+```
+
+Без ключа ассистент отвечает по шаблону (rule-based).
