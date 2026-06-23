@@ -14,6 +14,7 @@ if [[ -f "${CREDS}" ]]; then
 fi
 
 PASS="${ONEHUNT_VDS_PASSWORD:-}"
+BOT_TOKEN_DEPLOY="${ONEHUNT_BOT_TOKEN:-${BOT_TOKEN:-}}"
 if [[ -z "${PASS}" ]]; then
   echo "Set ONEHUNT_VDS_PASSWORD or create ${CREDS}:"
   echo "  ONEHUNT_VDS_PASSWORD=your_root_password"
@@ -28,16 +29,23 @@ fi
 SSH_OPTS=(-o StrictHostKeyChecking=no -o ConnectTimeout=20)
 
 echo "== Run full deploy on VDS =="
-sshpass -p "${PASS}" ssh "${SSH_OPTS[@]}" "${USER}@${HOST}" bash -s <<'REMOTE'
+sshpass -p "${PASS}" ssh "${SSH_OPTS[@]}" "${USER}@${HOST}" bash -s <<REMOTE
 set -Eeuo pipefail
 ROOT=/opt/onehunt
-mkdir -p "$ROOT"
-if [[ ! -d "$ROOT/.git" ]]; then
-  git clone --depth 1 -b main https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
+mkdir -p "\$ROOT"
+if [[ ! -d "\$ROOT/.git" ]]; then
+  git clone --depth 1 -b main https://github.com/conradshempert3961-dev/onehunt.git "\$ROOT"
 fi
-cd "$ROOT"
+cd "\$ROOT"
 git fetch --depth 1 origin main
 git reset --hard origin/main
+if [[ -n "${BOT_TOKEN_DEPLOY}" ]]; then
+  if grep -q '^BOT_TOKEN=' .env 2>/dev/null; then
+    sed -i "s|^BOT_TOKEN=.*|BOT_TOKEN=${BOT_TOKEN_DEPLOY}|" .env
+  else
+    echo "BOT_TOKEN=${BOT_TOKEN_DEPLOY}" >> .env
+  fi
+fi
 bash scripts/deploy_vds_full.sh 104.128.137.117
 REMOTE
 

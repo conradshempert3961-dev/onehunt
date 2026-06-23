@@ -35,7 +35,8 @@ set_kv() {
 }
 
 set_kv MINIAPP_URL "http://${IP}/app"
-set_kv MINIAPP_BROWSER_DEMO "false"
+set_kv MINIAPP_BROWSER_DEMO "true"
+set_kv MINIAPP_BROWSER_DEMO_HOSTS "${IP},localhost,127.0.0.1"
 set_kv FREE_MODE "true"
 set_kv USE_REDIS_FSM "false"
 set_kv ADMIN_IDS "6467055041"
