@@ -39,7 +39,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0
 После добавления ключа агент сможет деплоить сам. Или одна команда в **VNC-консоли** (шаг 2.3):
 
 ```bash
-DEEPSEEK_USER_TOKEN='ваш_токен' curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/improve-styling-fix-errors-2866/scripts/vds_one_click.sh | bash
+curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/main/scripts/vds_one_click.sh | bash
 ```
 
 ### 2.3. Консоль (если SSH не открывается)
@@ -120,23 +120,14 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 На 1 GB включён swap 2 GB в bootstrap-скрипте. Бот и отдельный лендинг по умолчанию **не** стартуют — только miniapp (внутри него уже web + promo + estate).
 
-## AI на VDS (DeepSeek Free — по гайду)
+## AI на VDS
 
-На сервере **нельзя** логиниться через email из datacenter IP (AWS WAF). Рабочий путь — **токен из браузера**:
+Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based). Для живого AI укажите в `/opt/onehunt/.env`:
 
-1. На своём ПК: https://chat.deepseek.com → войти в аккаунт
-2. F12 → **Application** → **Local Storage** → `userToken` → скопировать **value**
-3. На VDS в `/opt/onehunt/.env.deepseek`:
-   ```env
-   DEEPSEEK_USER_TOKEN=ваш_токен
-   ```
-4. Запуск:
-   ```bash
-   cd /opt/onehunt && bash scripts/setup_deepseek_vds.sh
-   ```
+```env
+OPENAI_API_KEY=ваш_ключ
+OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+```
 
-Локально (Mac): **не нужно** — всё на VDS. Остановить Mac: `bash scripts/stop_all_mac.sh`
-
-Проверка: в приложении AI-статус «Живой AI · DeepSeek», ответы не шаблонные.
-
-Официальный API (если есть ключ): `OPENAI_API_BASE=https://api.deepseek.com/v1` + `OPENAI_API_KEY=sk-...`
+Локально (Ollama): `OPENAI_API_BASE=http://127.0.0.1:11434/v1`, `OPENAI_MODEL=llama3`, `OPENAI_API_KEY=ollama`.

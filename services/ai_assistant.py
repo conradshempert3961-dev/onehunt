@@ -49,12 +49,7 @@ def ai_assistant_meta() -> dict[str, Any]:
     configured = ai_assistant_configured()
     provider = "rules"
     if configured:
-        base_lower = OPENAI_API_BASE.lower()
-        model_lower = OPENAI_MODEL.lower()
-        if "deepseek" in base_lower or "deepseek" in model_lower or ":18632" in base_lower:
-            provider = "deepseek"
-        else:
-            provider = "openai_compatible"
+        provider = "openai_compatible"
     return {
         "configured": configured,
         "provider": provider,

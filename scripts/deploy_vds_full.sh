@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full ONEHUNT deploy on VDS: app + DeepSeek AI + nginx.
+# Full ONEHUNT deploy on VDS: app + nginx.
 # Run on server as root: bash scripts/deploy_vds_full.sh
 set -Eeuo pipefail
 
@@ -43,16 +43,13 @@ set_kv MINIAPP_DEV_USER_ID "6467055041"
 set_kv MINIAPP_HOST "0.0.0.0"
 
 echo "== Start stack =="
-docker compose -f docker-compose.prod.yml up -d --build postgres redis deepseek
+docker rm -f onehunt_deepseek 2>/dev/null || true
+docker compose -f docker-compose.prod.yml up -d --build postgres redis
 sleep 5
 docker compose -f docker-compose.prod.yml up -d --build miniapp huntdriver
 docker compose -f docker-compose.prod.yml run --rm miniapp python scripts/load_questions.py 2>/dev/null || true
 
-if [[ -f "${ROOT}/.env.deepseek" ]] && grep -q 'DEEPSEEK_USER_TOKEN=' "${ROOT}/.env.deepseek"; then
-  echo "== Configure DeepSeek AI =="
-  bash "${ROOT}/scripts/setup_deepseek_vds.sh" || echo "DeepSeek setup failed — check .env.deepseek"
-else
-  echo "No .env.deepseek — AI will use rule-based fallback until token is added."
+if ! grep -q '^OPENAI_API_KEY=.\+' .env 2>/dev/null; then
   set_kv OPENAI_API_KEY ""
 fi
 
