@@ -725,7 +725,8 @@ async function submitAiMessage(rawMessage) {
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
         if (payload.fallback) {
-            showToast("Groq AI недоступен — ответ по шаблону. Проверьте OPENAI_API_KEY на сервере.");
+            const reason = payload.error || "Groq AI недоступен с сервера";
+            showToast(`${reason} — ответ по шаблону.`);
         }
         pulse("success");
     } catch (error) {

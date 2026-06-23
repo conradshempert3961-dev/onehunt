@@ -124,20 +124,41 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 ## AI на VDS (Groq)
 
-Рекомендуемый вариант — **Groq** (`groq/compound-mini`). Ключ берёте в [console.groq.com](https://console.groq.com).
+Groq **блокирует IP датацентров** (VDS получает `403 Forbidden` при прямом вызове `api.groq.com`).
 
-В `/opt/onehunt/.env`:
+Рабочая схема: VDS → **прокси** → Groq API.
+
+### Вариант 1. Cloudflare Worker (рекомендуется, бесплатно)
+
+1. Создайте API-токен Cloudflare (Workers → Edit).
+2. На сервере или локально:
+
+```bash
+export CLOUDFLARE_API_TOKEN=...
+export CLOUDFLARE_ACCOUNT_ID=...
+bash scripts/deploy_groq_cf_proxy.sh
+```
+
+3. В `/opt/onehunt/.env`:
 
 ```env
 OPENAI_API_KEY=gsk_ваш_ключ
-OPENAI_API_BASE=https://api.groq.com/openai/v1
+OPENAI_API_BASE=https://onehunt-groq-proxy.<subdomain>.workers.dev/openai/v1
 OPENAI_MODEL=groq/compound-mini
 ```
 
-Перезапуск после правки:
+### Вариант 2. Внешний прокси URL
+
+Если уже есть рабочий прокси:
+
+```env
+OPENAI_API_BASE=https://your-proxy.example.com/openai/v1
+```
+
+Перезапуск:
 
 ```bash
 cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build miniapp
 ```
 
-Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based).
+Без ключа ассистент отвечает по шаблону (rule-based).

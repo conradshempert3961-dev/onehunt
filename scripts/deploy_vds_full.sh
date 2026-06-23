@@ -71,6 +71,12 @@ server {
     listen [::]:80 default_server;
     server_name _;
 
+    location /assets/ {
+        proxy_pass http://${MINIAPP_IP}:8080/assets/;
+        proxy_http_version 1.1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+
     location /huntdriver/ {
         proxy_pass http://${MINIAPP_IP}:8080/huntdriver/;
         proxy_http_version 1.1;

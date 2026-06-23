@@ -398,6 +398,11 @@ async def _call_openai_chat(messages: list[dict[str, str]]) -> str:
 
     if status >= 400:
         detail = data.get("error", {}).get("message") if isinstance(data, dict) else None
+        if status == 403 and _is_groq_api() and "groq.com" in OPENAI_API_BASE.lower():
+            raise AIAssistantError(
+                "Groq blocked datacenter IP. Set OPENAI_API_BASE to a Groq proxy URL "
+                "(Cloudflare Worker). See scripts/deploy_groq_cf_proxy.sh"
+            )
         raise AIAssistantError(detail or f"LLM API returned HTTP {status}.")
 
     try:
@@ -444,8 +449,10 @@ async def generate_ai_reply(
             "provider": provider,
             "model": OPENAI_MODEL,
         }
-    except (AIAssistantError, json.JSONDecodeError, ClientError, asyncio.TimeoutError, OSError):
+    except (AIAssistantError, json.JSONDecodeError, ClientError, asyncio.TimeoutError, OSError) as exc:
         result = build_rule_based_reply(cleaned_message, context)
         result["provider"] = "rules"
         result["fallback"] = True
+        if isinstance(exc, AIAssistantError):
+            result["error"] = str(exc)
         return result
