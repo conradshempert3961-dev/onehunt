@@ -560,9 +560,7 @@ function buildAiWelcomeMessage() {
     const routeTask = state.bootstrap.route?.current_task?.task;
     const aiMeta = state.bootstrap.ai;
     const aiLead = aiMeta?.configured
-        ? aiMeta.provider === "deepseek"
-            ? "Подключён DeepSeek — отвечу по вашему прогрессу и плану подготовки."
-            : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
+        ? "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
         : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
 
     return [
@@ -591,9 +589,6 @@ function getAiStatusText(isBusy = false) {
     const ai = state.bootstrap?.ai;
     if (ai?.configured) {
         const modelLabel = ai.model ? ` · ${ai.model}` : "";
-        if (ai.provider === "deepseek") {
-            return `Живой AI · DeepSeek${modelLabel}`;
-        }
         return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
     }
 
@@ -725,7 +720,7 @@ async function submitAiMessage(rawMessage) {
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
         if (payload.fallback) {
-            showToast("DeepSeek недоступен — ответ по шаблону. Запустите: bash scripts/setup_deepseek_mac.sh");
+            showToast("Живой AI недоступен — ответ по шаблону. Укажите OPENAI_API_KEY в настройках.");
         }
         pulse("success");
     } catch (error) {

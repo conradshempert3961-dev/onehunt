@@ -7,7 +7,6 @@ HOST="${ONEHUNT_VDS_HOST:-104.128.137.117}"
 USER="${ONEHUNT_VDS_USER:-root}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CREDS="${ROOT}/.env.vds"
-DEEPSEEK_CREDS="${ROOT}/.env.deepseek"
 
 if [[ -f "${CREDS}" ]]; then
   # shellcheck disable=SC1090
@@ -27,13 +26,6 @@ if ! command -v sshpass >/dev/null 2>&1; then
 fi
 
 SSH_OPTS=(-o StrictHostKeyChecking=no -o ConnectTimeout=20)
-
-echo "== Upload DeepSeek token if present =="
-if [[ -f "${DEEPSEEK_CREDS}" ]]; then
-  sshpass -p "${PASS}" scp "${SSH_OPTS[@]}" "${DEEPSEEK_CREDS}" "${USER}@${HOST}:/opt/onehunt/.env.deepseek" 2>/dev/null \
-    || sshpass -p "${PASS}" ssh "${SSH_OPTS[@]}" "${USER}@${HOST}" "mkdir -p /opt/onehunt" \
-    && sshpass -p "${PASS}" scp "${SSH_OPTS[@]}" "${DEEPSEEK_CREDS}" "${USER}@${HOST}:/opt/onehunt/.env.deepseek"
-fi
 
 echo "== Run full deploy on VDS =="
 sshpass -p "${PASS}" ssh "${SSH_OPTS[@]}" "${USER}@${HOST}" bash -s <<'REMOTE'
