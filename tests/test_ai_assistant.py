@@ -67,6 +67,15 @@ def test_ai_assistant_meta_with_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert meta["model"] == "gpt-4o-mini"
 
 
+def test_ai_assistant_meta_detects_groq(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ai_assistant, "OPENAI_API_KEY", "gsk-test")
+    monkeypatch.setattr(ai_assistant, "OPENAI_API_BASE", "https://api.groq.com/openai/v1")
+    monkeypatch.setattr(ai_assistant, "OPENAI_MODEL", "groq/compound-mini")
+    meta = ai_assistant.ai_assistant_meta()
+    assert meta["provider"] == "groq"
+    assert meta["model"] == "groq/compound-mini"
+
+
 def test_build_rule_based_reply_mentions_exam() -> None:
     result = ai_assistant.build_rule_based_reply("Готов ли я к экзамену?", make_context())
     assert "экзамен" in result["reply"].lower()

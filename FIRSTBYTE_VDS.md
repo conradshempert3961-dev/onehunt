@@ -122,18 +122,22 @@ cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build
 
 На 1 GB включён swap 2 GB в bootstrap-скрипте. Бот и отдельный лендинг по умолчанию **не** стартуют — только miniapp (внутри него уже web + promo + estate).
 
-## AI на VDS
+## AI на VDS (Groq)
 
-Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based). Для живого AI укажите **только на сервере** в `/opt/onehunt/.env`:
+Рекомендуемый вариант — **Groq** (`groq/compound-mini`). Ключ берёте в [console.groq.com](https://console.groq.com).
+
+В `/opt/onehunt/.env`:
 
 ```env
-OPENAI_API_KEY=ваш_ключ
-OPENAI_API_BASE=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_API_KEY=gsk_ваш_ключ
+OPENAI_API_BASE=https://api.groq.com/openai/v1
+OPENAI_MODEL=groq/compound-mini
 ```
 
-После правки `.env` перезапустите miniapp:
+Перезапуск после правки:
 
 ```bash
 cd /opt/onehunt && docker compose -f docker-compose.prod.yml up -d --build miniapp
 ```
+
+Без `OPENAI_API_KEY` ассистент отвечает по шаблону (rule-based).
