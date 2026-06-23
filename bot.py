@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -49,6 +50,7 @@ from config import (
     EXAM_QUESTIONS,
     FREE_MODE,
     MINIAPP_URL,
+    TELEGRAM_API_BASE,
     TELEGRAM_PROXY,
     PREMIUM_PRICE_RUB,
     PREMIUM_PRICE_STARS,
@@ -194,13 +196,16 @@ class IPv4AiohttpSession(AiohttpSession):
 
 
 def build_bot_session() -> AiohttpSession:
+    session_kwargs: dict[str, object] = {}
+    if TELEGRAM_API_BASE:
+        session_kwargs["api"] = TelegramAPIServer.from_base(TELEGRAM_API_BASE)
     if TELEGRAM_PROXY:
-        return IPv4AiohttpSession(proxy=TELEGRAM_PROXY)
+        return IPv4AiohttpSession(proxy=TELEGRAM_PROXY, **session_kwargs)
     # On Windows we may need system proxy settings; on Linux servers they often
     # cause unnecessary timeouts or proxy resolution issues.
     if os.name == "nt":
-        return SystemProxyAiohttpSession()
-    return IPv4AiohttpSession()
+        return SystemProxyAiohttpSession(**session_kwargs)
+    return IPv4AiohttpSession(**session_kwargs)
 
 
 def build_storage():
@@ -298,6 +303,13 @@ def miniapp_shell_markup() -> InlineKeyboardMarkup:
     miniapp_url = get_miniapp_webapp_url()
     if miniapp_url:
         rows.append([InlineKeyboardButton(text="Открыть Mini App", web_app=WebAppInfo(url=miniapp_url))])
+    else:
+        app_url = MINIAPP_URL.strip().rstrip("/")
+        if app_url:
+            rows.append([InlineKeyboardButton(text="Открыть приложение", url=app_url)])
+        web_url = app_url.rsplit("/app", 1)[0] if app_url.endswith("/app") else app_url
+        if web_url:
+            rows.append([InlineKeyboardButton(text="Сайт с регистрацией", url=web_url or app_url)])
     rows.append(
         [
             InlineKeyboardButton(text="Профиль", callback_data="menu_profile"),
@@ -325,8 +337,10 @@ async def redirect_to_miniapp_if_shell_mode(
     miniapp_url = get_miniapp_webapp_url()
     if miniapp_url:
         lines.append("Нажмите кнопку ниже, чтобы открыть приложение.")
+    elif MINIAPP_URL.strip():
+        lines.append(f"Откройте приложение: {escape(MINIAPP_URL.strip())}")
     else:
-        lines.append("Укажите HTTPS MINIAPP_URL, чтобы Telegram показал кнопку Mini App.")
+        lines.append("Укажите MINIAPP_URL, чтобы показать кнопку приложения.")
 
     await respond(target, "\n".join(lines), reply_markup=main_menu_markup())
     return True
