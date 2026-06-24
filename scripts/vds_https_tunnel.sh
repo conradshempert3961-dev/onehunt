@@ -27,7 +27,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --url ${UPSTREAM}
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --url ${UPSTREAM}
 Restart=always
 RestartSec=5
 StandardOutput=append:${LOG}
@@ -37,22 +37,25 @@ StandardError=append:${LOG}
 WantedBy=multi-user.target
 EOF
 
+: > "${LOG}"
 systemctl daemon-reload
 systemctl enable onehunt-https-tunnel
 systemctl restart onehunt-https-tunnel
 
 echo "Waiting for tunnel URL in ${LOG}..."
 PUBLIC_URL=""
-for _ in $(seq 1 30); do
+for _ in $(seq 1 45); do
   PUBLIC_URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "${LOG}" | tail -1 || true)"
   if [[ -n "${PUBLIC_URL}" ]]; then
-    break
+    if curl -fsS -o /dev/null --max-time 12 "${PUBLIC_URL}/app"; then
+      break
+    fi
   fi
   sleep 2
 done
 
 if [[ -z "${PUBLIC_URL}" ]]; then
-  echo "Tunnel URL not found yet. Check: journalctl -u onehunt-https-tunnel -f"
+  echo "Tunnel URL not found. Check: journalctl -u onehunt-https-tunnel -f"
   exit 1
 fi
 
@@ -65,10 +68,21 @@ set_kv() {
   fi
 }
 
+TUNNEL_HOST="${PUBLIC_URL#https://}"
+DEMO_HOSTS="${IP},localhost,127.0.0.1,${TUNNEL_HOST}"
+
 set_kv MINIAPP_URL "${PUBLIC_URL}/app"
+set_kv MINIAPP_BROWSER_DEMO "true"
+set_kv MINIAPP_BROWSER_DEMO_HOSTS "${DEMO_HOSTS}"
 
 cd "${ROOT}"
 docker compose -f docker-compose.prod.yml up -d --build bot miniapp
+
+WATCHDOG="/etc/cron.d/onehunt-https-watchdog"
+cat > "${WATCHDOG}" <<'CRON'
+*/10 * * * * root /opt/onehunt/scripts/vds_miniapp_https_watchdog.sh >> /var/log/onehunt-https-watchdog.log 2>&1
+CRON
+chmod 644 "${WATCHDOG}"
 
 echo ""
 echo "HTTPS (no domain): ${PUBLIC_URL}"

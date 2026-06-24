@@ -120,6 +120,11 @@ ln -sf /etc/nginx/sites-available/onehunt /etc/nginx/sites-enabled/onehunt
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
+if [[ -z "${ONEHUNT_DOMAIN:-}" ]]; then
+  echo "== HTTPS tunnel for Mini App (Telegram WebApp) =="
+  bash scripts/vds_https_tunnel.sh "${IP}"
+fi
+
 echo ""
 echo "OK: http://${IP}/"
 echo "App: http://${IP}/app"
