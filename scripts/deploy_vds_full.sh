@@ -42,6 +42,10 @@ set_kv USE_REDIS_FSM "false"
 set_kv ADMIN_IDS "6467055041"
 set_kv MINIAPP_DEV_USER_ID "6467055041"
 set_kv MINIAPP_HOST "0.0.0.0"
+set_kv TELEGRAM_API_BASE ""
+
+echo "== Telegram API DNS fix =="
+TELEGRAM_SKIP_RESTART=1 bash scripts/fix_vds_telegram.sh
 
 echo "== Start stack =="
 docker rm -f onehunt_deepseek 2>/dev/null || true

@@ -6,6 +6,9 @@ services:
     container_name: onehunt_bot
     restart: unless-stopped
     env_file: .env
+    extra_hosts:
+      # VDS DNS often resolves api.telegram.org to IPv6 that is unreachable.
+      - "api.telegram.org:149.154.167.220"
     depends_on:
       postgres:
         condition: service_healthy
