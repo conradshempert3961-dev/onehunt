@@ -44,6 +44,7 @@ MINIAPP_BROWSER_DEMO_HOSTS = {
     if item.strip()
 }
 TELEGRAM_PROXY = os.getenv("TELEGRAM_PROXY", "").strip()
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "").strip().rstrip("/")
 
 TELEGRAM_STARS_PROVIDER_TOKEN = os.getenv("TELEGRAM_STARS_PROVIDER_TOKEN", "")
 YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID", "")

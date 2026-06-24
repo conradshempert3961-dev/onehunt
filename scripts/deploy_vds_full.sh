@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full ONEHUNT deploy on VDS: app + DeepSeek AI + nginx.
+# Full ONEHUNT deploy on VDS: app + nginx.
 # Run on server as root: bash scripts/deploy_vds_full.sh
 set -Eeuo pipefail
 
@@ -35,29 +35,45 @@ set_kv() {
 }
 
 set_kv MINIAPP_URL "http://${IP}/app"
-set_kv MINIAPP_BROWSER_DEMO "false"
+set_kv MINIAPP_BROWSER_DEMO "true"
+set_kv MINIAPP_BROWSER_DEMO_HOSTS "${IP},localhost,127.0.0.1"
 set_kv FREE_MODE "true"
 set_kv USE_REDIS_FSM "false"
 set_kv ADMIN_IDS "6467055041"
 set_kv MINIAPP_DEV_USER_ID "6467055041"
 set_kv MINIAPP_HOST "0.0.0.0"
+set_kv TELEGRAM_API_BASE ""
+
+echo "== Telegram API DNS fix =="
+TELEGRAM_SKIP_RESTART=1 bash scripts/fix_vds_telegram.sh
 
 echo "== Start stack =="
-docker compose -f docker-compose.prod.yml up -d --build postgres redis deepseek
+docker rm -f onehunt_deepseek 2>/dev/null || true
+docker compose -f docker-compose.prod.yml up -d --build postgres redis
 sleep 5
 docker compose -f docker-compose.prod.yml up -d --build miniapp huntdriver
 docker compose -f docker-compose.prod.yml run --rm miniapp python scripts/load_questions.py 2>/dev/null || true
 
-if [[ -f "${ROOT}/.env.deepseek" ]] && grep -q 'DEEPSEEK_USER_TOKEN=' "${ROOT}/.env.deepseek"; then
-  echo "== Configure DeepSeek AI =="
-  bash "${ROOT}/scripts/setup_deepseek_vds.sh" || echo "DeepSeek setup failed — check .env.deepseek"
+BOT_TOKEN_VALUE="$(grep '^BOT_TOKEN=' .env | cut -d= -f2- || true)"
+if [[ -n "${BOT_TOKEN_VALUE}" && "${BOT_TOKEN_VALUE}" != "your_telegram_bot_token" ]]; then
+  echo "== Start Telegram bot =="
+  docker compose -f docker-compose.prod.yml up -d --build bot
 else
-  echo "No .env.deepseek — AI will use rule-based fallback until token is added."
+  echo "== Skip bot: set real BOT_TOKEN from @BotFather in ${ROOT}/.env =="
+fi
+
+if ! grep -q '^OPENAI_API_KEY=.\+' .env 2>/dev/null; then
   set_kv OPENAI_API_KEY ""
 fi
 
-MINIAPP_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onehunt_miniapp 2>/dev/null || true)"
-if [[ -z "${MINIAPP_IP}" ]]; then
+# Refresh nginx upstream after container recreate (IP may change)
+bash scripts/refresh_nginx_upstream.sh 2>/dev/null || true
+
+if [[ -f /etc/nginx/sites-available/onehunt ]]; then
+  MINIAPP_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onehunt_miniapp 2>/dev/null || true)"
+fi
+
+if [[ -z "${MINIAPP_IP:-}" ]]; then
   echo "miniapp container not found"
   docker compose -f docker-compose.prod.yml ps
   exit 1
@@ -73,6 +89,12 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
+
+    location /assets/ {
+        proxy_pass http://${MINIAPP_IP}:8080/assets/;
+        proxy_http_version 1.1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
 
     location /huntdriver/ {
         proxy_pass http://${MINIAPP_IP}:8080/huntdriver/;
@@ -103,6 +125,11 @@ EOF
 ln -sf /etc/nginx/sites-available/onehunt /etc/nginx/sites-enabled/onehunt
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
+
+if [[ -z "${ONEHUNT_DOMAIN:-}" ]]; then
+  echo "== HTTPS tunnel for Mini App (Telegram WebApp) =="
+  bash scripts/vds_https_tunnel.sh "${IP}"
+fi
 
 echo ""
 echo "OK: http://${IP}/"

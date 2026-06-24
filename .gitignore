@@ -4,7 +4,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 .env
-.env.deepseek
 .env.vds
 *.db
 logs/
