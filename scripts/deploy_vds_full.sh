@@ -66,8 +66,14 @@ if ! grep -q '^OPENAI_API_KEY=.\+' .env 2>/dev/null; then
   set_kv OPENAI_API_KEY ""
 fi
 
-MINIAPP_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onehunt_miniapp 2>/dev/null || true)"
-if [[ -z "${MINIAPP_IP}" ]]; then
+# Refresh nginx upstream after container recreate (IP may change)
+bash scripts/refresh_nginx_upstream.sh 2>/dev/null || true
+
+if [[ -f /etc/nginx/sites-available/onehunt ]]; then
+  MINIAPP_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onehunt_miniapp 2>/dev/null || true)"
+fi
+
+if [[ -z "${MINIAPP_IP:-}" ]]; then
   echo "miniapp container not found"
   docker compose -f docker-compose.prod.yml ps
   exit 1

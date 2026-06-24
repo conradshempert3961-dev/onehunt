@@ -76,7 +76,9 @@ set_kv MINIAPP_BROWSER_DEMO "true"
 set_kv MINIAPP_BROWSER_DEMO_HOSTS "${DEMO_HOSTS}"
 
 cd "${ROOT}"
+bash scripts/refresh_nginx_upstream.sh
 docker compose -f docker-compose.prod.yml up -d --build bot miniapp
+bash scripts/refresh_nginx_upstream.sh
 
 WATCHDOG="/etc/cron.d/onehunt-https-watchdog"
 cat > "${WATCHDOG}" <<'CRON'
