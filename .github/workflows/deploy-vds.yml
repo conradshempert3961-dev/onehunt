@@ -2,44 +2,30 @@ name: Deploy VDS
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "miniapp/**"
-      - "huntdriver/**"
-      - "scripts/deploy_vds_full.sh"
-      - "scripts/remote_deploy_vds.sh"
-      - "docker-compose.prod.yml"
-      - "Dockerfile.miniapp"
-      - ".github/workflows/deploy-vds.yml"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: cursor/fix-all-vds-2866
 
-      - name: Deploy to VDS
+      - name: Deploy and heal VDS
         env:
           VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
         run: |
-          if [ -z "$VDS_PASSWORD" ]; then
-            echo "::error::ONEHUNT_VDS_PASSWORD GitHub secret is not set. Add it in repo Settings → Secrets → Actions."
-            exit 1
-          fi
           sudo apt-get install -y -qq sshpass
-          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no root@104.128.137.117 <<'EOF'
-          set -e
+          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@104.128.137.117 <<'EOF'
+          set -Eeuo pipefail
           ROOT=/opt/onehunt
-          BRANCH=main
-          REPO=https://github.com/conradshempert3961-dev/onehunt.git
+          BRANCH=cursor/fix-all-vds-2866
           mkdir -p "$ROOT"
           if [ ! -d "$ROOT/.git" ]; then
-            git clone --depth 1 -b "$BRANCH" "$REPO" "$ROOT"
+            git clone --depth 1 -b "$BRANCH" https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
           fi
           cd "$ROOT"
-          git fetch --depth 1 origin "$BRANCH"
-          git checkout "$BRANCH"
-          git reset --hard "origin/$BRANCH"
-          bash scripts/deploy_vds_full.sh 104.128.137.117
+          git fetch origin "$BRANCH"
+          git checkout -B "$BRANCH" "origin/$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" FETCH_HEAD
+          ONEHUNT_BRANCH="$BRANCH" bash scripts/deploy_vds_full.sh 104.128.137.117
           EOF

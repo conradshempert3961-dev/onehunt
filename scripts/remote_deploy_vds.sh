@@ -37,8 +37,8 @@ if [[ ! -d "\$ROOT/.git" ]]; then
   git clone --depth 1 -b main https://github.com/conradshempert3961-dev/onehunt.git "\$ROOT"
 fi
 cd "\$ROOT"
-git fetch --depth 1 origin main
-git reset --hard origin/main
+git fetch --depth 1 origin cursor/fix-all-vds-2866
+git checkout -B cursor/fix-all-vds-2866 FETCH_HEAD
 if [[ -n "${BOT_TOKEN_DEPLOY}" ]]; then
   if grep -q '^BOT_TOKEN=' .env 2>/dev/null; then
     sed -i "s|^BOT_TOKEN=.*|BOT_TOKEN=${BOT_TOKEN_DEPLOY}|" .env
@@ -46,7 +46,7 @@ if [[ -n "${BOT_TOKEN_DEPLOY}" ]]; then
     echo "BOT_TOKEN=${BOT_TOKEN_DEPLOY}" >> .env
   fi
 fi
-bash scripts/deploy_vds_full.sh 104.128.137.117
+ONEHUNT_BRANCH=cursor/fix-all-vds-2866 bash scripts/deploy_vds_full.sh 104.128.137.117
 REMOTE
 
-echo "Done: http://${HOST}/app"
+echo "Done. Run /start in @Onehuntbot"

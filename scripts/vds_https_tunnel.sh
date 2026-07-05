@@ -44,12 +44,10 @@ systemctl restart onehunt-https-tunnel
 
 echo "Waiting for tunnel URL in ${LOG}..."
 PUBLIC_URL=""
-for _ in $(seq 1 45); do
+for _ in $(seq 1 30); do
   PUBLIC_URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "${LOG}" | tail -1 || true)"
   if [[ -n "${PUBLIC_URL}" ]]; then
-    if curl -fsS -o /dev/null --max-time 12 "${PUBLIC_URL}/app"; then
-      break
-    fi
+    break
   fi
   sleep 2
 done
@@ -57,6 +55,23 @@ done
 if [[ -z "${PUBLIC_URL}" ]]; then
   echo "Tunnel URL not found. Check: journalctl -u onehunt-https-tunnel -f"
   exit 1
+fi
+
+bash "${ROOT}/scripts/refresh_nginx_upstream.sh"
+
+echo "Waiting for ${PUBLIC_URL}/app ..."
+READY=0
+for _ in $(seq 1 40); do
+  CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "${PUBLIC_URL}/app" 2>/dev/null || echo 000)"
+  if [[ "${CODE}" == "200" ]]; then
+    READY=1
+    break
+  fi
+  sleep 3
+done
+
+if [[ "${READY}" -ne 1 ]]; then
+  echo "WARNING: tunnel URL not returning 200 yet (${PUBLIC_URL}/app last=${CODE:-000})"
 fi
 
 set_kv() {
