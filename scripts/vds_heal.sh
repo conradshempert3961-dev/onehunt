@@ -25,7 +25,7 @@ echo "== 2/4 nginx upstream =="
 bash "${ROOT}/scripts/refresh_nginx_upstream.sh"
 
 echo "== 3/4 HTTPS Mini App tunnel =="
-bash "${ROOT}/scripts/vds_https_tunnel.sh" "${IP}"
+bash "${ROOT}/scripts/vds_fix_miniapp.sh" "${IP}"
 
 echo "== 4/4 Status =="
 grep -E '^(MINIAPP_URL|TELEGRAM_API_BASE)=' "${ROOT}/.env" || true

@@ -292,7 +292,35 @@ def get_miniapp_webapp_url() -> str | None:
     return None
 
 
-def get_app_timezone():
+def miniapp_domain_hint() -> str:
+    url = MINIAPP_URL.strip()
+    if not url.lower().startswith("https://"):
+        return ""
+    host = url.split("//", 1)[-1].split("/", 1)[0]
+    return f"Домен для @BotFather /setdomain: <code>{escape(host)}</code>"
+
+
+async def verify_miniapp_url_on_startup() -> None:
+    url = get_miniapp_webapp_url()
+    if not url:
+        logger.warning("MINIAPP_URL is not HTTPS — кнопка Mini App в Telegram не появится: %s", MINIAPP_URL or "(empty)")
+        return
+    try:
+        import aiohttp
+
+        timeout = aiohttp.ClientTimeout(total=20)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    logger.info("Mini App URL OK (%s): %s", response.status, url)
+                    host = url.split("//", 1)[-1].split("/", 1)[0]
+                    logger.info("BotFather /setdomain for @Onehuntbot: %s", host)
+                else:
+                    logger.error("Mini App URL returned HTTP %s: %s", response.status, url)
+    except Exception:
+        logger.exception("Mini App URL is unreachable: %s", url)
+
+
     try:
         return ZoneInfo(APP_TIMEZONE)
     except Exception:  # pragma: no cover
@@ -1592,12 +1620,16 @@ async def show_help(target: Message | CallbackQuery) -> None:
         else "Полный доступ и дополнительные сценарии можно включить через Премиум."
     )
     if BOT_SHELL_MODE:
+        domain_line = miniapp_domain_hint()
         text = "\n".join(
             [
                 "<b>ONEHUNT</b>",
                 "",
                 "Бот — вход в Mini App и напоминания о подготовке.",
                 "Вопросы, экзамен, маршрут и AI — в приложении.",
+                domain_line,
+                "",
+                "Если Mini App не открывается — в @BotFather: /setdomain и укажите домен выше.",
                 "",
                 "/start — главная",
                 "Поддержка: s.yarcev@onehunt.ru",
@@ -2471,6 +2503,7 @@ async def main() -> None:
     scheduler.start()
 
     logger.info("ONEHUNT bot is starting.")
+    await verify_miniapp_url_on_startup()
     await register_bot_commands()
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
