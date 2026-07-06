@@ -127,9 +127,12 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 if [[ -z "${ONEHUNT_DOMAIN:-}" ]]; then
-  echo "== HTTPS tunnel for Mini App (Telegram WebApp) =="
-  bash scripts/vds_https_tunnel.sh "${IP}"
+  echo "== HTTPS Mini App (stable URL or tunnel) =="
+  bash scripts/vds_stable_miniapp_url.sh "${IP}"
 fi
+
+echo "== Always-on watchdogs =="
+bash scripts/vds_always_on.sh
 
 echo ""
 echo "OK: http://${IP}/"

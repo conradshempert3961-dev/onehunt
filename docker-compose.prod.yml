@@ -9,6 +9,12 @@ services:
     extra_hosts:
       # VDS DNS often resolves api.telegram.org to IPv6 that is unreachable.
       - "api.telegram.org:149.154.167.220"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os,urllib.request; t=os.environ.get('BOT_TOKEN',''); urllib.request.urlopen('https://api.telegram.org/bot'+t+'/getMe', timeout=10) if t else exit(1)\""]
+      interval: 2m
+      timeout: 15s
+      retries: 3
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy

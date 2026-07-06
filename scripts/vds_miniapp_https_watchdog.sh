@@ -20,6 +20,16 @@ if [[ -z "${MINIAPP_URL}" ]]; then
   exit 0
 fi
 
+# Stable Cloudflare Worker URL — only check, do not recreate tunnel.
+if [[ "${MINIAPP_URL}" == *".workers.dev"* ]]; then
+  if curl -fsS -o /dev/null --max-time 15 "${MINIAPP_URL}"; then
+    exit 0
+  fi
+  echo "Worker MINIAPP_URL down: ${MINIAPP_URL} — check Cloudflare Worker / VDS IP"
+  bash "${ROOT}/scripts/vds_stable_miniapp_url.sh" 2>/dev/null || true
+  exit 1
+fi
+
 if curl -fsS -o /dev/null --max-time 15 "${MINIAPP_URL}"; then
   exit 0
 fi

@@ -1,0 +1,47 @@
+name: Deploy Mini App CF Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/fix-all-vds-2866
+      - main
+    paths:
+      - "workers/miniapp-proxy/**"
+      - "scripts/deploy_miniapp_cf_proxy.sh"
+      - ".github/workflows/deploy-cf-miniapp-proxy.yml"
+
+jobs:
+  deploy-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy Cloudflare Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set — skip worker deploy"
+            exit 0
+          fi
+          bash scripts/deploy_miniapp_cf_proxy.sh
+
+      - name: Heal VDS with worker URL
+        env:
+          VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "${VDS_PASSWORD}" ]; then
+            echo "ONEHUNT_VDS_PASSWORD not set — skip VDS heal"
+            exit 0
+          fi
+          sudo apt-get install -y -qq sshpass
+          WORKER_URL="https://onehunt-miniapp-proxy.${CLOUDFLARE_ACCOUNT_ID}.workers.dev"
+          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@104.128.137.117 \
+            "echo '${WORKER_URL}' > /opt/onehunt/.miniapp_worker_url && ONEHUNT_MINIAPP_WORKER_URL='${WORKER_URL}' bash /opt/onehunt/scripts/vds_heal.sh"

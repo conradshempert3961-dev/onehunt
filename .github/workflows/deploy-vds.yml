@@ -9,6 +9,10 @@ on:
     paths:
       - "scripts/vds_heal.sh"
       - "scripts/vds_one_click.sh"
+      - "scripts/vds_stable_miniapp_url.sh"
+      - "scripts/vds_always_on.sh"
+      - "scripts/vds_bot_health.sh"
+      - "scripts/vds_miniapp_https_watchdog.sh"
       - "scripts/fix_vds_telegram.sh"
       - "scripts/vds_https_tunnel.sh"
       - "scripts/refresh_nginx_upstream.sh"

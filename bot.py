@@ -300,6 +300,14 @@ def miniapp_domain_hint() -> str:
     return f"Домен для @BotFather /setdomain: <code>{escape(host)}</code>"
 
 
+def get_app_timezone() -> ZoneInfo:
+    try:
+        return ZoneInfo(APP_TIMEZONE)
+    except Exception:  # pragma: no cover
+        logger.warning("Unknown timezone %s, falling back to UTC.", APP_TIMEZONE)
+        return ZoneInfo("UTC")
+
+
 async def verify_miniapp_url_on_startup() -> None:
     url = get_miniapp_webapp_url()
     if not url:
@@ -319,13 +327,6 @@ async def verify_miniapp_url_on_startup() -> None:
                     logger.error("Mini App URL returned HTTP %s: %s", response.status, url)
     except Exception:
         logger.exception("Mini App URL is unreachable: %s", url)
-
-
-    try:
-        return ZoneInfo(APP_TIMEZONE)
-    except Exception:  # pragma: no cover
-        logger.warning("Unknown timezone %s, falling back to UTC.", APP_TIMEZONE)
-        return ZoneInfo("UTC")
 
 
 def home_back_markup() -> InlineKeyboardMarkup:

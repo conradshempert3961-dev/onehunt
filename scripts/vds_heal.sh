@@ -72,10 +72,11 @@ fi
 bash scripts/refresh_nginx_upstream.sh
 
 echo "== 4/5 HTTPS Mini App =="
-bash scripts/vds_https_tunnel.sh "${IP}"
+bash scripts/vds_stable_miniapp_url.sh "${IP}"
 
-echo "== 5/5 Bot restart =="
+echo "== 5/5 Bot restart + always-on =="
 docker compose -f docker-compose.prod.yml up -d --build bot
+bash "${ROOT}/scripts/vds_always_on.sh"
 sleep 5
 
 echo ""
