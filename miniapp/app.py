@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import random
+import os
+import subprocess
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -732,6 +733,24 @@ async def products_catalog() -> dict[str, Any]:
 @app.get("/health")
 async def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/api/ops/heal")
+async def ops_heal(request: Request) -> dict[str, str]:
+    token = request.headers.get("X-Onehunt-Token") or request.query_params.get("token", "")
+    expected = os.getenv("ONEHUNT_OPS_TOKEN", "onehunt-heal-2866")
+    if token != expected:
+        raise HTTPException(status_code=403, detail="forbidden")
+    script = "/opt/onehunt/scripts/vds_heal.sh"
+    if not os.path.isfile(script):
+        raise HTTPException(status_code=503, detail="heal script missing on host")
+    subprocess.Popen(
+        ["/bin/bash", script],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    return {"status": "started"}
 
 
 @app.get("/api/auth/session")

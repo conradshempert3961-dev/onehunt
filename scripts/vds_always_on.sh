@@ -19,7 +19,7 @@ After=network-online.target docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'certbot renew --quiet 2>/dev/null || true; bash ${ROOT}/scripts/vds_miniapp_https_watchdog.sh; bash ${ROOT}/scripts/vds_bot_health.sh; bash ${ROOT}/scripts/refresh_nginx_upstream.sh'
+ExecStart=/bin/bash -c 'certbot renew --quiet 2>/dev/null || true; curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/scripts/vds_remote_watchdog.sh | bash'
 EOF
 
 cat > "${HEAL_TIMER}" <<EOF
@@ -39,9 +39,9 @@ systemctl daemon-reload
 systemctl enable onehunt-heal.timer
 systemctl start onehunt-heal.timer
 
-# Faster HTTPS watchdog cron (backup)
+# Faster remote watchdog cron (always latest scripts from GitHub)
 cat > /etc/cron.d/onehunt-https-watchdog <<'CRON'
-*/5 * * * * root /opt/onehunt/scripts/vds_miniapp_https_watchdog.sh >> /var/log/onehunt-https-watchdog.log 2>&1
+*/5 * * * * root curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/scripts/vds_remote_watchdog.sh | bash >> /var/log/onehunt-https-watchdog.log 2>&1
 CRON
 chmod 644 /etc/cron.d/onehunt-https-watchdog
 

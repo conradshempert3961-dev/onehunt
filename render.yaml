@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: onehunt-miniapp-proxy
+    runtime: node
+    plan: free
+    rootDir: proxy/render
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ONEHUNT_ORIGIN
+        value: http://104.128.137.117
+    healthCheckPath: /health

@@ -50,6 +50,7 @@ from config import (
     EXAM_QUESTIONS,
     FREE_MODE,
     MINIAPP_URL,
+    MINIAPP_URL_REMOTE,
     TELEGRAM_API_BASE,
     TELEGRAM_PROXY,
     PREMIUM_PRICE_RUB,
@@ -283,8 +284,11 @@ def premium_title_text(user) -> str:
     return "<b>ONEHUNT</b>"
 
 
+_effective_miniapp_url: str = MINIAPP_URL.strip()
+
+
 def get_miniapp_webapp_url() -> str | None:
-    url = MINIAPP_URL.strip()
+    url = _effective_miniapp_url.strip() or MINIAPP_URL.strip()
     if url.lower().startswith("https://"):
         return url
     if url:
@@ -293,11 +297,37 @@ def get_miniapp_webapp_url() -> str | None:
 
 
 def miniapp_domain_hint() -> str:
-    url = MINIAPP_URL.strip()
+    url = get_miniapp_webapp_url() or MINIAPP_URL.strip()
     if not url.lower().startswith("https://"):
         return ""
     host = url.split("//", 1)[-1].split("/", 1)[0]
     return f"Домен для @BotFather /setdomain: <code>{escape(host)}</code>"
+
+
+async def resolve_miniapp_url_on_startup() -> None:
+    global _effective_miniapp_url
+    local = MINIAPP_URL.strip()
+    if local.lower().startswith("https://") and "trycloudflare.com" not in local:
+        _effective_miniapp_url = local
+        return
+    if not MINIAPP_URL_REMOTE:
+        _effective_miniapp_url = local
+        return
+    try:
+        import aiohttp
+
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(MINIAPP_URL_REMOTE) as response:
+                if response.status == 200:
+                    remote = (await response.text()).strip().splitlines()[0].strip()
+                    if remote.lower().startswith("https://"):
+                        _effective_miniapp_url = remote
+                        logger.info("Mini App URL from remote config: %s", remote)
+                        return
+    except Exception:
+        logger.exception("Failed to load remote MINIAPP_URL from %s", MINIAPP_URL_REMOTE)
+    _effective_miniapp_url = local
 
 
 def get_app_timezone() -> ZoneInfo:
@@ -2504,6 +2534,7 @@ async def main() -> None:
     scheduler.start()
 
     logger.info("ONEHUNT bot is starting.")
+    await resolve_miniapp_url_on_startup()
     await verify_miniapp_url_on_startup()
     await register_bot_commands()
     try:
