@@ -20,17 +20,23 @@ if [[ -z "${MINIAPP_URL}" ]]; then
   exit 0
 fi
 
-# Stable Cloudflare Worker URL — only check, do not recreate tunnel.
-if [[ "${MINIAPP_URL}" == *".workers.dev"* ]]; then
+# Stable URLs — never switch back to trycloudflare.
+if [[ "${MINIAPP_URL}" == *".workers.dev"* || "${MINIAPP_URL}" == *".nip.io"* || "${MINIAPP_URL}" == *".sslip.io"* ]]; then
   if curl -fsS -o /dev/null --max-time 15 "${MINIAPP_URL}"; then
     exit 0
   fi
-  echo "Worker MINIAPP_URL down: ${MINIAPP_URL} — check Cloudflare Worker / VDS IP"
-  bash "${ROOT}/scripts/vds_stable_miniapp_url.sh" 2>/dev/null || true
-  exit 1
+  echo "Stable MINIAPP_URL down: ${MINIAPP_URL} — running heal"
+  bash "${ROOT}/scripts/vds_stable_miniapp_url.sh" 2>/dev/null || bash "${ROOT}/scripts/refresh_nginx_upstream.sh"
+  exit 0
 fi
 
-if curl -fsS -o /dev/null --max-time 15 "${MINIAPP_URL}"; then
+# Permanent custom domain (not trycloudflare).
+if [[ "${MINIAPP_URL}" == https://* && "${MINIAPP_URL}" != *"trycloudflare.com"* ]]; then
+  if curl -fsS -o /dev/null --max-time 15 "${MINIAPP_URL}"; then
+    exit 0
+  fi
+  echo "HTTPS MINIAPP_URL down: ${MINIAPP_URL} — running stable URL setup"
+  bash "${ROOT}/scripts/vds_stable_miniapp_url.sh" 2>/dev/null || true
   exit 0
 fi
 

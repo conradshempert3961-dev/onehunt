@@ -19,7 +19,7 @@ After=network-online.target docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'bash ${ROOT}/scripts/vds_miniapp_https_watchdog.sh; bash ${ROOT}/scripts/vds_bot_health.sh; bash ${ROOT}/scripts/refresh_nginx_upstream.sh'
+ExecStart=/bin/bash -c 'certbot renew --quiet 2>/dev/null || true; bash ${ROOT}/scripts/vds_miniapp_https_watchdog.sh; bash ${ROOT}/scripts/vds_bot_health.sh; bash ${ROOT}/scripts/refresh_nginx_upstream.sh'
 EOF
 
 cat > "${HEAL_TIMER}" <<EOF

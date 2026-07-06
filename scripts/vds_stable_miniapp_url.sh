@@ -53,7 +53,18 @@ if [[ -n "${ONEHUNT_DOMAIN:-}" ]]; then
   fi
 fi
 
-# 2) Cloudflare Worker proxy (stable workers.dev URL).
+# 2) Cloudflare Named Tunnel (permanent hostname from your Cloudflare account).
+if [[ -f "${ENV_FILE}" ]] && grep -q '^CLOUDFLARE_TUNNEL_TOKEN=.\+' "${ENV_FILE}" 2>/dev/null; then
+  if bash "${ROOT}/scripts/vds_cloudflare_named_tunnel.sh"; then
+    TUNNEL_HOST="$(grep '^ONEHUNT_TUNNEL_HOSTNAME=' "${ENV_FILE}" | cut -d= -f2- || true)"
+    if [[ -n "${TUNNEL_HOST}" ]] && miniapp_url_ok "https://${TUNNEL_HOST}/app"; then
+      apply_miniapp_url "https://${TUNNEL_HOST}/app"
+      exit 0
+    fi
+  fi
+fi
+
+# 3) Cloudflare Worker proxy (stable workers.dev URL).
 WORKER_BASE="${ONEHUNT_MINIAPP_WORKER_URL:-}"
 if [[ -z "${WORKER_BASE}" && -f "${ROOT}/.miniapp_worker_url" ]]; then
   WORKER_BASE="$(tr -d '\r\n' < "${ROOT}/.miniapp_worker_url")"
@@ -67,5 +78,21 @@ if [[ -n "${WORKER_BASE}" ]]; then
   echo "Worker URL not ready yet: ${WORKER_URL}"
 fi
 
-# 3) Ephemeral trycloudflare tunnel (auto-recreated by watchdog).
+# 4) Permanent nip.io + Let's Encrypt (stable URL, no trycloudflare).
+USE_NIPIO="${ONEHUNT_USE_NIPIO:-true}"
+if [[ "${USE_NIPIO}" == "true" ]]; then
+  NIPIO_DOMAIN="${ONEHUNT_NIPIO_DOMAIN:-${IP}.nip.io}"
+  if bash "${ROOT}/scripts/vds_nipio_https.sh" "${IP}"; then
+    if miniapp_url_ok "https://${NIPIO_DOMAIN}/app"; then
+      apply_miniapp_url "https://${NIPIO_DOMAIN}/app"
+      exit 0
+    fi
+    echo "nip.io HTTPS issued but /app not 200 yet — check nginx upstream"
+  else
+    echo "nip.io HTTPS setup failed, falling back..."
+  fi
+fi
+
+# 5) Ephemeral trycloudflare tunnel (last resort; URL changes on restart).
+echo "WARNING: using temporary trycloudflare tunnel — set ONEHUNT_USE_NIPIO=true or add CLOUDFLARE_TUNNEL_TOKEN for permanent URL"
 bash "${ROOT}/scripts/vds_https_tunnel.sh" "${IP}"

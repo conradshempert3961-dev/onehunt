@@ -59,7 +59,16 @@ ln -sf /etc/nginx/sites-available/onehunt /etc/nginx/sites-enabled/onehunt
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
-EMAIL="${ONEHUNT_CERTBOT_EMAIL:-admin@${DOMAIN}}"
-certbot --nginx -d "${DOMAIN}" -d "www.${DOMAIN}" --non-interactive --agree-tos -m "${EMAIL}" --redirect
+EMAIL="${ONEHUNT_CERTBOT_EMAIL:-admin@onehunt.app}"
+CERTBOT_DOMAINS=(-d "${DOMAIN}")
+if [[ "${DOMAIN}" != *".nip.io" && "${DOMAIN}" != *".sslip.io" ]]; then
+  CERTBOT_DOMAINS+=(-d "www.${DOMAIN}")
+fi
+
+if [[ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
+  certbot --nginx "${CERTBOT_DOMAINS[@]}" --non-interactive --agree-tos -m "${EMAIL}" --redirect
+else
+  certbot renew --nginx --quiet || certbot --nginx "${CERTBOT_DOMAINS[@]}" --non-interactive --agree-tos -m "${EMAIL}" --redirect
+fi
 
 echo "HTTPS ready: https://${DOMAIN}/app"

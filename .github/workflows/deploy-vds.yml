@@ -10,6 +10,8 @@ on:
       - "scripts/vds_heal.sh"
       - "scripts/vds_one_click.sh"
       - "scripts/vds_stable_miniapp_url.sh"
+      - "scripts/vds_nipio_https.sh"
+      - "scripts/vds_cloudflare_named_tunnel.sh"
       - "scripts/vds_always_on.sh"
       - "scripts/vds_bot_health.sh"
       - "scripts/vds_miniapp_https_watchdog.sh"
