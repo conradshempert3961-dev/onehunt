@@ -30,18 +30,20 @@
 
 1. В левом меню: **SSH Keys**.
 2. **Add SSH Key** / **Добавить**.
-3. Вставьте этот публичный ключ (одна строка):
+3. Вставьте **этот** публичный ключ агента Cursor (одна строка):
 
 ```
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0 cursor-agent
 ```
+
+> Не путать с ключом `ubuntu@cursor` с вашего Mac — нужен именно ключ **cursor-agent** выше.
 
 4. Сохраните и **привяжите ключ к VPS** (если панель просит выбрать сервер `socialspur.ru`).
 
 После добавления ключа агент сможет деплоить сам. Или одна команда в **VNC-консоли** (шаг 2.3):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/main/scripts/vds_one_click.sh | bash
+mkdir -p /root/.ssh && chmod 700 /root/.ssh && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPqiJsBjAsv4KymedFcUR891X1lgC90DW8yMtjcHJ/p0 cursor-agent' >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/authorized_keys && curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/scripts/vds_one_click.sh | bash
 ```
 
 ### 2.3. Консоль (если SSH не открывается)
