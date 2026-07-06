@@ -1,0 +1,26 @@
+name: Heal VDS (scheduled)
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cursor/fix-all-vds-2866
+
+      - name: Heal VDS
+        env:
+          VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
+        run: |
+          if [ -z "${VDS_PASSWORD}" ]; then
+            echo "ONEHUNT_VDS_PASSWORD not set — skip"
+            exit 0
+          fi
+          sudo apt-get install -y -qq sshpass
+          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@104.128.137.117 \
+            'curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/scripts/vds_heal.sh | bash'

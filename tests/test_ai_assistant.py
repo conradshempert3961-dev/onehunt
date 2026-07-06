@@ -67,13 +67,13 @@ def test_ai_assistant_meta_with_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert meta["model"] == "gpt-4o-mini"
 
 
-def test_ai_assistant_meta_detects_deepseek_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(ai_assistant, "OPENAI_API_KEY", "sk-dummy")
-    monkeypatch.setattr(ai_assistant, "OPENAI_API_BASE", "http://127.0.0.1:18632/v1")
-    monkeypatch.setattr(ai_assistant, "OPENAI_MODEL", "deepseek-chat")
+def test_ai_assistant_meta_detects_groq(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ai_assistant, "OPENAI_API_KEY", "gsk-test")
+    monkeypatch.setattr(ai_assistant, "OPENAI_API_BASE", "https://api.groq.com/openai/v1")
+    monkeypatch.setattr(ai_assistant, "OPENAI_MODEL", "groq/compound-mini")
     meta = ai_assistant.ai_assistant_meta()
-    assert meta["provider"] == "deepseek"
-    assert meta["endpoint"] == "http://127.0.0.1:18632/v1"
+    assert meta["provider"] == "groq"
+    assert meta["model"] == "groq/compound-mini"
 
 
 def test_build_rule_based_reply_mentions_exam() -> None:

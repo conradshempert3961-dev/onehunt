@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#07090d">
+    <meta name="theme-color" content="#f5f8f6">
     <title>ONEHUNT</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" href="/assets/brand-logo.jpg" type="image/jpeg">
     <link rel="stylesheet" href="/assets/wolf-loader.css">
-    <link rel="stylesheet" href="/assets/app.css">
+    <link rel="stylesheet" href="/assets/app.css?v=20260624d">
 </head>
 <body class="mode-miniapp">
     <div class="app-shell">
@@ -33,15 +33,7 @@
                     <div class="auth-hero-glow"></div>
                     <img class="auth-hero-logo brand-logo" src="/assets/brand-logo.jpg" alt="ONEHUNT">
                     <h1>ONEHUNT</h1>
-                    <p class="auth-hero-tagline">Подготовка к охотминимуму прямо в Telegram</p>
-                    <ul class="auth-hero-list">
-                        <li><span>257</span> официальных вопросов</li>
-                        <li><span>14</span> дней маршрута</li>
-                        <li><span>AI</span> тренер и экзамен</li>
-                    </ul>
-                    <div class="auth-hero-note panel panel-flat">
-                        Откройте приложение из Telegram-бота — профиль создаётся автоматически, без паролей и регистрации.
-                    </div>
+                    <p class="auth-hero-tagline">Подготовка к охотминимуму</p>
                 </div>
             </section>
 
@@ -61,14 +53,13 @@
                     <button class="btn btn-primary btn-block" id="homeContinueButton" type="button">Продолжить подготовку</button>
                 </div>
 
-                <div class="dash-metrics" id="heroBadges"></div>
                 <div class="dash-stats" id="homeStats"></div>
 
                 <button class="dash-premium" id="guideBannerButton" type="button">
                     <div class="dash-premium-copy">
-                        <strong class="offer-banner-title">Полный путь до первой охоты</strong>
-                        <small class="offer-banner-subtitle">Маршрут, экзамен, AI и материалы</small>
-                        <em class="offer-banner-meta">990 ₽ · пожизненный доступ</em>
+                        <strong class="offer-banner-title">PREMIUM</strong>
+                        <small class="offer-banner-subtitle">990 ₽ · пожизненный доступ</small>
+                        <em class="offer-banner-meta hidden"></em>
                     </div>
                     <img class="offer-banner-image" src="/assets/premium-guide.jpg" alt="">
                 </button>
@@ -108,7 +99,6 @@
             <section class="screen" id="screen-practice">
                 <header class="screen-head">
                     <h1>Практика</h1>
-                    <p>Все режимы для подготовки к экзамену</p>
                 </header>
 
                 <div class="panel">
@@ -159,8 +149,7 @@
 
                 <div class="panel">
                     <div class="panel-head">
-                        <h2>Блоки программы</h2>
-                        <span>257 вопросов · 3 темы</span>
+                        <h2>Блоки</h2>
                     </div>
                     <div class="block-list" id="blockGrid"></div>
                 </div>
@@ -168,7 +157,6 @@
                 <div class="panel">
                     <div class="panel-head">
                         <h2>Карточки</h2>
-                        <span>Животные, следы, сезонность</span>
                     </div>
                     <p class="panel-lead" id="cardsSummary">Загружаем карточки…</p>
                     <div class="chip-scroll" id="cardCategories"></div>
@@ -180,7 +168,6 @@
             <section class="screen" id="screen-daily">
                 <header class="screen-head">
                     <h1>Сегодня</h1>
-                    <p>Вопрос дня, вызов и маршрут</p>
                 </header>
                 <div class="panel panel-accent" id="dailyQuestionCard"></div>
                 <div class="panel" id="dailyChallengeCard"></div>
@@ -191,10 +178,9 @@
             <section class="screen screen-ai" id="screen-ai">
                 <header class="ai-head">
                     <div>
-                        <p class="eyebrow">AI-тренер</p>
                         <h1>ONEHUNT AI</h1>
                     </div>
-                    <span class="ai-status-dot" id="aiStatus">Готов помочь</span>
+                    <span class="ai-status-dot" id="aiStatus">Онлайн</span>
                 </header>
                 <div class="ai-prompt-grid" id="aiPromptGrid"></div>
                 <div class="ai-thread" id="aiThread"></div>
@@ -210,11 +196,6 @@
             <section class="screen" id="screen-profile">
                 <div class="profile-banner panel" id="profileIdentityCard"></div>
                 <div class="dash-stats" id="profileStats"></div>
-
-                <div class="panel">
-                    <div class="panel-head"><h2>Блоки программы</h2></div>
-                    <div class="progress-list" id="blockProgress"></div>
-                </div>
 
                 <div class="panel">
                     <div class="panel-head"><h2>Активность · 14 дней</h2></div>
@@ -330,7 +311,7 @@
 
     <script>window.ONEHUNT_MODE = "miniapp";</script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/assets/wolf-loader.js"></script>
-    <script src="/assets/app.js"></script>
+    <script src="/assets/wolf-loader.js?v=20260624d"></script>
+    <script src="/assets/app.js?v=20260624d"></script>
 </body>
 </html>

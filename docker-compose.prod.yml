@@ -6,6 +6,15 @@ services:
     container_name: onehunt_bot
     restart: unless-stopped
     env_file: .env
+    extra_hosts:
+      # VDS DNS often resolves api.telegram.org to IPv6 that is unreachable.
+      - "api.telegram.org:149.154.167.220"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os,urllib.request; t=os.environ.get('BOT_TOKEN',''); urllib.request.urlopen('https://api.telegram.org/bot'+t+'/getMe', timeout=10) if t else exit(1)\""]
+      interval: 2m
+      timeout: 15s
+      retries: 3
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,22 +98,8 @@ services:
     networks:
       - onehunt
 
-  deepseek:
-    build:
-      context: .
-      dockerfile: Dockerfile.deepseek
-    container_name: onehunt_deepseek
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8000:8000"
-    volumes:
-      - deepseek_data:/app/data
-    networks:
-      - onehunt
-
 volumes:
   pgdata:
-  deepseek_data:
 
 networks:
   onehunt:

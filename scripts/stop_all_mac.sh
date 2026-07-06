@@ -20,5 +20,4 @@ stop_pid_file() {
 }
 
 stop_pid_file "miniapp"
-stop_pid_file "deepseek"
 echo "Local ONEHUNT processes stopped."

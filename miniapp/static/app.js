@@ -5,8 +5,8 @@ if (tg) {
     tg.ready();
     tg.expand();
     tg.enableClosingConfirmation();
-    tg.setHeaderColor("#07090d");
-    tg.setBackgroundColor("#07090d");
+    tg.setHeaderColor("#f5f8f6");
+    tg.setBackgroundColor("#f5f8f6");
 }
 
 const state = {
@@ -52,6 +52,7 @@ const bottomNav = document.querySelector(".tabbar, .bottom-nav");
 const siteFooter = document.querySelector(".site-footer");
 const PREMIUM_BANNER_IMAGE = "/assets/premium-guide.jpg";
 const BRAND_LOGO_IMAGE = "/assets/brand-logo.jpg";
+const AI_COACH_NAME = "ONEHUNT AI";
 const AI_AVATAR_IMAGE = BRAND_LOGO_IMAGE;
 let sessionTimerInterval = null;
 
@@ -80,12 +81,12 @@ function hasRouteAccess(route = state.bootstrap?.route) {
 
 function currentAccessBadge() {
     if (hasPremiumAccess()) {
-        return { label: "PREMIUM", className: "is-premium", note: "Пожизненный доступ активен" };
+        return { label: "PREMIUM", className: "is-premium", note: "Активен" };
     }
     if (state.bootstrap?.free_mode) {
-        return { label: "OPEN BETA", className: "is-beta", note: "Сейчас доступ открыт, но premium уже можно подключить" };
+        return { label: "OPEN BETA", className: "is-beta", note: "Открытый доступ" };
     }
-    return { label: "БАЗОВЫЙ", className: "is-basic", note: "Premium откроет весь маршрут, карточки и расширенные режимы" };
+    return { label: "БАЗОВЫЙ", className: "is-basic", note: "Premium — полный маршрут и AI" };
 }
 
 function premiumOffer() {
@@ -327,23 +328,19 @@ function renderPremiumSheet() {
             <div class="premium-sheet-head">
                 <div>
                     <p class="eyebrow">Премиум-доступ</p>
-                    <h2>${offer.title}</h2>
-                    <p class="info-line">${offer.subtitle} · пожизненный доступ · ${offer.price_rub} ₽ / ${offer.price_stars} ⭐</p>
+                    <h2>PREMIUM</h2>
+                    <p class="info-line">${offer.price_rub} ₽ · пожизненный доступ</p>
                 </div>
                 <span class="access-pill ${access.className}">${access.label}</span>
             </div>
             <div class="premium-benefits">
                 <article class="premium-benefit-card">
-                    <strong>Полный маршрут</strong>
-                    <span>Экзамен, маршрут на 14 дней, карточки, AI и все продвинутые режимы без лимитов.</span>
+                    <strong>Полный доступ</strong>
+                    <span>Маршрут, экзамен, карточки, AI и все режимы.</span>
                 </article>
                 <article class="premium-benefit-card">
-                    <strong>Гайд + 12 чек-листов</strong>
-                    <span>Документы, первая охота, снаряжение, сезонные заметки и готовый путь без лишней суеты.</span>
-                </article>
-                <article class="premium-benefit-card">
-                    <strong>${APP_MODE === "miniapp" ? "Статус в Telegram" : "Статус в web-профиле"}</strong>
-                    <span>${APP_MODE === "miniapp" ? "После оплаты Premium сразу активируется в Mini App и в связанном профиле ONEHUNT." : "После оплаты Premium сразу активируется в вашем браузерном профиле ONEHUNT."}</span>
+                    <strong>Материалы</strong>
+                    <span>Гайд и чек-листы для подготовки.</span>
                 </article>
             </div>
             <div class="premium-checkout-box">
@@ -547,7 +544,7 @@ function createAiPromptButton(label) {
 
 function buildAiWelcomeMessage() {
     if (!state.bootstrap || !state.journal) {
-        return "Я помогу по маршруту, ошибкам, экзамену и слабым темам. Сначала подгружу ваш прогресс.";
+        return "Спросите про маршрут, ошибки или экзамен.";
     }
 
     const user = state.bootstrap.user;
@@ -558,22 +555,14 @@ function buildAiWelcomeMessage() {
     ];
     const weakest = [...blocks].sort((left, right) => left.percent - right.percent)[0];
     const routeTask = state.bootstrap.route?.current_task?.task;
-    const aiMeta = state.bootstrap.ai;
-    const aiLead = aiMeta?.configured
-        ? aiMeta.provider === "deepseek"
-            ? "Подключён DeepSeek — отвечу по вашему прогрессу и плану подготовки."
-            : "Подключён живой AI — отвечу по вашему прогрессу и плану подготовки."
-        : "Я ваш тренер ONEHUNT — подскажу по маршруту, ошибкам и экзамену по вашему прогрессу.";
 
     return [
-        aiLead,
-        `Сейчас у вас ${user.questions_completed}/257 по прогрессу и ${user.accuracy}% точности.`,
-        `Больше всего внимания просит блок «${weakest.icon} ${weakest.name}» (${weakest.percent}%).`,
-        routeTask
-            ? `Сегодня в маршруте: ${routeTask.icon} ${routeTask.name} — ${routeTask.goal}.`
-            : "Маршрут можно использовать как основу плана на день.",
-        "Спросите, что подтянуть первым, как выйти на стабильный экзамен или как лучше разобрать ошибки.",
-    ].join("\n");
+        `${user.questions_completed}/257 · точность ${user.accuracy}%.`,
+        `Слабее всего: «${weakest.icon} ${weakest.name}» (${weakest.percent}%).`,
+        routeTask ? `Сегодня: ${routeTask.icon} ${routeTask.name}.` : null,
+    ]
+        .filter(Boolean)
+        .join("\n");
 }
 
 function buildAiHistoryPayload() {
@@ -585,19 +574,15 @@ function buildAiHistoryPayload() {
 
 function getAiStatusText(isBusy = false) {
     if (isBusy) {
-        return "Думаю над ответом...";
+        return "Думаю…";
     }
 
     const ai = state.bootstrap?.ai;
     if (ai?.configured) {
-        const modelLabel = ai.model ? ` · ${ai.model}` : "";
-        if (ai.provider === "deepseek") {
-            return `Живой AI · DeepSeek${modelLabel}`;
-        }
-        return `Живой AI${modelLabel} · прогресс, ошибки и маршрут`;
+        return ai.provider === "groq" ? "Groq AI" : "AI";
     }
 
-    return "Тренер ONEHUNT · прогресс, маршрут и экзамен";
+    return "Онлайн";
 }
 
 function applyAiMeta() {
@@ -623,7 +608,7 @@ function renderAiPrompts(prompts = []) {
 
 function renderAiThread() {
     if (!state.aiHistory.length) {
-        aiThread.innerHTML = '<div class="empty-state">Здесь появится разбор по прогрессу, ошибкам и маршруту. Можно спросить, что добить до экзамена, где вы проседаете и с чего лучше начать сегодня.</div>';
+        aiThread.innerHTML = '<div class="empty-state">Задайте вопрос — разберём прогресс и ошибки.</div>';
         return;
     }
 
@@ -632,10 +617,10 @@ function renderAiThread() {
             const isUser = item.role === "user";
             return `
                 <article class="ai-message ${isUser ? "is-user" : "is-assistant"}">
-                    ${isUser ? "" : `<span class="ai-avatar"><img src="${AI_AVATAR_IMAGE}" alt="ONEHUNT AI"></span>`}
+                    ${isUser ? "" : `<span class="ai-avatar"><img src="${AI_AVATAR_IMAGE}" alt="${AI_COACH_NAME}"></span>`}
                     <div class="ai-bubble-wrap">
                         <div class="ai-bubble ${isUser ? "is-user" : "is-assistant"}">${formatRichText(item.text)}</div>
-                        <div class="ai-meta">${isUser ? "Вы" : "ONEHUNT AI"} · ${escapeHtml(item.time)}</div>
+                        <div class="ai-meta">${isUser ? "Вы" : AI_COACH_NAME} · ${escapeHtml(item.time)}</div>
                     </div>
                 </article>
             `;
@@ -725,7 +710,8 @@ async function submitAiMessage(rawMessage) {
         pushAiMessage("assistant", payload.reply || "Пока не удалось собрать ответ. Попробуйте уточнить вопрос.");
         renderAiPrompts(payload.quick_replies || buildDefaultAiPrompts());
         if (payload.fallback) {
-            showToast("DeepSeek недоступен — ответ по шаблону. Запустите: bash scripts/setup_deepseek_mac.sh");
+            const reason = payload.error || "Groq AI недоступен с сервера";
+            showToast(`${reason} — ответ по шаблону.`);
         }
         pulse("success");
     } catch (error) {
@@ -806,12 +792,15 @@ function renderBootstrap() {
         }
     }
 
-    document.getElementById("heroBadges").innerHTML = `
+    const heroBadges = document.getElementById("heroBadges");
+    if (heroBadges) {
+        heroBadges.innerHTML = `
         ${createMetricPill("Ранг", `${data.user.rank.icon} ${data.user.rank.name}`)}
         ${createMetricPill("Маршрут", `${data.route.percent}%`)}
         ${createMetricPill("Серия", `${data.user.streak_days} дн.`)}
         ${createMetricPill("Экзамен", `${data.exam.pass_percent}%`)}
     `;
+    }
     document.getElementById("homeStats").innerHTML = `
         ${createStatCard("Пройдено", `${data.user.questions_completed}/257`)}
         ${createStatCard("Точность", `${data.user.accuracy}%`)}
@@ -835,10 +824,10 @@ function renderBootstrap() {
         </div>
         <p class="panel-lead">${
             routeLocked
-                ? `Первые ${freeRouteDays} дня бесплатно. День ${data.route.current_day} — дальше PREMIUM.`
+                ? `День ${data.route.current_day} · нужен PREMIUM`
                 : hasPremiumAccess()
-                  ? `Шаг ${data.route.current_day} из 14 · прогресс ${data.route.percent}%`
-                  : `Бесплатная часть: день ${data.route.current_day} из ${freeRouteDays}`
+                  ? `День ${data.route.current_day}/14 · ${data.route.percent}%`
+                  : `День ${data.route.current_day}/${freeRouteDays}`
         }</p>
         ${
             data.route.current_task
@@ -848,16 +837,20 @@ function renderBootstrap() {
     `;
 
     const guideBanner = document.getElementById("guideBannerButton");
-    const bannerTitle = hasPremiumAccess() ? "✨ PREMIUM уже активирован" : `📖 ${offer.title}`;
-    const bannerSubtitle = hasPremiumAccess()
-        ? `${access.note} · откройте профиль и проверьте статус`
-        : `${offer.price_rub} ₽ или ${offer.price_stars} ⭐ · маршрут 14 дней, AI и материалы`;
-    guideBanner.querySelector(".offer-banner-title").textContent = bannerTitle;
-    guideBanner.querySelector(".offer-banner-subtitle").textContent = bannerSubtitle;
-    guideBanner.querySelector(".offer-banner-meta").textContent = hasPremiumAccess()
-        ? "Пожизненный доступ уже у вас"
-        : "Гайд + 12 чек-листов + полный PREMIUM-доступ";
-    guideBanner.querySelector(".offer-banner-image").src = PREMIUM_BANNER_IMAGE;
+    if (guideBanner) {
+        const bannerTitle = hasPremiumAccess() ? "PREMIUM активен" : "PREMIUM";
+        const bannerSubtitle = hasPremiumAccess()
+            ? access.note
+            : `${offer.price_rub} ₽ · пожизненный доступ`;
+        guideBanner.querySelector(".offer-banner-title").textContent = bannerTitle;
+        guideBanner.querySelector(".offer-banner-subtitle").textContent = bannerSubtitle;
+        const bannerMeta = guideBanner.querySelector(".offer-banner-meta");
+        if (bannerMeta) {
+            bannerMeta.textContent = "";
+            bannerMeta.classList.add("hidden");
+        }
+        guideBanner.querySelector(".offer-banner-image").src = PREMIUM_BANNER_IMAGE;
+    }
 
     const routeTaskButton = document.getElementById("routeTaskButton");
     if (routeTaskButton) {
@@ -912,10 +905,10 @@ function renderRouteCard(route, container, compact = false) {
             route.current_task
                 ? `<p class="panel-lead">${
                       routeLocked
-                          ? `Первые ${freeDays} дня бесплатно. Дальше — PREMIUM.`
+                          ? `День ${route.current_day} · нужен PREMIUM`
                           : hasPremiumAccess()
-                            ? `Сегодня: ${route.current_task.task.icon} ${route.current_task.task.name}`
-                            : `Бесплатный день ${route.current_day} из ${freeDays}`
+                            ? `${route.current_task.task.icon} ${route.current_task.task.name}`
+                            : `День ${route.current_day}/${freeDays}`
                   }</p>
                    <button class="btn btn-primary btn-block route-task-launch" type="button">${routeLocked ? "Открыть PREMIUM" : hasPremiumAccess() ? "Начать задачу дня" : "Начать бесплатный день"}</button>`
                 : `<p class="panel-lead">Текущая задача не найдена.</p>`
@@ -1039,7 +1032,7 @@ function renderDaily() {
             <span>${daily.challenge.completed ? "Готово" : daily.challenge.attempts ? "В процессе" : "Новый"}</span>
         </div>
         <p class="panel-lead">${daily.challenge.config.description}</p>
-        <p class="panel-lead">+${daily.challenge.config.xp} XP · +${daily.challenge.config.coins} 🪙 · попыток: ${daily.challenge.attempts}</p>
+        <p class="panel-lead">+${daily.challenge.config.xp} XP · +${daily.challenge.config.coins} 🪙</p>
     `;
 
     renderRouteCard(daily.route, document.getElementById("routeCard"), true);
@@ -1047,7 +1040,7 @@ function renderDaily() {
 function renderCards() {
     if (!state.cards) {
         if (!hasPremiumAccess() && !state.bootstrap?.free_mode) {
-            document.getElementById("cardsSummary").textContent = "Карточки охотника входят в PREMIUM.";
+            document.getElementById("cardsSummary").textContent = "PREMIUM";
             document.getElementById("cardCategories").innerHTML = "";
             document.getElementById("cardsList").innerHTML =
                 '<button class="ghost-button" type="button" data-premium-entry="cards">Открыть PREMIUM</button>';
@@ -1085,13 +1078,11 @@ function renderProfile() {
     document.getElementById("profileIdentityCard").innerHTML = `
         <div class="profile-banner-inner">
             <div class="profile-identity-copy">
-                <p class="eyebrow">Профиль</p>
                 <h2>${escapeHtml(fullName)}</h2>
                 <p class="panel-lead">${escapeHtml(username)} · ${bootstrap.user.rank.icon} ${escapeHtml(bootstrap.user.rank.name)}</p>
             </div>
             <div class="profile-identity-side">
                 <span class="access-pill ${access.className}">${access.label}</span>
-                <small>${access.note}</small>
             </div>
         </div>
     `;
@@ -1103,24 +1094,29 @@ function renderProfile() {
         ${createStatCard("Следующий ранг", journal.next_rank ? `${journal.next_rank.icon} ${journal.next_rank.name}` : "Максимум")}
     `;
 
-    document.getElementById("blockProgress").innerHTML = [
-        { label: "📜 Право", value: journal.block1 },
-        { label: "🔫 Безопасность", value: journal.block2 },
-        { label: "🦌 Природа", value: journal.block3 },
-    ]
-        .map(
-            (item) => `
+    const blockProgress = document.getElementById("blockProgress");
+    if (blockProgress) {
+        blockProgress.innerHTML = [
+            { label: "📜 Право", value: journal.block1 },
+            { label: "🔫 Безопасность", value: journal.block2 },
+            { label: "🦌 Природа", value: journal.block3 },
+        ]
+            .map(
+                (item) => `
                 <div class="achievement-item">
                     <strong>${item.label}</strong>
                     <span>${item.value}%</span>
                     <div class="achievement-progress"><span style="width:${Math.max(4, item.value)}%"></span></div>
                 </div>
             `,
-        )
-        .join("");
+            )
+            .join("");
+    }
 
     if (state.progress?.points?.length) {
-        document.getElementById("progressChart").innerHTML = state.progress.points
+        const chartEl = document.getElementById("progressChart");
+        chartEl.classList.remove("is-empty");
+        chartEl.innerHTML = state.progress.points
             .map(
                 (point, index) => `
                     <div class="chart-bar">
@@ -1130,12 +1126,14 @@ function renderProfile() {
                 `,
             )
             .join("");
-    } else if (!hasPremiumAccess() && !bootstrap.free_mode) {
-        document.getElementById("progressChart").innerHTML =
-            '<div class="empty-state">График прогресса открывается после активации PREMIUM.</div>';
     } else {
-        document.getElementById("progressChart").innerHTML =
-            '<div class="empty-state">График появится после первых ответов за последние 14 дней. Как только накопится активность, здесь начнет рисоваться живой срез.</div>';
+        const chartEl = document.getElementById("progressChart");
+        chartEl.classList.add("is-empty");
+        if (!hasPremiumAccess() && !bootstrap.free_mode) {
+            chartEl.innerHTML = '<div class="empty-state">Нужен PREMIUM.</div>';
+        } else {
+            chartEl.innerHTML = '<div class="empty-state">Нет данных за 14 дней.</div>';
+        }
     }
 
     const nearest = state.achievements?.nearest || [];
@@ -1152,7 +1150,7 @@ function renderProfile() {
                   `,
               )
               .join("")
-        : `<div class="info-line">Достижения пока еще не появились.</div>`;
+        : `<div class="info-line">Пока нет достижений.</div>`;
 
     const history = state.history?.items || [];
     document.getElementById("historyList").innerHTML = history.length
@@ -1166,7 +1164,7 @@ function renderProfile() {
                   `,
               )
               .join("")
-        : `<div class="info-line">История экзаменов пока пустая.</div>`;
+        : `<div class="info-line">История пуста.</div>`;
 
     document.getElementById("settingQuestions").value = String(bootstrap.user.settings.questions_per_session || 20);
     document.getElementById("settingTimer").value = String(bootstrap.user.settings.timer_seconds || 0);

@@ -13,7 +13,7 @@ from config import QUESTIONS_FILE
 from database.database import async_session, init_db
 from database.models import Question
 from utils.constants import BLOCKS
-from utils.helpers import derive_block, normalize_option_key
+from utils.helpers import clean_option_text, derive_block, normalize_option_key
 
 
 def normalize_int(value: object) -> int | None:
@@ -25,10 +25,14 @@ def normalize_int(value: object) -> int | None:
         return None
 
 
-def normalize_options(raw_options: object) -> dict[str, str]:
+def normalize_options(raw_options: object, *, question_id: str | None = None) -> dict[str, str]:
     if isinstance(raw_options, dict):
         return {
-            normalize_option_key(str(key)): str(value).strip()
+            normalize_option_key(str(key)): clean_option_text(
+                str(value),
+                question_id=question_id,
+                option_key=str(key),
+            )
             for key, value in raw_options.items()
             if str(value).strip()
         }
@@ -39,10 +43,14 @@ def normalize_options(raw_options: object) -> dict[str, str]:
             fallback_key = ("a", "b", "c", "d")[index]
             if isinstance(item, dict):
                 key = normalize_option_key(str(item.get("key") or item.get("label") or fallback_key))
-                text = str(item.get("text") or item.get("value") or "").strip()
+                text = clean_option_text(
+                    str(item.get("text") or item.get("value") or ""),
+                    question_id=question_id,
+                    option_key=key,
+                )
             else:
                 key = fallback_key
-                text = str(item).strip()
+                text = clean_option_text(str(item), question_id=question_id, option_key=key)
             if text:
                 normalized[key] = text
         return normalized
@@ -130,7 +138,8 @@ async def load() -> None:
                 continue
 
             question_text = str(item.get("question") or item.get("question_text") or "").strip()
-            options = normalize_options(item.get("options"))
+            question_key = str(external_id or item.get("id") or "")
+            options = normalize_options(item.get("options"), question_id=question_key)
             correct_answer = normalize_correct_answer(item, options)
             block = resolve_block(item, external_id, source_number)
 

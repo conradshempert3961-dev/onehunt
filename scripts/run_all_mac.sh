@@ -46,78 +46,16 @@ export MINIAPP_DEV_USER_ID="${MINIAPP_DEV_USER_ID:-6467055041}"
 export MINIAPP_HOST="${MINIAPP_HOST:-0.0.0.0}"
 export MINIAPP_PORT="${MINIAPP_PORT:-8080}"
 export MINIAPP_URL="${MINIAPP_URL:-http://127.0.0.1:${MINIAPP_PORT}/}"
-export OPENAI_API_KEY="${OPENAI_API_KEY:-sk-dummy}"
-export OPENAI_API_BASE="${OPENAI_API_BASE:-http://127.0.0.1:18632/v1}"
-export OPENAI_MODEL="${OPENAI_MODEL:-deepseek-chat}"
+export OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+export OPENAI_API_BASE="${OPENAI_API_BASE:-https://api.openai.com/v1}"
+export OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
 export AI_REQUEST_TIMEOUT="${AI_REQUEST_TIMEOUT:-90}"
 
 "$PYTHON" -m pip install -q -r "$ROOT/requirements.txt"
 "$PYTHON" "$ROOT/scripts/load_questions.py"
 
-DEEPSEEK_DIR="${DEEPSEEK_API_DIR:-$ROOT/tools/deepseek-free-api}"
-DEEPSEEK_PORT="${DEEPSEEK_PORT:-18632}"
-
-deepseek_running() {
-  curl -sf "http://127.0.0.1:${DEEPSEEK_PORT}/v1/models" >/dev/null 2>&1
-}
-
 miniapp_running() {
   curl -sf "http://127.0.0.1:${MINIAPP_PORT}/health" >/dev/null 2>&1
-}
-
-start_deepseek() {
-  if deepseek_running; then
-    echo "DeepSeek proxy: already running on port ${DEEPSEEK_PORT}"
-    return 0
-  fi
-
-  if [[ ! -d "$DEEPSEEK_DIR" ]]; then
-    echo "DeepSeek proxy not found — bootstrapping..."
-    bash "$ROOT/scripts/bootstrap_deepseek_proxy.sh" || return 1
-  fi
-
-  if ! command -v node >/dev/null 2>&1; then
-    echo "Node.js 18+ is required for DeepSeek proxy. Install from https://nodejs.org"
-    return 1
-  fi
-
-  pushd "$DEEPSEEK_DIR" >/dev/null
-  if [[ -f package.json && ! -d node_modules ]]; then
-    npm install
-  fi
-  if [[ ! -f server.mjs && -f "$ROOT/scripts/deepseek_server.mjs" ]]; then
-    cp "$ROOT/scripts/deepseek_server.mjs" server.mjs
-  fi
-
-  if [[ -f server.mjs ]]; then
-    if [[ ! -f deepseek-auth.json && ! -f .session && ! -f session.json && ! -f .auth ]]; then
-      echo "First login: browser window will open for chat.deepseek.com"
-      echo "  cd \"$DEEPSEEK_DIR\" && node server.mjs --login"
-      node server.mjs --login || true
-    fi
-    PORT="${DEEPSEEK_PORT}" nohup node server.mjs > "$LOGS_DIR/deepseek.stdout.log" 2> "$LOGS_DIR/deepseek.stderr.log" &
-  elif [[ -f server.js ]]; then
-    if [[ ! -f auth.json ]]; then
-      echo "First login: run npm run auth in $DEEPSEEK_DIR"
-      npm run auth
-    fi
-    nohup node server.js > "$LOGS_DIR/deepseek.stdout.log" 2> "$LOGS_DIR/deepseek.stderr.log" &
-  else
-    echo "No server.mjs or server.js found in $DEEPSEEK_DIR"
-    popd >/dev/null
-    return 1
-  fi
-
-  echo $! > "$LOGS_DIR/deepseek.pid"
-  popd >/dev/null
-  sleep 2
-
-  if deepseek_running; then
-    echo "DeepSeek proxy: started on port ${DEEPSEEK_PORT}"
-  else
-    echo "DeepSeek proxy failed to start. Check $LOGS_DIR/deepseek.stderr.log"
-    return 1
-  fi
 }
 
 start_miniapp() {
@@ -138,7 +76,6 @@ start_miniapp() {
   fi
 }
 
-start_deepseek || true
 start_miniapp
 
 echo ""

@@ -32,7 +32,26 @@ APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Europe/Moscow")
 FREE_MODE = os.getenv("FREE_MODE", "true").lower() == "true"
 BOT_SHELL_MODE = os.getenv("BOT_SHELL_MODE", "true").lower() == "true"
 ANSWER_BUTTONS_LAYOUT = os.getenv("ANSWER_BUTTONS_LAYOUT", "single_row")
-MINIAPP_URL = os.getenv("MINIAPP_URL", "")
+def _load_miniapp_url() -> str:
+    local = os.getenv("MINIAPP_URL", "").strip()
+    if local.lower().startswith("https://") and "trycloudflare.com" not in local:
+        return local
+    bundled = BASE_DIR / "config" / "miniapp_public_url.txt"
+    if bundled.is_file():
+        try:
+            line = bundled.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+            if line.lower().startswith("https://"):
+                return line
+        except OSError:
+            pass
+    return local
+
+
+MINIAPP_URL = _load_miniapp_url()
+MINIAPP_URL_REMOTE = os.getenv(
+    "MINIAPP_URL_REMOTE",
+    "https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/config/miniapp_public_url.txt",
+).strip()
 MINIAPP_DEV_USER_ID = int(os.getenv("MINIAPP_DEV_USER_ID", "0") or 0)
 MINIAPP_PORT = int(os.getenv("MINIAPP_PORT", "8080"))
 MINIAPP_HOST = os.getenv("MINIAPP_HOST", "127.0.0.1")
@@ -44,6 +63,7 @@ MINIAPP_BROWSER_DEMO_HOSTS = {
     if item.strip()
 }
 TELEGRAM_PROXY = os.getenv("TELEGRAM_PROXY", "").strip()
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "").strip().rstrip("/")
 
 TELEGRAM_STARS_PROVIDER_TOKEN = os.getenv("TELEGRAM_STARS_PROVIDER_TOKEN", "")
 YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID", "")

@@ -16,7 +16,7 @@ if [[ -f "${COMPOSE_FILE}" ]]; then
   docker compose -f "${COMPOSE_FILE}" down --remove-orphans 2>/dev/null || true
 fi
 
-for name in onehunt_miniapp onehunt_postgres onehunt_redis onehunt_deepseek onehunt_bot onehunt_site; do
+for name in onehunt_miniapp onehunt_postgres onehunt_redis onehunt_bot onehunt_site onehunt_huntdriver; do
   if docker ps -a --format '{{.Names}}' | grep -qx "${name}"; then
     docker rm -f "${name}" 2>/dev/null || true
     echo "Removed ${name}"
