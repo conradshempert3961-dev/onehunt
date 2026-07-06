@@ -2,6 +2,19 @@ name: Deploy VDS
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - cursor/fix-all-vds-2866
+      - main
+    paths:
+      - "scripts/vds_heal.sh"
+      - "scripts/vds_one_click.sh"
+      - "scripts/fix_vds_telegram.sh"
+      - "scripts/vds_https_tunnel.sh"
+      - "scripts/refresh_nginx_upstream.sh"
+      - "bot.py"
+      - "docker-compose.prod.yml"
+      - ".github/workflows/deploy-vds.yml"
 
 jobs:
   deploy:
@@ -15,17 +28,12 @@ jobs:
         env:
           VDS_PASSWORD: ${{ secrets.ONEHUNT_VDS_PASSWORD }}
         run: |
+          if [ -z "${VDS_PASSWORD}" ]; then
+            echo "::error::ONEHUNT_VDS_PASSWORD secret is empty. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
           sudo apt-get install -y -qq sshpass
           sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 root@104.128.137.117 <<'EOF'
           set -Eeuo pipefail
-          ROOT=/opt/onehunt
-          BRANCH=cursor/fix-all-vds-2866
-          mkdir -p "$ROOT"
-          if [ ! -d "$ROOT/.git" ]; then
-            git clone --depth 1 -b "$BRANCH" https://github.com/conradshempert3961-dev/onehunt.git "$ROOT"
-          fi
-          cd "$ROOT"
-          git fetch origin "$BRANCH"
-          git checkout -B "$BRANCH" "origin/$BRANCH" 2>/dev/null || git checkout -B "$BRANCH" FETCH_HEAD
-          ONEHUNT_BRANCH="$BRANCH" bash scripts/deploy_vds_full.sh 104.128.137.117
+          curl -fsSL https://raw.githubusercontent.com/conradshempert3961-dev/onehunt/cursor/fix-all-vds-2866/scripts/vds_heal.sh | bash
           EOF
